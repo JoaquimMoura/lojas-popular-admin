@@ -1,0 +1,1 @@
+export const MATERIALS = ["MDF", "MDP", "MADEIRA", "FERRO", "VIDRO", "PLASTICO"];

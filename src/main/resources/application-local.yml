@@ -1,0 +1,82 @@
+spring:
+  profiles:
+    active: local  # garante que o profile 'local' esteja ativo
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/loja_popular  # 🔄 nome do banco
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true  # 👀 exibe SQLs no console
+
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: lojas.popular@gmail.com
+    password: sua-senha-ou-app-password #TODO alterar configuraco
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG                    # 👀 loga queries SQL
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE  # 👀 loga parâmetros
+
+security:
+  jwt:
+    issuer: lojas-popular-moveis
+    access-token:
+      ttl-seconds: 3600
+    refresh-token:
+      ttl-seconds: 604800
+    # ⚠️ Trocar em produção (>=64 bytes)
+    secret: "change-me-in-prod-64-bytes-minimum-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+cors:
+  allowed-origins:
+    - "http://localhost:5173"
+    - "http://localhost:3000"
+  allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+  allowed-headers: "*"
+
+mercadopago:
+  access-token: "TEST-1375941359691268-102215-39248d21f780d675f5368f4d4035c269-184393666"
+  base-url: "https://api.mercadopago.com"
+  webhook:
+    secret: "TEST-1375941359691268-102215-39248d21f780d675f5368f4d4035c269-184393666"
+
+notificacao:
+  remetente: "Lojas Popular Móveis <lojas.popular@gmail.com>"
+
+whatsapp:
+  provider: zenvia
+  base-url: "https://api.zenvia.com/v2/channels/whatsapp/messages"
+  api-key: "SUA_CHAVE_ZENVIA_AQUI"
+  remetente: "Lojas Popular Móveis"
