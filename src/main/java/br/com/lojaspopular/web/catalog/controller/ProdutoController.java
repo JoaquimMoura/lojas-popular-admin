@@ -31,7 +31,7 @@ public class ProdutoController {
         Pageable pageable = PageRequest.of(page, size, Sort.by("nome"));
         var list = service.listar(nome, pageable);
         var resp = list.stream().map(this::toResponse).toList();
-        return new PageImpl<>(resp, pageable, resp.size());
+        return new PageImpl<>(resp, pageable, list.getTotalElements());
     }
 
     @GetMapping("/{id}")

@@ -8,6 +8,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,28 +26,31 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProdutoService {
 
-	private final ProdutoRepository produtoRepo;
-	private final CategoriaRepository categoriaRepo;
+	private final ProdutoRepository produtoRepository;
+	private final CategoriaRepository categoriaRepository;
 	
     @Value("${app.upload-dir:uploads}")
     private String baseUploadDir;
 
 	public Categoria buscarCategoria(Long id) {
-		return categoriaRepo.findById(id)
+		return categoriaRepository.findById(id)
 				.orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada: " + id));
 	}
 
 	public Produto buscar(Long id) {
-		return produtoRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Produto não encontrado: " + id));
+		return produtoRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Produto não encontrado: " + id));
 	}
 
-	public List<Produto> listar(String nome, Pageable pageable) {
-		return produtoRepo.findAll(pageable).getContent();
+	public Page<Produto> listar(String nome, Pageable pageable) {
+	    if (nome != null && !nome.isBlank()) {
+	        return produtoRepository.findByNomeContainingIgnoreCase(nome, pageable);
+	    }
+	    return produtoRepository.findAll(pageable);
 	}
 
 	@Transactional
 	public Produto salvar(Produto p) {
-		return produtoRepo.save(p);
+		return produtoRepository.save(p);
 	}
 
 	@Transactional

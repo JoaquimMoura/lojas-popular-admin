@@ -1,6 +1,10 @@
 // src/utils/url.js
 export const API_BASE = "http://localhost:8080";
+export const DEFAULT_IMAGE = "/assets/no-image.png";
 
+/**
+ * Gera uma URL absoluta segura (para API e uploads).
+ */
 export function absUrl(path = "") {
   if (!path) return "";
   if (path.startsWith("http")) return path;
@@ -8,5 +12,25 @@ export function absUrl(path = "") {
   return `${API_BASE}${path}`;
 }
 
-// 🔁 Alias compatível com o código legado
-export const resolveImageUrl = absUrl;
+/**
+ * Resolve uma URL de imagem com fallback.
+ */
+export function resolveImageUrl(url) {
+  if (!url) return DEFAULT_IMAGE;
+
+  if (url.startsWith("http")) return url;
+
+  // caminhos que ja apontam para assets locais (public/)
+  if (
+    url.startsWith("/assets/") ||
+    url.startsWith("/static/") ||
+    url.startsWith("/images/") ||
+    url === DEFAULT_IMAGE
+  ) {
+    return url;
+  }
+
+  if (!url.startsWith("/")) url = "/" + url;
+
+  return `${API_BASE}${url}`;
+}

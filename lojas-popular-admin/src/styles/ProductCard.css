@@ -1,0 +1,74 @@
+/* ProductCard - Popular Moveis */
+
+.product-card {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+}
+
+/* imagem do card */
+.product-card .card-img-top {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+/* titulo / preco */
+.product-card .card-body h6 {
+  margin-bottom: 6px;
+  line-height: 1.25;
+}
+
+.product-card-description {
+  min-height: 38px;
+}
+
+.product-card .card-body p {
+  margin-bottom: 10px;
+}
+
+/* lista de itens exibidos no card */
+.product-card-items {
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.product-card-items li::before {
+  content: "\2022";
+  display: inline-block;
+  width: 1em;
+  margin-left: -1em;
+  color: #dc3545;
+}
+
+/* cores da marca: vermelho + amarelo */
+.product-card .btn.btn-outline-warning {
+  border-width: 2px;
+  font-weight: 600;
+}
+
+.product-card .btn.btn-outline-warning:hover {
+  background: #ffc107;
+  color: #212529;
+}
+
+/* sutilezas de borda e separacao */
+.product-card .card-body {
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* responsividade pequena: texto mais legivel */
+@media (max-width: 400px) {
+  .product-card .card-body h6 {
+    font-size: 0.95rem;
+  }
+
+  .product-card .card-body p {
+    font-size: 0.9rem;
+  }
+}

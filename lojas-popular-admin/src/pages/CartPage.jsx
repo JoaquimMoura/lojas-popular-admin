@@ -1,88 +1,97 @@
 import { useCart } from "../context/CartContext";
-import { resolveImageUrl } from "../utils/url";
+import WhatsAppButton from "../components/WhatsAppButton";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function CartPage() {
-  const { items, updateQty, remove, total, clear } = useCart();
+  const { cartItems, total, removeFromCart, clearCart } = useCart();
+
+  if (!cartItems || cartItems.length === 0) {
+    return (
+      <div className="container text-center py-5">
+        <h4>Seu carrinho esta vazio</h4>
+        <p>Adicione produtos e finalize o pedido pelo WhatsApp.</p>
+      </div>
+    );
+  }
+
+  const message = `Ola! Gostaria de comprar os seguintes produtos:\n\n${cartItems
+    .map((item) => `${item.nome} - R$ ${item.preco.toFixed(2)}`)
+    .join("\n")}\n\nTotal: R$ ${total.toFixed(2)}`;
+
+  const handleClearCart = () => {
+    clearCart();
+    toast.info("Carrinho esvaziado com sucesso!", {
+      position: "top-right",
+      autoClose: 2000,
+      theme: "dark",
+      style: { backgroundColor: "#B71C1C", color: "#fff" },
+    });
+  };
 
   return (
-    <div className="py-3">
-      <h4 className="mb-3">Carrinho</h4>
-      {items.length === 0 ? (
-        <div className="text-muted">Seu carrinho está vazio.</div>
-      ) : (
-        <>
-          <div className="table-responsive">
-            <table className="table align-middle">
-              <thead>
-                <tr>
-                  <th style={{ width: 80 }}>Imagem</th>
-                  <th>Produto</th>
-                  <th style={{ width: 120 }}>Preço</th>
-                  <th style={{ width: 120 }}>Qtd</th>
-                  <th style={{ width: 120 }}>Subtotal</th>
-                  <th style={{ width: 100 }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((it) => (
-                  <tr key={it.id}>
-                    <td>
-                      <img
-                        src={resolveImageUrl(it.imagemUrl) ?? "https://via.placeholder.com/80x80?text=IMG"}
-                        alt=""
-                        width={64}
-                        height={64}
-                        style={{ objectFit: "cover" }}
-                        className="rounded"
-                      />
-                    </td>
-                    <td>{it.nome}</td>
-                    <td>R$ {Number(it.preco).toFixed(2)}</td>
-                    <td>
-                      <input
-                        type="number"
-                        min={1}
-                        className="form-control form-control-sm"
-                        value={it.qty}
-                        onChange={(e) => updateQty(it.id, Number(e.target.value || 1))}
-                      />
-                    </td>
-                    <td>R$ {(Number(it.preco) * it.qty).toFixed(2)}</td>
-                    <td>
-                      <button className="btn btn-outline-danger btn-sm" onClick={() => remove(it.id)}>
-                        Remover
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colSpan={4} className="text-end fw-bold">Total</td>
-                  <td className="fw-bold">R$ {total.toFixed(2)}</td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+    <div className="container py-4">
+      <h3 className="mb-3 text-danger fw-bold">Meu Carrinho</h3>
 
-          <div className="d-flex gap-2">
-            <button className="btn btn-outline-secondary" onClick={clear}>Limpar</button>
-            <a
-              className="btn btn-success"
-              href={`https://wa.me/5511986789299?text=${encodeURIComponent(
-                `Olá! Quero finalizar a compra:\n` +
-                items.map(i => `• ${i.nome} x${i.qty} — R$ ${(i.preco * i.qty).toFixed(2)}`).join("\n") +
-                `\nTotal: R$ ${total.toFixed(2)}`
-              )}&utm_source=site&utm_medium=carrinho&utm_campaign=whatsapp`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Finalizar pelo WhatsApp
-            </a>
-          </div>
-        </>
-      )}
+      <ul className="list-group mb-4">
+        {cartItems.map((item) => (
+          <li
+            key={item.id}
+            className="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <div className="d-flex align-items-center gap-3">
+              {item.imagemUrl && (
+                <img
+                  src={item.imagemUrl}
+                  alt={item.nome}
+                  style={{
+                    width: 60,
+                    height: 60,
+                    objectFit: "cover",
+                    borderRadius: 6,
+                  }}
+                  onError={(event) => {
+                    event.target.src = "/assets/no-image.png";
+                  }}
+                />
+              )}
+              <span>{item.nome}</span>
+            </div>
+            <div>
+              <span className="me-3 fw-semibold text-danger">
+                R$ {item.preco.toFixed(2)}
+              </span>
+              <button
+                className="btn btn-sm btn-outline-danger"
+                onClick={() => removeFromCart(item.id)}
+              >
+                Remover
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h5 className="mb-0 text-dark">
+          Total: <strong>R$ {total.toFixed(2)}</strong>
+        </h5>
+
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-outline-secondary"
+            onClick={handleClearCart}
+          >
+            Esvaziar Carrinho
+          </button>
+          <WhatsAppButton
+            text={message}
+            label="Finalizar pelo WhatsApp"
+          />
+        </div>
+      </div>
+
+      <ToastContainer />
     </div>
   );
 }
