@@ -1,39 +1,57 @@
-// src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "../services/api";
 
 const AuthCtx = createContext(null);
 
+const USER_STORAGE_KEY = "lp_user";
+const TOKEN_STORAGE_KEY = "lp_token";
+const REFRESH_STORAGE_KEY = "lp_refresh";
+
+function storeSession({ accessToken, refreshToken, user }) {
+  localStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
+  localStorage.setItem(REFRESH_STORAGE_KEY, refreshToken);
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+}
+
+function clearSession() {
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  localStorage.removeItem(REFRESH_STORAGE_KEY);
+  localStorage.removeItem(USER_STORAGE_KEY);
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const u = localStorage.getItem("lp_user");
-    return u ? JSON.parse(u) : null;
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
   });
+
   const isAuthenticated = !!user;
 
   async function login(email, senha) {
     const { data } = await api.post("/auth/login", { email, senha });
-    localStorage.setItem("lp_token", data.accessToken);
-    localStorage.setItem("lp_refresh", data.refreshToken);
-    // mock do usuário (ajuste se o backend devolver dados)
-    const u = { email, roles: ["ADMIN"] };
-    setUser(u);
-    localStorage.setItem("lp_user", JSON.stringify(u));
+    storeSession(data);
+    setUser(data.user);
+    return data.user;
   }
 
   function logout() {
-    localStorage.removeItem("lp_token");
-    localStorage.removeItem("lp_refresh");
-    localStorage.removeItem("lp_user");
+    clearSession();
     setUser(null);
   }
 
-  // opcional: refresh token/validação inicial
   useEffect(() => {
-    // noop por enquanto
+    // Placeholder for token refresh flow
   }, []);
 
-  const value = useMemo(() => ({ user, isAuthenticated, login, logout }), [user, isAuthenticated]);
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated,
+      login,
+      logout,
+    }),
+    [user, isAuthenticated],
+  );
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }

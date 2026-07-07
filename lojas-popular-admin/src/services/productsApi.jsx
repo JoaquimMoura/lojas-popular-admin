@@ -42,4 +42,16 @@ export const productsApi = {
   // ✅ Reordenar imagens após drag&drop
   reorderGallery: (id, orderedUrls) =>
     api.put(`/produtos/${id}/galeria/reordena`, orderedUrls),
+
+  // ✅ Upload de imagem de variação (cor)
+  uploadVariacaoImage: (produtoId, variacaoId, file) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api.post(`/produtos/${produtoId}/variacoes/${variacaoId}/imagem`, form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  // ✅ Busca produto por ID (retorna data diretamente)
+  byId: (id) => api.get(`/produtos/${id}`).then(r => r.data),
 };

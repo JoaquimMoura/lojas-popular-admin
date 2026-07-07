@@ -17,3 +17,19 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Redireciona para login em caso de token expirado/inválido
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+    // 401 = token expirado ou ausente — limpa sessão e redireciona para login
+    if (status === 401) {
+      localStorage.removeItem("lp_token");
+      localStorage.removeItem("lp_refresh");
+      localStorage.removeItem("lp_user");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);

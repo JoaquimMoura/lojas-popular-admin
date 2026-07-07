@@ -8,12 +8,21 @@ public record ProdutoResponse(
     String nome,
     String descricao,
     BigDecimal preco,
+    BigDecimal precoOriginal,
     Integer estoque,
     String sku,
+    String codigo,
     String imagemUrl,
-    String categoria, // nome da categoria
+    String categoria,
+    Long categoriaId,
+    BigDecimal largura,
+    BigDecimal altura,
+    BigDecimal profundidade,
+    BigDecimal peso,
+    Integer volumes,
+    List<String> diferenciais,
     List<VariacaoResponse> variacoes,
-    List<String> galeria // URLs
+    List<String> galeria
 ) {
   public record VariacaoResponse(
       Long id,
@@ -21,6 +30,7 @@ public record ProdutoResponse(
       String tamanho,
       String sku,
       BigDecimal adicionalPreco,
-      Integer estoque
+      Integer estoque,
+      String imagemUrl
   ) {}
 }

@@ -1,9 +1,12 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+// src/pages/ProductDetails.jsx
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { storeApi } from "../services/storeApi";
 import { resolveImageUrl } from "../utils/url";
+import { buildWhatsAppUrl } from "../utils/whatsapp";
 import WhatsAppButton from "../components/WhatsAppButton";
 import "../styles/Lightbox.css";
+import "../styles/ProductDetails.css";
 import { useCart } from "../context/CartContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -11,273 +14,255 @@ import "react-toastify/dist/ReactToastify.css";
 export default function ProductDetails() {
   const { id } = useParams();
   const [produto, setProduto] = useState(null);
-  const [imagemSelecionada, setImagemSelecionada] = useState(null);
+  const [imagemPrincipal, setImagemPrincipal] = useState(null);
+  const [corSelecionada, setCorSelecionada] = useState(null);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(null);
   const { addToCart } = useCart();
 
-  const handleKey = useCallback(
-    (event) => {
-      if (event.key === "Escape") {
-        closeLightbox();
-      }
-
-      if (lightboxIndex !== null) {
-        if (event.key === "ArrowRight") nextImage();
-        if (event.key === "ArrowLeft") prevImage();
-      }
-    },
-    [lightboxIndex]
-  );
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const data = await storeApi.getProduct(id);
-
-        let galeria = [];
-        if (Array.isArray(data.galeria)) {
-          galeria = data.galeria;
-        } else if (typeof data.galeria === "string") {
-          try {
-            galeria = JSON.parse(data.galeria);
-          } catch {
-            galeria = [];
-          }
-        }
-
-        const principal =
-          data.imagemUrl || galeria[0] || "/assets/no-image.png";
-
-        setProduto({ ...data, galeria });
-        setImagemSelecionada(resolveImageUrl(principal));
-      } catch (error) {
-        console.error("Erro ao carregar produto:", error);
-      }
+  const handleKey = useCallback((e) => {
+    if (e.key === "Escape") { setLightboxIndex(null); setZoom(1); }
+    if (lightboxIndex !== null) {
+      if (e.key === "ArrowRight") setLightboxIndex(p => p === (produto?.galeria?.length - 1) ? 0 : p + 1);
+      if (e.key === "ArrowLeft") setLightboxIndex(p => p === 0 ? (produto?.galeria?.length - 1) : p - 1);
     }
-
-    load();
-  }, [id]);
+  }, [lightboxIndex, produto]);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [handleKey]);
 
+  useEffect(() => {
+    storeApi.getProduct(id).then(data => {
+      let galeria = Array.isArray(data.galeria) ? data.galeria : [];
+      setProduto({ ...data, galeria });
+      setImagemPrincipal(resolveImageUrl(data.imagemUrl || galeria[0]));
+    }).catch(console.error);
+  }, [id]);
+
   if (!produto) {
-    return <p className="text-center mt-5">Carregando...</p>;
+    return (
+      <div className="container py-5 text-center">
+        <div className="spinner-border text-danger" role="status" />
+        <p className="mt-3 text-muted">Carregando produto...</p>
+      </div>
+    );
   }
 
-  const openLightbox = (index) => {
-    if (!produto?.galeria?.length) return;
-    setLightboxIndex(index >= 0 ? index : 0);
-    setZoom(1);
-  };
+  const preco = Number(produto.preco || 0);
+  const precoOriginal = produto.precoOriginal ? Number(produto.precoOriginal) : null;
+  const temDesconto = precoOriginal && precoOriginal > preco;
+  const desconto = temDesconto ? Math.round((1 - preco / precoOriginal) * 100) : 0;
+  const parcelas = 12;
+  const valorParcela = preco / parcelas;
 
-  const closeLightbox = () => {
-    setLightboxIndex(null);
-    setZoom(1);
-  };
+  const fmt = (v) => v?.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+  const fmtM = (v) => v != null ? `${Number(v).toFixed(2)} m` : "—";
 
-  const nextImage = () => {
-    if (!produto?.galeria?.length) return;
-    setLightboxIndex((prev) =>
-      prev === produto.galeria.length - 1 ? 0 : prev + 1
-    );
-    setZoom(1);
-  };
+  const temDimensoes = produto.largura || produto.altura || produto.profundidade || produto.peso;
+  const temDiferenciais = produto.diferenciais?.length > 0;
+  const temVariacoes = produto.variacoes?.length > 0;
 
-  const prevImage = () => {
-    if (!produto?.galeria?.length) return;
-    setLightboxIndex((prev) =>
-      prev === 0 ? produto.galeria.length - 1 : prev - 1
-    );
-    setZoom(1);
-  };
+  const todasImagens = [
+    ...(produto.imagemUrl ? [produto.imagemUrl] : []),
+    ...(produto.galeria || []),
+  ].filter(Boolean);
 
-  const handleWheelZoom = (event) => {
-    event.preventDefault();
-    const delta = event.deltaY < 0 ? 0.15 : -0.15;
-    setZoom((value) => Math.min(Math.max(value + delta, 1), 3));
-  };
+  function selectVariacao(v) {
+    setCorSelecionada(corSelecionada?.id === v.id ? null : v);
+    if (v.imagemUrl) setImagemPrincipal(resolveImageUrl(v.imagemUrl));
+  }
 
-  const handleDrag = (event) => {
-    if (zoom <= 1) return;
-    event.preventDefault();
-    const img = zoomRef.current;
-    const startX = event.clientX - img.offsetLeft;
-    const startY = event.clientY - img.offsetTop;
-    img.style.cursor = "grabbing";
-
-    const onMouseMove = (moveEvent) => {
-      img.style.left = `${moveEvent.clientX - startX}px`;
-      img.style.top = `${moveEvent.clientY - startY}px`;
-    };
-
-    const onMouseUp = () => {
-      img.style.cursor = "grab";
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  };
-
-  const currentImage =
-    lightboxIndex !== null && produto.galeria[lightboxIndex]
-      ? resolveImageUrl(produto.galeria[lightboxIndex])
-      : imagemSelecionada;
-
-  const handleAddToCart = () => {
-    addToCart({
-      id: produto.id,
-      nome: produto.nome,
-      preco: produto.preco,
-      imagemUrl: produto.imagemUrl,
-    });
-
-    toast.success(`${produto.nome} foi adicionado ao carrinho!`, {
-      position: "top-right",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      theme: "dark",
+  function handleAddToCart() {
+    addToCart({ id: produto.id, nome: produto.nome, preco: produto.preco, imagemUrl: produto.imagemUrl });
+    toast.success(`${produto.nome} adicionado ao carrinho!`, {
+      position: "top-right", autoClose: 3000, theme: "dark",
       style: { backgroundColor: "#B71C1C", color: "#fff" },
     });
+  }
+
+  const handleWheelZoom = (e) => {
+    e.preventDefault();
+    setZoom(v => Math.min(Math.max(v + (e.deltaY < 0 ? 0.15 : -0.15), 1), 3));
   };
 
+  const currentLightbox = lightboxIndex !== null
+    ? resolveImageUrl(todasImagens[lightboxIndex])
+    : null;
+
   return (
-    <div className="container py-4">
-      <h3 className="text-danger fw-bold mb-1">{produto.nome}</h3>
-      <p className="text-muted">{produto.descricao}</p>
-      <div className="row mt-4">
-        <div className="col-md-6 text-center">
-          <img
-            src={imagemSelecionada}
-            alt={produto.nome}
-            className="img-fluid rounded shadow-sm mb-3"
-            style={{ maxHeight: 420, objectFit: "contain", cursor: "zoom-in" }}
-            onClick={() =>
-              openLightbox(
-                produto.galeria.findIndex(
-                  (item) => resolveImageUrl(item) === imagemSelecionada
-                )
-              )
-            }
-            onError={(event) => {
-              event.target.src = "/assets/no-image.png";
-            }}
-          />
-
-          <div className="d-flex flex-wrap justify-content-center gap-2">
-            {produto.galeria?.map((g, index) => {
-              const imgUrl = resolveImageUrl(g);
-              const selected = imgUrl === imagemSelecionada;
-              return (
-                <img
-                  key={index}
-                  src={imgUrl}
-                  alt=""
-                  className="rounded"
-                  style={{
-                    width: 80,
-                    height: 80,
-                    objectFit: "cover",
-                    cursor: "pointer",
-                    border: selected ? "3px solid #dc3545" : "2px solid #ccc",
-                    opacity: selected ? 1 : 0.7,
-                  }}
-                  onClick={() => setImagemSelecionada(imgUrl)}
-                  onError={(event) => {
-                    event.target.src = "/assets/no-image.png";
-                  }}
-                />
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="col-md-6">
-          <h4 className="text-danger mb-3">
-            R$ {produto.preco?.toFixed(2) || "0.00"}
-          </h4>
-          <p>
-            <strong>Categoria:</strong> {produto.categoria || "-"}
-          </p>
-          <p>
-            <strong>Estoque:</strong> {produto.estoque || 0}
-          </p>
-
-          <WhatsAppButton
-            text={`Ola! Tenho interesse no produto ${produto.nome}`}
-            label="Falar com um atendente"
-          />
-        </div>
-      </div>
-
-      <div className="d-flex gap-3 mt-4">
-        <button className="btn btn-warning px-4" onClick={handleAddToCart}>
-          Adicionar ao carrinho
-        </button>
-
-        <WhatsAppButton
-          text={`Ola! Tenho interesse no produto ${produto.nome}`}
-          label="Comprar pelo WhatsApp"
-        />
-      </div>
-
+    <div className="product-details-page">
       <ToastContainer />
 
-      {lightboxIndex !== null && (
-        <div
-          className="lightbox-overlay"
-          onClick={closeLightbox}
-          onWheel={handleWheelZoom}
-        >
-          <button
-            className="lightbox-prev btn btn-light btn-lg"
-            onClick={(event) => {
-              event.stopPropagation();
-              prevImage();
-            }}
-          >
-            &lt;
-          </button>
-
-          <div
-            className="lightbox-container"
-            onClick={(event) => event.stopPropagation()}
-          >
+      <div className="row g-4 g-lg-5">
+        {/* ── Coluna esquerda: imagens ── */}
+        <div className="col-lg-6">
+          {/* Imagem principal */}
+          <div className="product-main-img-wrap mb-3" onClick={() => setLightboxIndex(0)}>
+            {produto.codigo && (
+              <span className="product-code-badge">Cód. {produto.codigo}</span>
+            )}
             <img
-              ref={zoomRef}
-              src={currentImage || "/assets/no-image.png"}
-              alt=""
-              className="lightbox-image"
-              style={{
-                transform: `scale(${zoom})`,
-                cursor: zoom > 1 ? "grab" : "zoom-out",
-                transition: "transform 0.25s ease",
-              }}
-              onMouseDown={handleDrag}
-              onError={(event) => {
-                event.target.src = "/assets/no-image.png";
-              }}
+              src={imagemPrincipal || "/assets/no-image.png"}
+              alt={produto.nome}
+              className="product-main-img"
+              onError={e => { e.target.src = "/assets/no-image.png"; }}
+            />
+            {temDesconto && (
+              <span className="product-discount-badge">{desconto}% OFF</span>
+            )}
+            <span className="product-zoom-hint">Clique para ampliar</span>
+          </div>
+
+          {/* Miniaturas galeria */}
+          {todasImagens.length > 1 && (
+            <div className="product-thumbnails">
+              {todasImagens.map((url, i) => {
+                const src = resolveImageUrl(url);
+                return (
+                  <img
+                    key={i}
+                    src={src}
+                    alt=""
+                    className={`product-thumb ${src === imagemPrincipal ? "active" : ""}`}
+                    onClick={() => setImagemPrincipal(src)}
+                    onError={e => { e.target.src = "/assets/no-image.png"; }}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Coluna direita: informações ── */}
+        <div className="col-lg-6">
+          {/* Categoria */}
+          {produto.categoria && (
+            <p className="product-category-tag">{produto.categoria}</p>
+          )}
+
+          {/* Nome */}
+          <h1 className="product-title">{produto.nome}</h1>
+
+          {/* Preço */}
+          <div className="product-price-block">
+            {temDesconto && (
+              <p className="product-price-original">
+                De: <span className="text-decoration-line-through">R$ {fmt(precoOriginal)}</span>
+              </p>
+            )}
+            <p className="product-price-main">R$ {fmt(preco)}</p>
+            <p className="product-price-installment">
+              ou {parcelas}x de R$ {fmt(valorParcela)}{" "}
+              <span className="text-success fw-semibold">sem juros</span>
+            </p>
+          </div>
+
+          {/* Descrição */}
+          {produto.descricao && (
+            <p className="product-description">{produto.descricao}</p>
+          )}
+
+          {/* Cores / Variações */}
+          {temVariacoes && (
+            <div className="product-colors mb-3">
+              <p className="fw-semibold mb-2 text-muted small">
+                CORES DISPONÍVEIS ({produto.variacoes.length})
+              </p>
+              <div className="d-flex flex-wrap gap-2">
+                {produto.variacoes.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => selectVariacao(v)}
+                    className={`product-color-btn ${corSelecionada?.id === v.id ? "active" : ""}`}
+                    title={[v.cor, v.tamanho].filter(Boolean).join(" — ")}
+                  >
+                    {v.imagemUrl ? (
+                      <img
+                        src={resolveImageUrl(v.imagemUrl)}
+                        alt={v.cor}
+                        className="product-color-img"
+                        onError={e => { e.target.style.display = "none"; }}
+                      />
+                    ) : (
+                      <span className="product-color-label">{v.cor || "?"}</span>
+                    )}
+                    <span className="product-color-name">{v.cor}</span>
+                    {v.tamanho && <span className="product-color-size">{v.tamanho}</span>}
+                    {v.adicionalPreco > 0 && (
+                      <span className="product-color-adicional">+R$ {fmt(v.adicionalPreco)}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Dimensões */}
+          {temDimensoes && (
+            <div className="product-dimensions mb-3">
+              <p className="fw-semibold mb-2 text-muted small">DIMENSÕES</p>
+              <div className="dimensions-grid">
+                {produto.largura && <div className="dim-item"><span className="dim-label">Largura</span><span className="dim-value">{fmtM(produto.largura)}</span></div>}
+                {produto.altura && <div className="dim-item"><span className="dim-label">Altura</span><span className="dim-value">{fmtM(produto.altura)}</span></div>}
+                {produto.profundidade && <div className="dim-item"><span className="dim-label">Prof.</span><span className="dim-value">{fmtM(produto.profundidade)}</span></div>}
+                {produto.peso && <div className="dim-item"><span className="dim-label">Peso</span><span className="dim-value">{Number(produto.peso).toFixed(1)} kg</span></div>}
+                {produto.volumes && <div className="dim-item"><span className="dim-label">Volumes</span><span className="dim-value">{produto.volumes} cx</span></div>}
+              </div>
+            </div>
+          )}
+
+          {/* Diferenciais */}
+          {temDiferenciais && (
+            <div className="product-diferenciais mb-3">
+              <p className="fw-semibold mb-2 text-muted small">DIFERENCIAIS</p>
+              <ul className="dif-list">
+                {produto.diferenciais.map((d, i) => (
+                  <li key={i}><span className="dif-check">&#10003;</span> {d}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* CTA */}
+          <div className="product-cta d-flex flex-column gap-2 mt-4">
+            <button className="btn btn-warning btn-lg fw-bold" onClick={handleAddToCart}>
+              Adicionar ao Carrinho
+            </button>
+            <WhatsAppButton
+              text={`Olá! Tenho interesse no produto: *${produto.nome}* (R$ ${fmt(preco)}). Podem me ajudar?`}
+              label="Comprar pelo WhatsApp"
+              className="btn btn-success btn-lg"
             />
           </div>
 
-          <button
-            className="lightbox-next btn btn-light btn-lg"
-            onClick={(event) => {
-              event.stopPropagation();
-              nextImage();
-            }}
-          >
-            &gt;
-          </button>
+          {/* Estoque */}
+          {produto.estoque != null && (
+            <p className="text-muted small mt-2">
+              {produto.estoque > 5
+                ? `Em estoque (${produto.estoque} disponíveis)`
+                : produto.estoque > 0
+                ? `Últimas unidades (${produto.estoque} restantes)`
+                : "Indisponível"}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Lightbox ── */}
+      {lightboxIndex !== null && (
+        <div className="lightbox-overlay" onClick={() => { setLightboxIndex(null); setZoom(1); }} onWheel={handleWheelZoom}>
+          <button className="lightbox-prev btn btn-light btn-lg" onClick={e => { e.stopPropagation(); setLightboxIndex(p => p === 0 ? todasImagens.length - 1 : p - 1); setZoom(1); }}>&#8249;</button>
+          <div className="lightbox-container" onClick={e => e.stopPropagation()}>
+            <img ref={zoomRef} src={currentLightbox} alt="" className="lightbox-image"
+              style={{ transform: `scale(${zoom})`, cursor: zoom > 1 ? "grab" : "zoom-out", transition: "transform 0.25s ease" }}
+              onError={e => { e.target.src = "/assets/no-image.png"; }} />
+          </div>
+          <button className="lightbox-next btn btn-light btn-lg" onClick={e => { e.stopPropagation(); setLightboxIndex(p => p === todasImagens.length - 1 ? 0 : p + 1); setZoom(1); }}>&#8250;</button>
+          <div className="lightbox-counter">{lightboxIndex + 1} / {todasImagens.length}</div>
         </div>
       )}
     </div>

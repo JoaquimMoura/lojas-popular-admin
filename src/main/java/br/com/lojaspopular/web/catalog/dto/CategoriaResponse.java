@@ -15,6 +15,7 @@ public class CategoriaResponse {
     private String nome;
     private String descricao;
     private MaterialType material;
+    private String imagemUrl;
     private boolean ativa;
 }
 

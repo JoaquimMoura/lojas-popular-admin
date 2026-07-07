@@ -1,12 +1,15 @@
 package br.com.lojaspopular.domain.catalog.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -16,13 +19,15 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.OrderColumn;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.var;
 
 @Entity
 @Table(name = "produtos")
@@ -55,6 +60,34 @@ public class Produto {
 
 	private String imagemUrl; // capa principal
 
+	@Column(length = 30)
+	private String codigo;
+
+	@Column(precision = 10, scale = 2)
+	private BigDecimal precoOriginal;
+
+	// Dimensões
+	@Column(precision = 8, scale = 3)
+	private BigDecimal largura;
+
+	@Column(precision = 8, scale = 3)
+	private BigDecimal altura;
+
+	@Column(precision = 8, scale = 3)
+	private BigDecimal profundidade;
+
+	@Column(precision = 8, scale = 3)
+	private BigDecimal peso;
+
+	private Integer volumes;
+
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "produto_diferenciais", joinColumns = @JoinColumn(name = "produto_id"))
+	@Column(name = "diferencial", length = 300)
+	@OrderColumn(name = "ordem")
+	@Builder.Default
+	private List<String> diferenciais = new ArrayList<>();
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "categoria_id")
 	private Categoria categoria;
@@ -67,6 +100,14 @@ public class Produto {
 	@OrderBy("ordem ASC")
 	@Builder.Default
 	private List<ProdutoImagem> galeria = new ArrayList<>();
+    
+    @Builder.Default
+    private boolean ativa = true;
+
+    @Column(updatable = false)
+    private LocalDateTime dataCriacao;
+
+    private LocalDateTime dataAtualizacao;
 
 	public void addVariacao(ProdutoVariacao v) {
 		v.setProduto(this);
@@ -91,10 +132,24 @@ public class Produto {
 	            .collect(java.util.stream.Collectors.toMap(ProdutoImagem::getUrl, g -> g));
 	    List<ProdutoImagem> nova = new java.util.ArrayList<>();
 	    for (int i = 0; i < urlsNaOrdem.size(); i++) {
-	        var gi = map.get(urlsNaOrdem.get(i));
-	        if (gi != null) { gi.setOrdem(i); nova.add(gi); }
+	        ProdutoImagem gi = map.get(urlsNaOrdem.get(i));
+	        if (gi != null) {
+	            gi.setOrdem(i);
+	            nova.add(gi);
+	        }
 	    }
 	    galeria.clear();
 	    galeria.addAll(nova);
 	}
+
+    @PrePersist
+    protected void onCreate() {
+        dataCriacao = LocalDateTime.now();
+        dataAtualizacao = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        dataAtualizacao = LocalDateTime.now();
+    }
 }

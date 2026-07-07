@@ -32,66 +32,66 @@ import lombok.extern.slf4j.Slf4j;
 public class PedidoController {
 
   private final PedidoService service;
-  private final ProdutoRepository produtoRepo;
+  private final ProdutoRepository produtoRepository;
 
   @PostMapping
   @PreAuthorize("hasAnyRole('CLIENTE','ADMIN')")
-  public ResponseEntity<PedidoResponse> criar(@Valid @RequestBody PedidoRequest req) {
-	  
-	  
-	log.info("Solicitacao para criar um pedido: {}", req);
-    List<ItemPedido> itens = req.itens().stream().map(i -> {
-      var produto = produtoRepo.findById(i.produtoId())
-          .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+  public ResponseEntity<PedidoResponse> criar(@Valid @RequestBody PedidoRequest request) {
+    log.info("Solicitacao para criar um pedido: {}", request);
+
+    List<ItemPedido> itens = request.itens().stream().map(item -> {
+      var produto = produtoRepository.findById(item.produtoId())
+          .orElseThrow(() -> new RuntimeException("Produto nao encontrado"));
       return ItemPedido.builder()
           .produto(produto)
-          .quantidade(i.quantidade())
+          .quantidade(item.quantidade())
           .precoUnitario(produto.getPreco())
           .build();
     }).toList();
 
     Pedido pedido = service.criarPedido(itens);
+    return ResponseEntity.ok(toResponse(pedido));
+  }
 
-    var resp = new PedidoResponse(
+  @GetMapping
+  @PreAuthorize("hasAnyRole('CLIENTE','ADMIN','VENDEDOR')")
+  public List<PedidoResponse> listar() {
+    return service.listarPedidosDoUsuario().stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
+  @GetMapping("/gerenciar")
+  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  public List<PedidoResponse> listarTodos() {
+    return service.listarTodos().stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
+  @PutMapping("/{id}/status")
+  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  public PedidoResponse alterarStatus(@PathVariable Long id, @RequestParam PedidoStatus status) {
+    Pedido pedido = service.alterarStatus(id, status);
+    return toResponse(pedido);
+  }
+
+  private PedidoResponse toResponse(Pedido pedido) {
+    var itens = pedido.getItens().stream()
+        .map(it -> new ItemPedidoResponse(
+            it.getProduto().getNome(),
+            it.getQuantidade(),
+            it.getPrecoUnitario(),
+            it.getTotal()))
+        .toList();
+
+    return new PedidoResponse(
         pedido.getId(),
         pedido.getStatus(),
         pedido.getSubtotal(),
         pedido.getFrete(),
         pedido.getTotal(),
         pedido.getCriadoEm(),
-        pedido.getItens().stream().map(it -> new ItemPedidoResponse(
-            it.getProduto().getNome(),
-            it.getQuantidade(),
-            it.getPrecoUnitario(),
-            it.getTotal()
-        )).toList()
-    );
-    return ResponseEntity.ok(resp);
-  }
-
-  @GetMapping
-  @PreAuthorize("hasAnyRole('CLIENTE','ADMIN')")
-  public List<PedidoResponse> listar() {
-    List<Pedido> pedidos = service.listarPedidosDoUsuario();
-    return pedidos.stream().map(p -> new PedidoResponse(
-        p.getId(), p.getStatus(), p.getSubtotal(), p.getFrete(), p.getTotal(),
-        p.getCriadoEm(),
-        p.getItens().stream().map(it -> new ItemPedidoResponse(
-            it.getProduto().getNome(),
-            it.getQuantidade(),
-            it.getPrecoUnitario(),
-            it.getTotal()
-        )).toList()
-    )).toList();
-  }
-
-  @PutMapping("/{id}/status")
-  @PreAuthorize("hasRole('ADMIN')")
-  public PedidoResponse alterarStatus(@PathVariable Long id, @RequestParam PedidoStatus status) {
-    Pedido pedido = service.alterarStatus(id, status);
-    return new PedidoResponse(
-        pedido.getId(), pedido.getStatus(), pedido.getSubtotal(),
-        pedido.getFrete(), pedido.getTotal(), pedido.getCriadoEm(), null
-    );
+        itens);
   }
 }

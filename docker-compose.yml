@@ -1,0 +1,33 @@
+# ==========================================================
+# 🐘 Lojas Popular Backend - Banco de Dados
+# PostgreSQL Local (v13) e Staging (v16)
+# ==========================================================
+
+services:
+  # ==========================================================
+  # 🐘 PostgreSQL - Local (versão 13)
+  # ==========================================================
+  postgres-local:
+    image: postgres:15
+    container_name: lojas-postgres-local
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: lojas-local
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_local_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LOCAL_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - local
+
+volumes:
+  pg_local_data:

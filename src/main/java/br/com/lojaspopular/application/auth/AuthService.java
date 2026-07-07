@@ -1,74 +1,85 @@
 package br.com.lojaspopular.application.auth;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import br.com.lojaspopular.application.auditoria.AuditoriaService;
 import br.com.lojaspopular.domain.auditoria.enums.AuditoriaTipo;
+import br.com.lojaspopular.domain.user.User;
 import br.com.lojaspopular.domain.user.UserRepository;
 import br.com.lojaspopular.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-	private final UserRepository userRepository;
-	private final PasswordEncoder passwordEncoder;
-	private final JwtUtil jwt;
-	private final AuditoriaService auditoriaService;
+  private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final JwtUtil jwtUtil;
+  private final AuditoriaService auditoriaService;
 
-	public record Tokens(String accessToken, String refreshToken, long expiresIn) {
-	}
+  public record Tokens(
+      String accessToken,
+      String refreshToken,
+      long expiresIn,
+      UserSummary user) {
+  }
 
-	public Tokens login(String email, String rawPassword) {
+  public record UserSummary(Long id, String email, Set<String> roles) {
+  }
 
-		var user = userRepository.findByEmail(email)
-				.orElseThrow(() -> new IllegalArgumentException("Credenciais inválidas"));
+  public Tokens login(String email, String rawPassword) {
+    var user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new IllegalArgumentException("Credenciais invalidas"));
 
-		log.info("Validando senha: raw='{}', hash='{}'", rawPassword, user.getPasswordHash());
+    log.info("Validando senha para usuario {}", email);
 
-		if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
-			throw new IllegalArgumentException("Credenciais inválidas");
-		}
+    if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
+      throw new IllegalArgumentException("Credenciais invalidas");
+    }
 
-		var claims = Map.<String, Object>of("roles", user.getRoles().stream().map(Enum::name).toList());
+    var tokens = generateTokens(user);
+    auditoriaService.registrar(AuditoriaTipo.LOGIN_SUCESSO, "Usuario logado com sucesso");
+    return tokens;
+  }
 
-		String access = jwt.generateAccessToken(user.getEmail(), claims);
+  public Tokens refresh(String refreshToken) {
+    var jws = jwtUtil.parse(refreshToken);
 
-		String refresh = jwt.generateRefreshToken(user.getEmail());
-		long ttl = 3600L; // alinhar com application.yml
-		
-		auditoriaService.registrar(AuditoriaTipo.LOGIN_SUCESSO, "Usuário logado com sucesso");
+    if (!"refresh".equals(jws.getBody().get("typ"))) {
+      throw new IllegalArgumentException("Token invalido");
+    }
 
-		return new Tokens(access, refresh, ttl);
-	}
+    String email = jws.getBody().getSubject();
 
-	public Tokens refresh(String refreshToken) {
+    var user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new IllegalArgumentException("Usuario invalido"));
 
-		var jws = jwt.parse(refreshToken);
+    return generateTokens(user);
+  }
 
-		if (!"refresh".equals(jws.getBody().get("typ"))) {
-			throw new IllegalArgumentException("Token inválido");
-		}
+  private Tokens generateTokens(User user) {
+    Set<String> roles = user.getRoles().stream()
+        .map(Enum::name)
+        .collect(Collectors.toUnmodifiableSet());
 
-		String email = jws.getBody().getSubject();
+    Map<String, Object> claims = Map.of("roles", roles);
 
-		var user = userRepository.findByEmail(email)
-				.orElseThrow(() -> new IllegalArgumentException("Usuário inválido"));
+    String accessToken = jwtUtil.generateAccessToken(user.getEmail(), claims);
+    String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+    long ttl = 3600L; // TODO alinhar com configuracao em application.yml
 
-		var claims = Map.<String, Object>of("roles", user.getRoles().stream().map(Enum::name).toArray(String[]::new));
-		String access = jwt.generateAccessToken(email, claims);
-		String newRefresh = jwt.generateRefreshToken(email);
-		long ttl = 3600L;
-
-		return new Tokens(access, newRefresh, ttl);
-	}
-	
-
+    return new Tokens(
+        accessToken,
+        refreshToken,
+        ttl,
+        new UserSummary(user.getId(), user.getEmail(), roles));
+  }
 }

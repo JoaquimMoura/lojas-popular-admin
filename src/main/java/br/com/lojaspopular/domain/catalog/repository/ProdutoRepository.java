@@ -10,4 +10,6 @@ import br.com.lojaspopular.domain.catalog.model.Produto;
 @Repository
 public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 	Page<Produto> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
+	Page<Produto> findByCategoriaId(Long categoriaId, Pageable pageable);
+	Page<Produto> findByCategoriaNomeContainingIgnoreCase(String categoria, Pageable pageable);
 }

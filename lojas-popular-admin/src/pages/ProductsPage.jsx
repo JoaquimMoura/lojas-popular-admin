@@ -26,17 +26,33 @@ export default function ProductsPage() {
   }
 
   async function onCreate(payload, files) {
-    const { data } = await productsApi.create(payload);
-    if (files?.cover) await productsApi.uploadCover(data.id, files.cover);
-    if (files?.gallery?.length) await productsApi.uploadGallery(data.id, files.gallery);
+    const { data: saved } = await productsApi.create(payload);
+    if (files?.cover) await productsApi.uploadCover(saved.id, files.cover);
+    if (files?.gallery?.length) await productsApi.uploadGallery(saved.id, files.gallery);
+    if (files?.variacaoImages) {
+      for (const [idx, file] of Object.entries(files.variacaoImages)) {
+        const variacao = saved.variacoes?.[Number(idx)];
+        if (variacao?.id && file) {
+          await productsApi.uploadVariacaoImage(saved.id, variacao.id, file);
+        }
+      }
+    }
     setCreating(false);
     await load();
   }
 
   async function onUpdate(produtoId, payload, files) {
-    await productsApi.update(produtoId, payload);
+    const { data: saved } = await productsApi.update(produtoId, payload);
     if (files?.cover) await productsApi.uploadCover(produtoId, files.cover);
     if (files?.gallery?.length) await productsApi.uploadGallery(produtoId, files.gallery);
+    if (files?.variacaoImages) {
+      for (const [idx, file] of Object.entries(files.variacaoImages)) {
+        const variacao = saved.variacoes?.[Number(idx)];
+        if (variacao?.id && file) {
+          await productsApi.uploadVariacaoImage(produtoId, variacao.id, file);
+        }
+      }
+    }
     setEditing(null);
     await load();
   }

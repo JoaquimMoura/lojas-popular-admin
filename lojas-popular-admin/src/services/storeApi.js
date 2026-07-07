@@ -6,11 +6,16 @@ export const storeApi = {
    * Lista publica de produtos.
    * Sempre retorna um array, mesmo que o backend utilize PageImpl.
    */
-  listProducts: async ({ page = 0, size = 24 } = {}) => {
+  listProducts: async ({ page = 0, size = 24, nome, categoriaId, categoria } = {}) => {
     try {
-      const { data } = await api.get(
-        `/api/v1/produtos?page=${page}&size=${size}`
-      );
+      const params = new URLSearchParams();
+      params.set("page", page);
+      params.set("size", size);
+      if (nome) params.set("nome", nome);
+      if (categoriaId) params.set("categoriaId", categoriaId);
+      if (categoria) params.set("categoria", categoria);
+
+      const { data } = await api.get(`/api/v1/produtos?${params.toString()}`);
 
       if (Array.isArray(data)) {
         return data;

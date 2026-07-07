@@ -1,0 +1,232 @@
+/* ProductDetails.css — Popular Moveis */
+
+.product-details-page {
+  --brand-red: #c62828;
+  --brand-yellow: #ffca28;
+}
+
+/* ── Imagem principal ── */
+.product-main-img-wrap {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8f9fa;
+  cursor: zoom-in;
+}
+
+.product-main-img {
+  width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+  display: block;
+  padding: 8px;
+}
+
+.product-code-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  z-index: 1;
+}
+
+.product-discount-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--brand-red);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  z-index: 1;
+}
+
+.product-zoom-hint {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  font-size: 0.72rem;
+  color: rgba(0,0,0,0.45);
+}
+
+/* ── Miniaturas ── */
+.product-thumbnails {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.product-thumb {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #dee2e6;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+  opacity: 0.75;
+}
+
+.product-thumb:hover { opacity: 1; transform: scale(1.05); }
+.product-thumb.active { border-color: var(--brand-red); opacity: 1; }
+
+/* ── Info ── */
+.product-category-tag {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--brand-red);
+  margin-bottom: 4px;
+}
+
+.product-title {
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1.25;
+  margin-bottom: 1rem;
+}
+
+/* ── Preço ── */
+.product-price-block { margin-bottom: 1rem; }
+
+.product-price-original {
+  font-size: 0.88rem;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+.product-price-main {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--brand-red);
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+.product-price-installment {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* ── Descrição ── */
+.product-description {
+  color: #555;
+  line-height: 1.65;
+  font-size: 0.97rem;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Cores ── */
+.product-color-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border: 2px solid #dee2e6;
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-width: 64px;
+  font-size: 0.72rem;
+}
+
+.product-color-btn:hover { border-color: var(--brand-red); }
+.product-color-btn.active { border-color: var(--brand-red); box-shadow: 0 0 0 3px rgba(198,40,40,0.15); }
+
+.product-color-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.product-color-label {
+  display: flex;
+  width: 48px;
+  height: 48px;
+  background: #f0f0f0;
+  border-radius: 6px;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.product-color-name { font-weight: 600; color: #333; }
+.product-color-size { color: #777; }
+.product-color-adicional { color: var(--brand-red); font-weight: 600; }
+
+/* ── Dimensões ── */
+.dimensions-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dim-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 8px 14px;
+  min-width: 80px;
+}
+
+.dim-label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+.dim-value { font-size: 0.95rem; font-weight: 700; color: #333; }
+
+/* ── Diferenciais ── */
+.dif-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dif-list li {
+  font-size: 0.93rem;
+  color: #444;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.dif-check {
+  color: #198754;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── CTA ── */
+.product-cta .btn { border-radius: 10px; }
+
+/* ── Lightbox counter ── */
+.lightbox-counter {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  z-index: 1200;
+}

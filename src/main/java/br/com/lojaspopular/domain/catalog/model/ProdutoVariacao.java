@@ -31,6 +31,9 @@ public class ProdutoVariacao {
   // estoque da variação (se não usar por variação, deixe null e use do produto)
   private Integer estoque;
 
+  @Column(length = 500)
+  private String imagemUrl;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "produto_id", nullable = false)
   private Produto produto;

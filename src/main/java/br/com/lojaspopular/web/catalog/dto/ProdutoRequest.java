@@ -7,16 +7,25 @@ public record ProdutoRequest(
     String nome,
     String descricao,
     BigDecimal preco,
+    BigDecimal precoOriginal,
     Integer estoque,
     String sku,
+    String codigo,
     Long categoriaId,
-    List<VariacaoRequest> variacoes // opcional
+    BigDecimal largura,
+    BigDecimal altura,
+    BigDecimal profundidade,
+    BigDecimal peso,
+    Integer volumes,
+    List<String> diferenciais,
+    List<VariacaoRequest> variacoes
 ) {
   public record VariacaoRequest(
       String cor,
       String tamanho,
       String sku,
       BigDecimal adicionalPreco,
-      Integer estoque
+      Integer estoque,
+      String imagemUrl
   ) {}
 }

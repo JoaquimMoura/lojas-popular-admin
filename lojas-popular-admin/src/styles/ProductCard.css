@@ -7,34 +7,86 @@
 }
 
 .product-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
 }
 
-/* imagem do card */
+/* wrapper da imagem para posicionar badges */
+.product-card-img-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
 .product-card .card-img-top {
   aspect-ratio: 4 / 3;
   object-fit: cover;
+  width: 100%;
+  display: block;
 }
 
-/* titulo / preco */
+/* badges flutuantes sobre a imagem */
+.product-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+  z-index: 1;
+}
+
+.product-badge--discount {
+  background-color: #c62828;
+  color: #fff;
+}
+
+.product-badge--promo {
+  background-color: #ffca28;
+  color: #5d2e00;
+}
+
+/* corpo */
+.product-card .card-body {
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0.85rem;
+}
+
 .product-card .card-body h6 {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   line-height: 1.25;
+  font-size: 0.95rem;
 }
 
 .product-card-description {
-  min-height: 38px;
+  min-height: 36px;
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
 
-.product-card .card-body p {
-  margin-bottom: 10px;
+/* preco original riscado */
+.product-card-original {
+  font-size: 0.78rem;
 }
 
-/* lista de itens exibidos no card */
+/* preco principal */
+.product-card-price {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+/* parcelamento */
+.product-card-installment {
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+/* lista de itens */
 .product-card-items {
-  margin-bottom: 12px;
-  font-size: 0.9rem;
+  margin-bottom: 10px;
+  font-size: 0.83rem;
   color: #6c757d;
 }
 
@@ -46,10 +98,27 @@
   color: #dc3545;
 }
 
-/* cores da marca: vermelho + amarelo */
+/* botao whatsapp no card */
+.product-card-wa-btn {
+  color: #198754;
+  border-color: #198754;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-card-wa-btn:hover {
+  background-color: #25D366;
+  border-color: #25D366;
+  color: #fff;
+}
+
+/* cores da marca */
 .product-card .btn.btn-outline-warning {
   border-width: 2px;
   font-weight: 600;
+  font-size: 0.82rem;
 }
 
 .product-card .btn.btn-outline-warning:hover {
@@ -57,18 +126,55 @@
   color: #212529;
 }
 
-/* sutilezas de borda e separacao */
-.product-card .card-body {
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+/* ============================================================
+   Skeleton loader
+   ============================================================ */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
 }
 
-/* responsividade pequena: texto mais legivel */
+.skeleton-box {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeleton-img-box {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  border-radius: 0;
+}
+
+.skeleton-title-box {
+  height: 14px;
+  width: 70%;
+}
+
+.skeleton-text-box {
+  height: 11px;
+  width: 55%;
+}
+
+.skeleton-text-box.short {
+  width: 40%;
+}
+
+.skeleton-price-box {
+  height: 18px;
+  width: 45%;
+}
+
+.skeleton-btn-box {
+  height: 30px;
+  width: 80%;
+  border-radius: 20px;
+}
+
+/* responsividade */
 @media (max-width: 400px) {
   .product-card .card-body h6 {
-    font-size: 0.95rem;
-  }
-
-  .product-card .card-body p {
-    font-size: 0.9rem;
+    font-size: 0.88rem;
   }
 }

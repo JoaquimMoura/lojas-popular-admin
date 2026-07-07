@@ -10,8 +10,11 @@ import EmailsPage from "./pages/EmailsPage";
 import ProductsPage from "./pages/ProductsPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import StoreConfigPage from "./pages/StoreConfigPage";
+import VendorDashboard from "./pages/VendorDashboard";
+import FanpageConfigPage from "./pages/FanpageConfigPage";
 
 import StoreHome from "./pages/StoreHome";
+import CategoryProducts from "./pages/CategoryProducts";
 import ProductDetails from "./pages/ProductDetails";
 import CartPage from "./pages/CartPage";
 
@@ -35,6 +38,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Fanpage /> },
       { path: "login", element: <LoginPage /> },
       { path: "loja", element: <StoreHome /> },
+      { path: "categoria/:id", element: <CategoryProducts /> },
       { path: "produto/:id", element: <ProductDetails /> },
       { path: "carrinho", element: <CartPage /> },
 
@@ -47,7 +51,17 @@ export const router = createBrowserRouter([
           { path: "emails", element: <EmailsPage /> },
           { path: "produtos", element: <ProductsPage /> },
           { path: "categorias", element: <CategoriesPage /> },
+          { path: "fanpage", element: <FanpageConfigPage /> },
           { path: "config", element: <StoreConfigPage /> },
+        ],
+      },
+      {
+        path: "vendedor",
+        element: <PrivateRoute roles={["VENDEDOR"]} />,
+        children: [
+          { index: true, element: <VendorDashboard /> },
+          { path: "produtos", element: <ProductsPage /> },
+          { path: "categorias", element: <CategoriesPage /> },
         ],
       },
     ],

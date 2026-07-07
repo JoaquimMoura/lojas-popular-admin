@@ -1,46 +1,68 @@
 spring:
+  application:
+    name: lojas-popular-backend
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/file-upload # mudar para loja_popular
-    username: postgres
-    password: postgres
+    driver-class-name: org.postgresql.Driver
+    url: ${PROD_DB_URL}
+    username: ${PROD_DB_USER}
+    password: ${PROD_DB_PASSWORD}
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
-  jackson:
-    serialization:
-      WRITE_DATES_AS_TIMESTAMPS: false
+        format_sql: false
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    default-schema: public
 
 server:
-  port: 8080
+  port: ${PROD_SERVER_PORT:8080}
 
 logging:
   level:
     root: INFO
     org.springframework.security: INFO
+    org.hibernate.SQL: ERROR
 
 security:
   jwt:
     issuer: lojas-popular-moveis
+    secret: ${JWT_SECRET}
     access-token:
       ttl-seconds: 3600
     refresh-token:
       ttl-seconds: 604800
-    # TROCAR EM PRODUCAO (>=64 bytes):
-    secret: "change-me-in-prod-64-bytes-minimum-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 cors:
   allowed-origins:
-    - "http://localhost:5173"
-    - "http://localhost:3000"
-  allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+    - ${CORS_ORIGINS:https://lojaspopular.com.br}
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
 
+rabbitmq:
+  host: ${RABBITMQ_HOST}
+  port: ${RABBITMQ_PORT}
+  username: ${RABBITMQ_USER}
+  password: ${RABBITMQ_PASSWORD}
+
+whatsapp:
+  provider: zenvia
+  base-url: https://api.zenvia.com/v2/channels/whatsapp/messages
+  api-key: ${WHATSAPP_API_KEY}
+  remetente: Lojas Popular Moveis
+
 mercadopago:
-  access-token: "TEST-1375941359691268-102215-39248d21f780d675f5368f4d4035c269-184393666"
-  base-url: "https://api.mercadopago.com"
-  # opcional: segredo para validar assinatura do webhook (se configurado no MP)
+  access-token: ${MP_ACCESS_TOKEN}
+  base-url: https://api.mercadopago.com
   webhook:
-    secret: "TEST-1375941359691268-102215-39248d21f780d675f5368f4d4035c269-184393666"
+    secret: ${MP_WEBHOOK_SECRET}

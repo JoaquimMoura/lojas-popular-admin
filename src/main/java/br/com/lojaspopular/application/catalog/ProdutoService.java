@@ -5,11 +5,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,54 +29,91 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProdutoService {
 
-	private final ProdutoRepository produtoRepository;
+	private final ProdutoRepository repository;
 	private final CategoriaRepository categoriaRepository;
 	
     @Value("${app.upload-dir:uploads}")
     private String baseUploadDir;
 
-	public Categoria buscarCategoria(Long id) {
+	public Categoria buscarCategoria(@NonNull Long id) {
 		return categoriaRepository.findById(id)
 				.orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada: " + id));
 	}
 
-	public Produto buscar(Long id) {
-		return produtoRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Produto não encontrado: " + id));
+	public Produto buscar(@NonNull Long id) {
+		return repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Produto não encontrado: " + id));
 	}
 
-	public Page<Produto> listar(String nome, Pageable pageable) {
-	    if (nome != null && !nome.isBlank()) {
-	        return produtoRepository.findByNomeContainingIgnoreCase(nome, pageable);
+	public Page<Produto> listar(String nome, Long categoriaId, String categoriaNome, @NonNull Pageable pageable) {
+	    if (categoriaId != null) {
+	        return repository.findByCategoriaId(categoriaId, pageable);
 	    }
-	    return produtoRepository.findAll(pageable);
+	    if (categoriaNome != null && !categoriaNome.isBlank()) {
+	        return repository.findByCategoriaNomeContainingIgnoreCase(categoriaNome, pageable);
+	    }
+	    if (nome != null && !nome.isBlank()) {
+	        return repository.findByNomeContainingIgnoreCase(nome, pageable);
+	    }
+	    return repository.findAll(pageable);
 	}
 
 	@Transactional
-	public Produto salvar(Produto p) {
-		return produtoRepository.save(p);
+	public Produto salvar(@NonNull Produto p) {
+		return repository.save(p);
 	}
 
 	@Transactional
-	public Produto atualizar(Long id, Produto novo) {
+	public Produto atualizar(@NonNull Long id, Produto novo) {
 		var atual = buscar(id);
+
+		// Preserva imagemUrl das variações existentes por SKU
+		Map<String, String> imagesBySku = atual.getVariacoes().stream()
+			.filter(v -> v.getSku() != null && v.getImagemUrl() != null)
+			.collect(java.util.stream.Collectors.toMap(
+				ProdutoVariacao::getSku,
+				ProdutoVariacao::getImagemUrl,
+				(a, b) -> a));
+
 		atual.setNome(novo.getNome());
 		atual.setDescricao(novo.getDescricao());
 		atual.setPreco(novo.getPreco());
+		atual.setPrecoOriginal(novo.getPrecoOriginal());
 		atual.setEstoque(novo.getEstoque());
 		atual.setSku(novo.getSku());
+		atual.setCodigo(novo.getCodigo());
 		atual.setCategoria(novo.getCategoria());
+		atual.setLargura(novo.getLargura());
+		atual.setAltura(novo.getAltura());
+		atual.setProfundidade(novo.getProfundidade());
+		atual.setPeso(novo.getPeso());
+		atual.setVolumes(novo.getVolumes());
 
-		// reset de variações
+		atual.getDiferenciais().clear();
+		atual.getDiferenciais().addAll(novo.getDiferenciais() != null ? novo.getDiferenciais() : List.of());
+
 		atual.getVariacoes().clear();
 		if (novo.getVariacoes() != null) {
 			for (ProdutoVariacao v : novo.getVariacoes()) {
+				// Restaura imagem existente se não veio nova no request
+				if (v.getImagemUrl() == null && v.getSku() != null && imagesBySku.containsKey(v.getSku())) {
+					v.setImagemUrl(imagesBySku.get(v.getSku()));
+				}
 				atual.addVariacao(v);
 			}
 		}
 		return atual;
 	}
+	
+	@Transactional
+	public void excluir(@NonNull Long id) {
+		
+		var p = buscar(id);
+		p.setAtiva(false);
+		p.setDataAtualizacao(LocalDateTime.now());
+		repository.saveAndFlush(p);
+		
+	}
 
-	// ===== Uploads locais =====
 	private static final Path ROOT = Path.of("uploads");
 	private static final Path PROD_DIR = ROOT.resolve("produtos");
 	private static final Path GAL_DIR = ROOT.resolve("produtos/galeria");
@@ -86,7 +126,6 @@ public class ProdutoService {
 	public String salvarImagemCapa(MultipartFile file) throws IOException {
 	    if (file.isEmpty()) throw new IllegalArgumentException("Arquivo vazio");
 
-	    // 3.1 - normaliza nome do arquivo para evitar espaços/acentos
 	    String original = file.getOriginalFilename();
 	    String safeName = java.text.Normalizer.normalize(original, java.text.Normalizer.Form.NFD)
 	            .replaceAll("[^\\p{ASCII}]", "")     // remove acentos
@@ -106,13 +145,13 @@ public class ProdutoService {
 	    return "/uploads/produtos/" + fileName;
 	}
 	
-	public void removerImagemGaleria(Long produtoId, String url) {
+    @Transactional
+    public void removerImagemGaleria(@NonNull Long produtoId, String url) {
         var p = buscar(produtoId);
         // remove do modelo
         p.removeImagemByUrl(url);
         salvar(p);
 
-        // tenta remover arquivo físico (opcional)
         try {
             if (url.startsWith("/")) url = url.substring(1);
             Path path = Paths.get(url);
@@ -132,9 +171,24 @@ public class ProdutoService {
 		return "/uploads/produtos/galeria/" + filename;
 	}
 	
-	public void reordenarGaleria(Long produtoId, List<String> urlsNaOrdem) {
+    @Transactional
+    public void reordenarGaleria(@NonNull Long produtoId, List<String> urlsNaOrdem) {
         var p = buscar(produtoId);
         p.reorderGaleria(urlsNaOrdem);
         salvar(p);
     }
+
+	@Transactional
+	public String salvarImagemVariacao(@NonNull Long produtoId, @NonNull Long variacaoId, MultipartFile file) throws IOException {
+		var produto = buscar(produtoId);
+		var variacao = produto.getVariacoes().stream()
+			.filter(v -> v.getId() != null && v.getId().equals(variacaoId))
+			.findFirst()
+			.orElseThrow(() -> new EntityNotFoundException("Variação não encontrada: " + variacaoId));
+
+		var url = salvarImagemCapa(file); // reutiliza o mesmo diretório de uploads
+		variacao.setImagemUrl(url);
+		salvar(produto);
+		return url;
+	}
 }

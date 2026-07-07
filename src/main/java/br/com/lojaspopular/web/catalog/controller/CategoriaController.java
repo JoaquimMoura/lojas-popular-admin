@@ -29,58 +29,58 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CategoriaController {
 
-    private final CategoriaService service;
-    private final CategoriaMapper mapper;
+  private final CategoriaService service;
+  private final CategoriaMapper mapper;
 
-    @GetMapping
-    public ResponseEntity<List<CategoriaResponse>> listar() {
-        var categorias = service.listar();
-        return ResponseEntity.ok(mapper.toResponseList(categorias));
-    }
+  @GetMapping
+  public ResponseEntity<List<CategoriaResponse>> listar() {
+    var categorias = service.listar();
+    return ResponseEntity.ok(mapper.toResponseList(categorias));
+  }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<CategoriaResponse> buscar(@PathVariable Long id) {
-        var categoria = service.buscar(id);
-        return ResponseEntity.ok(mapper.toResponse(categoria));
-    }
+  @GetMapping("/{id}")
+  public ResponseEntity<CategoriaResponse> buscar(@PathVariable Long id) {
+    var categoria = service.buscar(id);
+    return ResponseEntity.ok(mapper.toResponse(categoria));
+  }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping
-    public ResponseEntity<CategoriaResponse> criar(@Valid @RequestBody CategoriaRequest req) {
-        var entidade = mapper.toEntity(req);
-        var salva = service.salvar(entidade);
-        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(salva));
-    }
+  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PostMapping
+  public ResponseEntity<CategoriaResponse> criar(@Valid @RequestBody CategoriaRequest req) {
+    var entidade = mapper.toEntity(req);
+    var salva = service.salvar(entidade);
+    return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(salva));
+  }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{id}")
-    public ResponseEntity<CategoriaResponse> atualizar(@PathVariable Long id, @Valid @RequestBody CategoriaRequest req) {
-        var entidade = mapper.toEntity(req);
-        var atualizada = service.atualizar(id, entidade);
-        return ResponseEntity.ok(mapper.toResponse(atualizada));
-    }
+  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PutMapping("/{id}")
+  public ResponseEntity<CategoriaResponse> atualizar(
+      @PathVariable Long id,
+      @Valid @RequestBody CategoriaRequest req) {
+    var entidade = mapper.toEntity(req);
+    var atualizada = service.atualizar(id, entidade);
+    return ResponseEntity.ok(mapper.toResponse(atualizada));
+  }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> excluir(@PathVariable Long id) {
-        service.excluir(id);
-        return ResponseEntity.noContent().build();
-    }
-    
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/{id}/imagem")
-    public ResponseEntity<String> uploadImagem(
-            @PathVariable Long id,
-            @RequestParam("file") MultipartFile file) throws IOException {
+  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> excluir(@PathVariable Long id) {
+    service.excluir(id);
+    return ResponseEntity.noContent().build();
+  }
 
-        String url = service.salvarImagemCategoria(file);
-        var categoria = service.buscar(id);
+  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PostMapping("/{id}/imagem")
+  public ResponseEntity<String> uploadImagem(
+      @PathVariable Long id,
+      @RequestParam("file") MultipartFile file) throws IOException {
 
-        categoria.setImagemUrl(url);
-        service.salvar(categoria);
+    String url = service.salvarImagemCategoria(file);
+    var categoria = service.buscar(id);
 
-        return ResponseEntity.ok(url);
-    }
+    categoria.setImagemUrl(url);
+    service.salvar(categoria);
 
-
+    return ResponseEntity.ok(url);
+  }
 }
