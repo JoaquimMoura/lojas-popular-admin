@@ -25,6 +25,13 @@ spring:
     baseline-on-migrate: true
     default-schema: public
 
+  # RabbitMQ desligado por enquanto (notificação WhatsApp inativa) — evita
+  # tentativa de conexão/retry e o log repetido de "Connection refused".
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: false
+
 server:
   port: ${PROD_SERVER_PORT:8080}
 
