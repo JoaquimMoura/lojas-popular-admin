@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -55,6 +56,25 @@ public class ApiExceptionHandler {
       "status", 404,
       "error", "Not Found",
       "message", ex.getMessage()
+    ));
+  }
+
+  /**
+   * Violação de constraint no banco (ex.: SKU duplicado)
+   */
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<?> handleDataIntegrity(DataIntegrityViolationException ex) {
+    String causa = ex.getMostSpecificCause().getMessage();
+    String message = "Já existe um registro com esses dados.";
+    if (causa != null && causa.contains("produtos_sku_key")) {
+      message = "Já existe um produto cadastrado com esse SKU. Use outro SKU ou deixe o campo em branco.";
+    }
+
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+      "timestamp", Instant.now().toString(),
+      "status", 409,
+      "error", "Conflito de dados",
+      "message", message
     ));
   }
 
