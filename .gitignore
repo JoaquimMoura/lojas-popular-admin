@@ -6,6 +6,7 @@ data/
 !**/src/test/**/target/
 .env
 !.env.*.example
+uploads/
 lojas-popular-admin/node_modules/
 lojas-popular-admin/dist/
 .claude/

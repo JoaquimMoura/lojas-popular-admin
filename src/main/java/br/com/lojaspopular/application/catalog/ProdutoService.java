@@ -3,7 +3,6 @@ package br.com.lojaspopular.application.catalog;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
@@ -114,26 +113,42 @@ public class ProdutoService {
 		repository.delete(p);
 	}
 
+	private Path resolveFromUrl(String url) {
+		String relative = url.startsWith("/") ? url.substring(1) : url;
+		if (relative.startsWith("uploads/")) relative = relative.substring("uploads/".length());
+		return Path.of(baseUploadDir).resolve(relative);
+	}
+
 	private void deleteFileQuietly(String url) {
 		if (url == null || url.isBlank()) return;
 		try {
-			String relative = url.startsWith("/") ? url.substring(1) : url;
-			Files.deleteIfExists(Path.of(relative));
+			Files.deleteIfExists(resolveFromUrl(url));
 		} catch (IOException ignored) {}
 	}
 
-	private static final Path ROOT = Path.of("uploads");
-	private static final Path PROD_DIR = ROOT.resolve("produtos");
-	private static final Path GAL_DIR = ROOT.resolve("produtos/galeria");
-
-	private void ensureDirs() throws IOException {
-		Files.createDirectories(PROD_DIR);
-		Files.createDirectories(GAL_DIR);
+	/** Slug ASCII do nome da categoria (ex.: "Escritório" -> "escritorio"), usado como subpasta de imagens. */
+	private static String categoriaSlug(Categoria categoria) {
+		String nome = categoria != null ? categoria.getNome() : null;
+		if (nome == null || nome.isBlank()) return "sem-categoria";
+		String semAcento = java.text.Normalizer.normalize(nome, java.text.Normalizer.Form.NFD)
+				.replaceAll("[^\\p{ASCII}]", "");
+		String slug = semAcento.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
+		return slug.isBlank() ? "sem-categoria" : slug;
 	}
 
-	public String salvarImagemCapa(MultipartFile file) throws IOException {
+	private Path produtosDir() {
+		return Path.of(baseUploadDir).resolve("produtos");
+	}
+
+	private Path categoriaDir(Categoria categoria) throws IOException {
+		Path dir = produtosDir().resolve(categoriaSlug(categoria));
+		Files.createDirectories(dir);
+		return dir;
+	}
+
+	public String salvarImagemCapa(MultipartFile file, Categoria categoria) throws IOException {
 	    if (file.isEmpty()) throw new IllegalArgumentException("Arquivo vazio");
-	    ensureDirs();
+	    Path dir = categoriaDir(categoria);
 
 	    String original = file.getOriginalFilename();
 	    String safeName = java.text.Normalizer.normalize(original, java.text.Normalizer.Form.NFD)
@@ -141,42 +156,33 @@ public class ProdutoService {
 	            .replaceAll("[^a-zA-Z0-9\\.\\-_]", "-"); // troca espaços/qualquer coisa por '-'
 
 	    String fileName = java.util.UUID.randomUUID() + "_" + safeName;
-	    Path target = PROD_DIR.resolve(fileName);
+	    Path target = dir.resolve(fileName);
 
 	    try (var in = file.getInputStream()) {
 	        Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
 	    }
 
-	    // 3.2 - retorna a URL sem precisar de encode (pois não tem espaço)
-	    return "/uploads/produtos/" + fileName;
+	    return "/uploads/produtos/" + categoriaSlug(categoria) + "/" + fileName;
 	}
-	
+
     @Transactional
     public void removerImagemGaleria(@NonNull Long produtoId, String url) {
         var p = buscar(produtoId);
-        // remove do modelo
         p.removeImagemByUrl(url);
         salvar(p);
-
-        try {
-            if (url.startsWith("/")) url = url.substring(1);
-            Path path = Paths.get(url);
-            if (!path.isAbsolute()) path = Paths.get(baseUploadDir).getParent().resolve(url).normalize();
-            // fallback simples:
-            Path local = Paths.get(url);
-            if (Files.exists(local)) Files.delete(local);
-        } catch (Exception ignored) {}
+        deleteFileQuietly(url);
     }
 
-	public String salvarImagemGaleria(MultipartFile file) throws IOException {
-		ensureDirs();
+	public String salvarImagemGaleria(MultipartFile file, Categoria categoria) throws IOException {
+		Path dir = categoriaDir(categoria).resolve("galeria");
+		Files.createDirectories(dir);
 		String clean = Path.of(file.getOriginalFilename()).getFileName().toString();
 		String filename = java.util.UUID.randomUUID() + "_" + clean;
-		Path dest = GAL_DIR.resolve(filename);
+		Path dest = dir.resolve(filename);
 		Files.copy(file.getInputStream(), dest, StandardCopyOption.REPLACE_EXISTING);
-		return "/uploads/produtos/galeria/" + filename;
+		return "/uploads/produtos/" + categoriaSlug(categoria) + "/galeria/" + filename;
 	}
-	
+
     @Transactional
     public void reordenarGaleria(@NonNull Long produtoId, List<String> urlsNaOrdem) {
         var p = buscar(produtoId);
@@ -192,7 +198,7 @@ public class ProdutoService {
 			.findFirst()
 			.orElseThrow(() -> new EntityNotFoundException("Variação não encontrada: " + variacaoId));
 
-		var url = salvarImagemCapa(file); // reutiliza o mesmo diretório de uploads
+		var url = salvarImagemCapa(file, produto.getCategoria());
 		variacao.setImagemUrl(url);
 		salvar(produto);
 		return url;

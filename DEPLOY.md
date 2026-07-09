@@ -13,10 +13,45 @@ IP `179.197.67.211`), atrás do Traefik já existente (rede `host`, certresolver
 - **3 containers** (`docker-compose.prod.yml`): `lojas-postgres-prod`, `lojas-backend-prod`,
   `lojas-frontend-prod`.
 - **Segredos reais**: arquivo `/docker/lojas-popular/.env` na VPS (nunca commitado no git).
-- **Uploads de imagem**: ficam no volume Docker `uploads_data` (não no filesystem do
-  container) — sobrevive a rebuilds.
+- **Uploads de imagem**: ficam em `/docker/lojas-popular-uploads` na própria VPS (bind mount,
+  fora de `/docker/lojas-popular` onde está o código) — sobrevive a rebuilds e dá pra navegar
+  como pasta normal. Dentro dela, as imagens de produto ficam organizadas por categoria:
+  `produtos/<slug-da-categoria>/` (ex.: `produtos/dormitorio/`, `produtos/cozinha/`), com uma
+  subpasta `galeria/` em cada uma. O slug é gerado a partir do nome da categoria cadastrada no
+  banco (sem acento, minúsculo, espaços trocados por `-`), então toda categoria nova já ganha
+  pasta própria automaticamente no primeiro upload — não precisa criar nada manualmente, mas
+  o passo abaixo cria as 6 pastas atuais de antemão.
 - **Banco**: Postgres real dentro do container `lojas-postgres-prod`, schema criado por
   migrations Flyway (`src/main/resources/db/migration/`).
+
+## 1.1 Passo único na VPS: preparar a pasta de uploads (antes do próximo deploy)
+
+Essa mudança troca o volume Docker nomeado `uploads_data` por uma pasta real em
+`/docker/lojas-popular-uploads`. É preciso criar essa pasta **uma vez** antes de rodar
+`docker compose up -d --build` com o código novo, senão o Docker cria uma pasta vazia
+dona de `root` e o backend (que roda como usuário não-root `app` dentro do container) não
+vai conseguir gravar nela.
+
+```bash
+# 1) Cria a pasta base e as 6 subpastas de categoria já conhecidas hoje
+mkdir -p /docker/lojas-popular-uploads/produtos/{dormitorio,cozinha,sala,escritorio,lavanderia,banheiro}
+mkdir -p /docker/lojas-popular-uploads/produtos/{dormitorio,cozinha,sala,escritorio,lavanderia,banheiro}/galeria
+mkdir -p /docker/lojas-popular-uploads/categorias
+
+# 2) Se já existiam uploads no volume antigo, copie o conteúdo pra pasta nova ANTES do
+#    próximo "up --build" (senão as fotos de produtos já cadastrados somem visualmente,
+#    mesmo que a URL continue no banco):
+docker run --rm -v uploads_data:/old -v /docker/lojas-popular-uploads:/new alpine \
+  sh -c "cp -a /old/. /new/ 2>/dev/null || true"
+
+# 3) Ajusta o dono da pasta pro mesmo usuário que o container backend usa (evita erro de
+#    permissão no upload). Descubra o UID/GID reais com:
+docker exec lojas-backend-prod id app
+# Exemplo de saída: uid=100(app) gid=101(app) — troque os números abaixo pelos que aparecerem:
+chown -R 100:101 /docker/lojas-popular-uploads
+```
+
+Depois disso, siga o fluxo normal da seção 2. Esse passo só precisa ser feito uma vez.
 
 ## 2. Fluxo padrão pra qualquer alteração de código
 

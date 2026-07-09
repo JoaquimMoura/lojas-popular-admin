@@ -152,10 +152,11 @@ public class ProdutoController {
 
   @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
   @PostMapping("/{id}/imagem")
+  @Transactional
   public ResponseEntity<String> uploadCapa(@PathVariable Long id, @RequestParam("file") MultipartFile file)
       throws IOException {
     var produto = service.buscar(id);
-    var url = service.salvarImagemCapa(file);
+    var url = service.salvarImagemCapa(file, produto.getCategoria());
     produto.setImagemUrl(url);
     service.salvar(produto);
     return ResponseEntity.ok(url);
@@ -184,7 +185,7 @@ public class ProdutoController {
     List<String> urls = new ArrayList<>();
 
     for (MultipartFile file : files) {
-      var url = service.salvarImagemGaleria(file);
+      var url = service.salvarImagemGaleria(file, produto.getCategoria());
       produto.addImagem(ProdutoImagem.builder().url(url).ordem(ordem++).build());
       urls.add(url);
     }

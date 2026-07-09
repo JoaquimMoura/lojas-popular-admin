@@ -47,7 +47,9 @@ services:
       PROD_DB_PASSWORD: ${POSTGRES_PASSWORD}
       CORS_ORIGINS: https://popularmoveis.app.br
     volumes:
-      - uploads_data:/app/uploads
+      # Bind mount para pasta fora do repositório clonado (/docker/lojas-popular),
+      # navegável direto na VPS. Precisa existir antes do primeiro "up" (ver DEPLOY.md).
+      - /docker/lojas-popular-uploads:/app/uploads
     networks:
       - internal
     labels:
@@ -79,4 +81,3 @@ networks:
 
 volumes:
   pg_prod_data:
-  uploads_data:

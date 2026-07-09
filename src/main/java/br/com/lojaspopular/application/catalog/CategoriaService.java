@@ -1,10 +1,13 @@
 package br.com.lojaspopular.application.catalog;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +22,9 @@ import lombok.RequiredArgsConstructor;
 public class CategoriaService {
 
 	private final CategoriaRepository repo;
+
+    @Value("${app.upload-dir:uploads}")
+    private String baseUploadDir;
 
     @Transactional(readOnly = true)
     public List<Categoria> listar() {
@@ -69,20 +75,16 @@ public class CategoriaService {
             throw new IllegalArgumentException("Arquivo inválido");
         }
 
-        String uploadDir = "uploads/categorias/";
-        File directory = new File(uploadDir);
-
-        if (!directory.exists()) {
-            directory.mkdirs(); // cria diretórios se não existirem
-        }
+        Path dir = Path.of(baseUploadDir).resolve("categorias");
+        Files.createDirectories(dir);
 
         String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        File destinationFile = new File(uploadDir + fileName);
+        Path destino = dir.resolve(fileName);
 
-        // Salva o arquivo fisicamente no servidor
-        file.transferTo(destinationFile);
+        try (var in = file.getInputStream()) {
+            Files.copy(in, destino, StandardCopyOption.REPLACE_EXISTING);
+        }
 
-        // URL para ser acessada pelo front-end
         return "/uploads/categorias/" + fileName;
     }
 
