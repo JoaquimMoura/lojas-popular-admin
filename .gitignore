@@ -4,6 +4,10 @@ data/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+.env
+!.env.*.example
+lojas-popular-admin/node_modules/
+lojas-popular-admin/dist/
 
 ### STS ###
 .apt_generated

@@ -1,0 +1,82 @@
+# ==========================================================
+# Stack de produção: Postgres + Backend (Spring Boot) + Frontend (Vite/React)
+# Roteamento por PATH em um único domínio, atrás do Traefik já existente na VPS
+# (traefik-traefik-1, network_mode: host, certresolver "letsencrypt").
+#
+# Antes do primeiro "docker compose up":
+#   1) Crie o arquivo .env (copie de .env.prod.example) com os segredos reais.
+#   2) Confirme que o DNS de popularmoveis.app.br já aponta pro IP da VPS
+#      (registro A, "DNS only" / nuvem cinza na Cloudflare).
+# ==========================================================
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: lojas-postgres-prod
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lojas_popular}
+      POSTGRES_USER: ${POSTGRES_USER:-lojas_popular}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lojas_popular}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lojas-backend-prod
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      PROD_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-lojas_popular}
+      PROD_DB_USER: ${POSTGRES_USER:-lojas_popular}
+      PROD_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      CORS_ORIGINS: https://popularmoveis.app.br
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lojas-backend.rule=Host(`popularmoveis.app.br`) && (PathPrefix(`/api`) || PathPrefix(`/uploads`))"
+      - "traefik.http.routers.lojas-backend.entrypoints=websecure"
+      - "traefik.http.routers.lojas-backend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.lojas-backend.priority=10"
+      - "traefik.http.services.lojas-backend.loadbalancer.server.port=8080"
+
+  frontend:
+    build:
+      context: ./lojas-popular-admin
+      dockerfile: Dockerfile
+    container_name: lojas-frontend-prod
+    restart: unless-stopped
+    networks:
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lojas-frontend.rule=Host(`popularmoveis.app.br`)"
+      - "traefik.http.routers.lojas-frontend.entrypoints=websecure"
+      - "traefik.http.routers.lojas-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.lojas-frontend.priority=1"
+      - "traefik.http.services.lojas-frontend.loadbalancer.server.port=80"
+
+networks:
+  internal:
+
+volumes:
+  pg_prod_data:
+  uploads_data:

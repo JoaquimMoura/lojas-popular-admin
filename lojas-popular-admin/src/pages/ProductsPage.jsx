@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { productsApi } from "../services/productsApi";
 import ProductForm from "../components/ProductForm";
 import ProductGalleryModal from "../components/ProductGalleryModal";
+import { resolveImageUrl } from "../utils/url";
 
 export default function ProductsPage() {
   const [galleryProd, setGalleryProd] = useState(null);
@@ -62,13 +63,6 @@ export default function ProductsPage() {
     await productsApi.remove(id);
     await load();
   }
-
-  const resolveImageUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith("http")) return url;
-    if (!url.startsWith("/")) url = "/" + url;
-    return `http://localhost:8080${url}`;
-  };
 
   return (
     <div>

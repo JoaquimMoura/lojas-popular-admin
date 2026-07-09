@@ -14,7 +14,7 @@
 
   <groupId>br.com.lojaspopular</groupId>
   <artifactId>lojas-popular-backend</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0.1</version>
   <name>Lojas Popular Backend</name>
   <description>API Backend para Lojas Popular (Spring Boot, JPA, MapStruct e Lombok)</description>
 
@@ -69,6 +69,11 @@
 	<dependency>
 	  <groupId>org.flywaydb</groupId>
 	  <artifactId>flyway-core</artifactId>
+	  <version>11.10.0</version>
+	</dependency>
+	<dependency>
+	  <groupId>org.flywaydb</groupId>
+	  <artifactId>flyway-database-postgresql</artifactId>
 	  <version>11.10.0</version>
 	</dependency>
 

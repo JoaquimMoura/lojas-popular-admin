@@ -20,7 +20,7 @@ spring:
           time_zone: UTC
 
   flyway:
-    enabled: false
+    enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
     default-schema: public
@@ -45,7 +45,7 @@ security:
 
 cors:
   allowed-origins:
-    - ${CORS_ORIGINS:https://lojaspopular.com.br}
+    - ${CORS_ORIGINS:https://popularmoveis.app.br}
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
 

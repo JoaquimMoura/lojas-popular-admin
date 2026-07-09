@@ -1,8 +1,7 @@
 // src/pages/StoreConfigPage.jsx
 import { useEffect, useState } from "react";
 import { storeConfigApi } from "../services/storeConfigApi";
-
-const resolveUrl = (u) => (!u ? null : (u.startsWith("http") ? u : `http://localhost:8080${u}`));
+import { resolveImageUrl as resolveUrl } from "../utils/url";
 
 export default function StoreConfigPage() {
   const [cfg, setCfg] = useState(null);
