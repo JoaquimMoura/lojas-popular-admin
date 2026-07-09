@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -106,12 +105,21 @@ public class ProdutoService {
 	
 	@Transactional
 	public void excluir(@NonNull Long id) {
-		
 		var p = buscar(id);
-		p.setAtiva(false);
-		p.setDataAtualizacao(LocalDateTime.now());
-		repository.saveAndFlush(p);
-		
+
+		deleteFileQuietly(p.getImagemUrl());
+		p.getGaleria().forEach(img -> deleteFileQuietly(img.getUrl()));
+		p.getVariacoes().forEach(v -> deleteFileQuietly(v.getImagemUrl()));
+
+		repository.delete(p);
+	}
+
+	private void deleteFileQuietly(String url) {
+		if (url == null || url.isBlank()) return;
+		try {
+			String relative = url.startsWith("/") ? url.substring(1) : url;
+			Files.deleteIfExists(Path.of(relative));
+		} catch (IOException ignored) {}
 	}
 
 	private static final Path ROOT = Path.of("uploads");
@@ -125,6 +133,7 @@ public class ProdutoService {
 
 	public String salvarImagemCapa(MultipartFile file) throws IOException {
 	    if (file.isEmpty()) throw new IllegalArgumentException("Arquivo vazio");
+	    ensureDirs();
 
 	    String original = file.getOriginalFilename();
 	    String safeName = java.text.Normalizer.normalize(original, java.text.Normalizer.Form.NFD)
@@ -132,13 +141,10 @@ public class ProdutoService {
 	            .replaceAll("[^a-zA-Z0-9\\.\\-_]", "-"); // troca espaços/qualquer coisa por '-'
 
 	    String fileName = java.util.UUID.randomUUID() + "_" + safeName;
-
-	    java.nio.file.Path base = java.nio.file.Paths.get("C:/Users/jmoura/developer/tools/projects/lojas-popular-backend/uploads/produtos");
-	    java.nio.file.Files.createDirectories(base);
-	    java.nio.file.Path target = base.resolve(fileName);
+	    Path target = PROD_DIR.resolve(fileName);
 
 	    try (var in = file.getInputStream()) {
-	        java.nio.file.Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+	        Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
 	    }
 
 	    // 3.2 - retorna a URL sem precisar de encode (pois não tem espaço)
