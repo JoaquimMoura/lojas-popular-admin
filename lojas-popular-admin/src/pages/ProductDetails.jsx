@@ -229,14 +229,17 @@ export default function ProductDetails() {
 
           {/* CTA */}
           <div className="product-cta d-flex flex-column gap-2 mt-4">
-            <button className="btn btn-warning btn-lg fw-bold" onClick={handleAddToCart}>
-              Adicionar ao Carrinho
-            </button>
             <WhatsAppButton
               text={`Olá! Tenho interesse no produto: *${produto.nome}* (R$ ${fmt(preco)}). Podem me ajudar?`}
-              label="Comprar pelo WhatsApp"
-              className="btn btn-success btn-lg"
+              label="Quero este produto no WhatsApp"
+              className="btn btn-success btn-lg fw-bold"
             />
+            <p className="product-cta-hint text-muted small mb-0">
+              Respondemos rapidamente pelo WhatsApp.
+            </p>
+            <button className="btn btn-outline-warning btn-lg" onClick={handleAddToCart}>
+              Adicionar ao Carrinho
+            </button>
           </div>
 
           {/* Estoque */}

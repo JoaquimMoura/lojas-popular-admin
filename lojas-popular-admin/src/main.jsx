@@ -10,6 +10,12 @@ import { CartProvider } from "./context/CartContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
+// Fundação de design (tokens, reset, utilitários, botões)
+import "./styles/variables.css";
+import "./styles/global.css";
+import "./styles/utilities.css";
+import "./styles/buttons.css";
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AuthProvider>

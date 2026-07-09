@@ -1,0 +1,98 @@
+/* ============================================================
+   NavBar — identidade de marca (sem azul padrão do Bootstrap)
+   ============================================================ */
+
+.site-navbar .navbar-brand {
+  color: var(--color-primary);
+  font-size: 1.25rem;
+}
+
+.site-navbar .nav-link {
+  color: var(--color-text);
+}
+
+.site-navbar .nav-link:hover,
+.site-navbar .nav-link:focus,
+.site-navbar .nav-link.active {
+  color: var(--color-primary);
+}
+
+.navbar-admin-link {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  text-decoration: none;
+  border: none;
+  background: none;
+  padding: 0.25rem 0.5rem;
+}
+
+.navbar-admin-link:hover,
+.navbar-admin-link:focus {
+  color: var(--color-primary);
+}
+
+.navbar-search {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 320px;
+  flex: 1 1 220px;
+}
+
+.navbar-search input[type="search"] {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.9rem;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.navbar-search input[type="search"]:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.15);
+}
+
+.navbar-search button {
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.9rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.navbar-search button:hover,
+.navbar-search button:focus {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+.navbar-whatsapp {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.9rem;
+}
+
+/* ── Linha de categorias ── */
+.category-pills .nav-link {
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+}
+
+.category-pills .nav-link.active {
+  background-color: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.category-pills .nav-link:hover:not(.active) {
+  color: var(--color-primary);
+}
+
+@media (max-width: 991.98px) {
+  .navbar-search {
+    max-width: none;
+    margin: 0.5rem 0;
+  }
+}

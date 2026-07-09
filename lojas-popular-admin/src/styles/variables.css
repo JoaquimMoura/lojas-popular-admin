@@ -1,0 +1,54 @@
+/* ============================================================
+   Design tokens — Popular Moveis
+   Paleta derivada das cores de marca já usadas na Fanpage.
+   ============================================================ */
+
+:root {
+  /* Marca */
+  --color-brand-red: #c62828;
+  --color-brand-red-dark: #8e0000;
+  --color-brand-red-darker: #6e0000;
+  --color-brand-red-light: #e57373;
+  --color-brand-yellow: #ffca28;
+  --color-brand-yellow-dark: #ffb300;
+  --color-brand-yellow-light: #ffe082;
+
+  /* Neutro derivado da marca (footer, superfícies escuras) */
+  --color-ink: #241010;
+  --color-ink-soft: #341717;
+
+  /* Aliases semânticos — usar estes nos componentes novos */
+  --color-primary: var(--color-brand-red);
+  --color-primary-dark: var(--color-brand-red-dark);
+  --color-accent: var(--color-brand-yellow);
+  --color-accent-dark: var(--color-brand-yellow-dark);
+
+  --color-text: #2f2f2f;
+  --color-text-muted: rgba(47, 47, 47, 0.72);
+  --color-text-on-dark: rgba(255, 255, 255, 0.92);
+  --color-text-on-dark-muted: rgba(255, 255, 255, 0.66);
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-on-dark: rgba(255, 255, 255, 0.12);
+
+  /* Espaçamento */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Raio e sombra — discretos, sem "glow" */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 12px 28px rgba(0, 0, 0, 0.1);
+
+  --container-max: 1280px;
+}

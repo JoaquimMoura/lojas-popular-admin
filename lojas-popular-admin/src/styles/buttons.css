@@ -1,0 +1,44 @@
+/* ============================================================
+   Botões de marca — classes novas e aditivas.
+   Não sobrescreve .btn-primary/.btn-danger do Bootstrap
+   (usados pela Área Administrativa) para não gerar efeito colateral.
+   ============================================================ */
+
+.btn-brand {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.btn-brand:hover,
+.btn-brand:focus {
+  background-color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: #fff;
+}
+
+.btn-brand-outline {
+  background-color: transparent;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn-brand-outline:hover,
+.btn-brand-outline:focus {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.btn-accent {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-primary);
+}
+
+.btn-accent:hover,
+.btn-accent:focus {
+  background-color: var(--color-accent-dark);
+  border-color: var(--color-accent-dark);
+  color: var(--color-primary);
+}

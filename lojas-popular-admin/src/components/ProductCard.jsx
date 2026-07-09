@@ -146,18 +146,18 @@ export default function ProductCard({ produto, badge, whatsapp }) {
           </p>
 
           <div className="d-flex flex-column gap-2">
-            <Link to={`/produto/${produto.id}`} className="btn btn-outline-warning btn-sm">
-              Ver detalhes
-            </Link>
             <a
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-outline-success btn-sm product-card-wa-btn"
+              className="btn btn-success btn-sm w-100 product-card-wa-btn"
             >
               <WaIconSmall />
-              Pedir via WhatsApp
+              Quero este produto
             </a>
+            <Link to={`/produto/${produto.id}`} className="product-card-details-link">
+              Saiba mais
+            </Link>
           </div>
         </div>
       </div>

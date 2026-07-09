@@ -1,6 +1,7 @@
 // src/routes.jsx
-import { createBrowserRouter, Outlet } from "react-router-dom";
+import { createBrowserRouter, Outlet, useMatches } from "react-router-dom";
 import NavBar from "./components/NavBar";
+import Footer from "./components/Footer";
 import PrivateRoute from "./components/PrivateRoute";
 
 import Fanpage from "./pages/Fanpage";
@@ -19,12 +20,21 @@ import ProductDetails from "./pages/ProductDetails";
 import CartPage from "./pages/CartPage";
 
 function RootLayout() {
+  const matches = useMatches();
+  const fullBleed = matches.some((m) => m.handle?.fullBleed);
+  const noFooter = matches.some((m) => m.handle?.noFooter);
+
   return (
     <>
       <NavBar />
-      <div className="container py-3">
+      {fullBleed ? (
         <Outlet />
-      </div>
+      ) : (
+        <div className="container py-3">
+          <Outlet />
+        </div>
+      )}
+      {!noFooter && <Footer />}
     </>
   );
 }
@@ -35,7 +45,7 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       // públicas
-      { index: true, element: <Fanpage /> },
+      { index: true, element: <Fanpage />, handle: { fullBleed: true } },
       { path: "login", element: <LoginPage /> },
       { path: "loja", element: <StoreHome /> },
       { path: "categoria/:id", element: <CategoryProducts /> },
@@ -46,6 +56,7 @@ export const router = createBrowserRouter([
       {
         path: "admin",
         element: <PrivateRoute roles={["ADMIN"]} />,
+        handle: { noFooter: true },
         children: [
           { index: true, element: <Dashboard /> },
           { path: "emails", element: <EmailsPage /> },
@@ -58,6 +69,7 @@ export const router = createBrowserRouter([
       {
         path: "vendedor",
         element: <PrivateRoute roles={["VENDEDOR"]} />,
+        handle: { noFooter: true },
         children: [
           { index: true, element: <VendorDashboard /> },
           { path: "produtos", element: <ProductsPage /> },

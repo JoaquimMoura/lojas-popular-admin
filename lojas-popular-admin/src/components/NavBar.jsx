@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { categoriesApi } from "../services/categoriesApi";
+import { storeConfigApi } from "../services/storeConfigApi";
+import WhatsAppButton from "./WhatsAppButton";
+import "../styles/navbar.css";
 
 function resolveMenu(user) {
   const roles = user?.roles ?? [];
@@ -35,6 +38,8 @@ export default function NavBar() {
   const navigate = useNavigate();
   const menu = resolveMenu(user);
   const [categories, setCategories] = useState([]);
+  const [storeWhatsapp, setStoreWhatsapp] = useState(null);
+  const [busca, setBusca] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -46,6 +51,14 @@ export default function NavBar() {
       .catch(() => {
         if (active) setCategories([]);
       });
+    storeConfigApi
+      .get()
+      .then((data) => {
+        if (active) setStoreWhatsapp(data?.whatsapp ?? null);
+      })
+      .catch(() => {
+        if (active) setStoreWhatsapp(null);
+      });
     return () => {
       active = false;
     };
@@ -56,9 +69,15 @@ export default function NavBar() {
     navigate("/", { replace: true });
   }
 
+  function handleSearch(e) {
+    e.preventDefault();
+    const termo = busca.trim();
+    navigate(termo ? `/loja?busca=${encodeURIComponent(termo)}` : "/loja");
+  }
+
   return (
     <>
-      <nav className="navbar navbar-expand-lg bg-body-tertiary border-bottom">
+      <nav className="site-navbar navbar navbar-expand-lg bg-body-tertiary border-bottom">
         <div className="container">
           <Link className="navbar-brand fw-bold" to="/">
             Popular Moveis
@@ -78,11 +97,6 @@ export default function NavBar() {
 
           <div id="mainNav" className="collapse navbar-collapse">
             <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-             {/*  <li className="nav-item">
-                <NavLink className="nav-link" to="/">
-                  Fanpage
-                </NavLink>
-              </li>*/}
               <li className="nav-item">
                 <NavLink className="nav-link" to="/loja">
                   Loja
@@ -95,11 +109,32 @@ export default function NavBar() {
               </li>
             </ul>
 
+            <form className="navbar-search mb-2 mb-lg-0" onSubmit={handleSearch} role="search">
+              <label htmlFor="navbar-busca" className="visually-hidden">
+                Buscar produto
+              </label>
+              <input
+                id="navbar-busca"
+                type="search"
+                placeholder="Buscar produto..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+              />
+              <button type="submit">Buscar</button>
+            </form>
+
+            <WhatsAppButton
+              phone={storeWhatsapp}
+              label="WhatsApp"
+              text="Ola! Vim pelo site e gostaria de mais informacoes."
+              className="btn btn-success navbar-whatsapp ms-lg-3"
+            />
+
             <ul className="navbar-nav ms-auto">
               {!isAuthenticated && (
                 <li className="nav-item">
-                  <NavLink className="btn btn-outline-primary btn-sm" to="/login">
-                    Area Administrativa
+                  <NavLink className="navbar-admin-link" to="/login">
+                    Área Administrativa
                   </NavLink>
                 </li>
               )}
@@ -139,7 +174,7 @@ export default function NavBar() {
       {categories.length > 0 && (
         <div className="bg-white border-bottom mb-3">
           <div className="container py-2">
-            <div className="nav nav-pills flex-wrap gap-2">
+            <div className="category-pills nav nav-pills flex-wrap gap-2">
               {categories.map((categoria) => (
                 <NavLink
                   key={categoria.id}

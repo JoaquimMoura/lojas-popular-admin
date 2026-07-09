@@ -39,12 +39,12 @@
 }
 
 .product-badge--discount {
-  background-color: #c62828;
+  background-color: var(--color-brand-red);
   color: #fff;
 }
 
 .product-badge--promo {
-  background-color: #ffca28;
+  background-color: var(--color-brand-yellow);
   color: #5d2e00;
 }
 
@@ -98,32 +98,37 @@
   color: #dc3545;
 }
 
-/* botao whatsapp no card */
+/* botao whatsapp no card — CTA principal */
 .product-card-wa-btn {
-  color: #198754;
+  background-color: #198754;
   border-color: #198754;
-  font-size: 0.8rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.55rem 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.product-card-wa-btn:hover {
-  background-color: #25D366;
-  border-color: #25D366;
+.product-card-wa-btn:hover,
+.product-card-wa-btn:focus {
+  background-color: #128c7e;
+  border-color: #128c7e;
   color: #fff;
 }
 
-/* cores da marca */
-.product-card .btn.btn-outline-warning {
-  border-width: 2px;
-  font-weight: 600;
+/* link secundario "Saiba mais" */
+.product-card-details-link {
+  text-align: center;
   font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #6c757d);
+  text-decoration: underline;
 }
 
-.product-card .btn.btn-outline-warning:hover {
-  background: #ffc107;
-  color: #212529;
+.product-card-details-link:hover,
+.product-card-details-link:focus {
+  color: var(--color-primary, #c62828);
 }
 
 /* ============================================================

@@ -11,8 +11,11 @@ import { absUrl } from "../utils/url";
 import ProductCard from "../components/ProductCard";
 import ProductCardSkeleton from "../components/ProductCardSkeleton";
 import WhatsAppButton from "../components/WhatsAppButton";
+import StarRating from "../components/StarRating";
+import TrustBadges from "../components/TrustBadges";
+import SectionTitle from "../components/SectionTitle";
 
-import "../styles/Fanpage.css";
+import "../styles/pages/Fanpage.css";
 
 // ============================================================
 // Fallback completo — tudo configurável via fanpageApi
@@ -96,24 +99,16 @@ const FALLBACK_CONFIG = {
       cidade: "Santo André, SP",
     },
   ],
+  // Sem logos reais de parceiros ainda — placeholders neutros até existir conteúdo configurável.
+  brands: ["Pix", "Mercado Pago", "Visa", "Mastercard", "Elo", "Boleto"],
 };
 
 const FALLBACK_HERO_IMAGE =
   "https://images.unsplash.com/photo-1616594039964-1959be9883a7?auto=format&fit=crop&w=1400&q=80";
 
 // ============================================================
-// Sub-componentes internos
+// Sub-componente interno (específico da Fanpage, não reutilizado em outra página)
 // ============================================================
-
-function StarRating({ nota = 5 }) {
-  return (
-    <span className="fanpage-stars" aria-label={`${nota} de 5 estrelas`}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <span key={i} className={i < nota ? "star filled" : "star"}>★</span>
-      ))}
-    </span>
-  );
-}
 
 function AnnouncementBar({ items }) {
   const [current, setCurrent] = useState(0);
@@ -132,28 +127,6 @@ function AnnouncementBar({ items }) {
   return (
     <div className="announcement-bar">
       <span className="announcement-text">{items[current]}</span>
-    </div>
-  );
-}
-
-function TrustBadges() {
-  const badges = [
-    { icon: "💳", label: "Pix" },
-    { icon: "🏦", label: "Boleto" },
-    { icon: "💰", label: "Parcelado" },
-    { icon: "🛡️", label: "Garantia 12m" },
-    { icon: "🚚", label: "Entrega SP" },
-    { icon: "🔧", label: "Montagem" },
-  ];
-
-  return (
-    <div className="trust-badges">
-      {badges.map((b) => (
-        <div className="trust-badge" key={b.label}>
-          <span className="trust-badge-icon">{b.icon}</span>
-          <span className="trust-badge-label">{b.label}</span>
-        </div>
-      ))}
     </div>
   );
 }
@@ -267,6 +240,9 @@ export default function Fanpage() {
       ? fanpageConfig.testimonials
       : FALLBACK_CONFIG.testimonials;
 
+  const brands =
+    fanpageConfig.brands?.length > 0 ? fanpageConfig.brands : FALLBACK_CONFIG.brands;
+
   return (
     <div className="fanpage">
       {/* ── Barra de anúncio ── */}
@@ -325,6 +301,7 @@ export default function Fanpage() {
           <div
             className="hero-banner rounded-4"
             style={{ backgroundImage: `url(${heroBanner})` }}
+            role="img"
             aria-label="Ambiente planejado Popular Moveis"
           >
             <div className="hero-info-card shadow">
@@ -338,13 +315,22 @@ export default function Fanpage() {
         </div>
       </section>
 
+      {/* ── Faixa de confiança pós-hero ── */}
+      <section className="trust-strip">
+        <div className="container">
+          <p className="trust-strip-lead">
+            Loja física com atendimento próximo, parcelamento facilitado e entrega rápida.
+          </p>
+          <TrustBadges className="trust-badges trust-badges--strip" />
+        </div>
+      </section>
+
       {/* ── Coleções ── */}
       <section className="container my-5">
-        <h2 className="section-title">Colecoes para cada ambiente</h2>
-        <p className="section-subtitle">
-          Ambientes completos inspirados nas principais tendencias de decoracao, prontos para caber
-          no seu orcamento.
-        </p>
+        <SectionTitle
+          title="Colecoes para cada ambiente"
+          subtitle="Ambientes completos inspirados nas principais tendencias de decoracao, prontos para caber no seu orcamento."
+        />
 
         <div className="row g-3 g-lg-4">
           {colecoes.map((colecao) => (
@@ -381,8 +367,12 @@ export default function Fanpage() {
       <section className="container py-5 bg-light rounded-4 shadow-sm">
         <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4 gap-3">
           <div>
-            <h2 className="section-title mb-2">{fanpageConfig.offersTitle}</h2>
-            <p className="section-subtitle mb-0">{fanpageConfig.offersDescription}</p>
+            <SectionTitle
+              className="mb-2"
+              subtitleClassName="mb-0"
+              title={fanpageConfig.offersTitle}
+              subtitle={fanpageConfig.offersDescription}
+            />
           </div>
           <Link to="/loja" className="btn btn-danger px-4">
             Ver todas as ofertas
@@ -417,10 +407,10 @@ export default function Fanpage() {
       {/* ── Categorias com produtos ── */}
       {categoriasComProdutos.length > 0 && (
         <section className="container my-5">
-          <h2 className="section-title">Ambientes completos</h2>
-          <p className="section-subtitle">
-            Combine moveis da mesma linha para montar um ambiente harmonioso e funcional.
-          </p>
+          <SectionTitle
+            title="Ambientes completos"
+            subtitle="Combine moveis da mesma linha para montar um ambiente harmonioso e funcional."
+          />
 
           <div className="row gy-5">
             {categoriasComProdutos.map((categoria) => (
@@ -458,8 +448,11 @@ export default function Fanpage() {
         <section className="container my-5">
           <div className="combo-banner rounded-4 shadow-sm">
             <div>
-              <h2 className="section-title text-white">{fanpageConfig.combosTitle}</h2>
-              <p className="section-subtitle text-white-50">{fanpageConfig.combosDescription}</p>
+              <SectionTitle
+                light
+                title={fanpageConfig.combosTitle}
+                subtitle={fanpageConfig.combosDescription}
+              />
               <WhatsAppButton
                 phone={lojaWhatsapp}
                 label="Quero montar meu combo"
@@ -481,10 +474,12 @@ export default function Fanpage() {
 
       {/* ── Depoimentos ── */}
       <section className="container my-5">
-        <h2 className="section-title text-center">O que nossos clientes dizem</h2>
-        <p className="section-subtitle text-center mx-auto mb-4">
-          Mais de 1.000 familias ja transformaram seus lares com a Popular Moveis.
-        </p>
+        <SectionTitle
+          center
+          subtitleClassName="mx-auto mb-4"
+          title="O que nossos clientes dizem"
+          subtitle="Mais de 1.000 familias ja transformaram seus lares com a Popular Moveis."
+        />
 
         <div className="row g-4">
           {testimonials.map((t, i) => (
@@ -509,12 +504,30 @@ export default function Fanpage() {
         </div>
       </section>
 
+      {/* ── Marcas parceiras ── */}
+      <section className="brands-strip">
+        <div className="container">
+          <p className="brands-strip-label">Formas de pagamento aceitas</p>
+          <ul className="brands-list">
+            {brands.map((brand) => (
+              <li key={brand} className="brands-item">
+                {brand}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
       {/* ── CTA final ── */}
       <section className="container mb-5" style={{ marginTop: "50px" }}>
         <div className="cta-panel rounded-4 border shadow-sm p-4 p-md-5">
           <div>
-            <h2 className="section-title mb-2">{fanpageConfig.ctaTitle}</h2>
-            <p className="section-subtitle mb-0">{fanpageConfig.ctaDescription}</p>
+            <SectionTitle
+              className="mb-2"
+              subtitleClassName="mb-0"
+              title={fanpageConfig.ctaTitle}
+              subtitle={fanpageConfig.ctaDescription}
+            />
             <ul className="cta-highlights mt-4">
               {ctaHighlights.map((text, index) => (
                 <li key={`highlight-${index}`}>{text}</li>
