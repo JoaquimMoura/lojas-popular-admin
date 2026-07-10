@@ -25,7 +25,7 @@ public class LojaConfigService {
              .nome("Popular movies")
              .corPrimaria("#D11B1B") // vermelho
              .corSecundaria("#FFD200") // amarelo
-             .whatsapp("98678-9299")
+             .whatsapp("1196111-8141")
              .endereco("Avenida Presidente médici 417")
              .ctaTexto("Chamar no WhatsApp")
              .logoUrl(null)

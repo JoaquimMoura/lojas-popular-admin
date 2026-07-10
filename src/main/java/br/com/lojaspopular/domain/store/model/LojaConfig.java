@@ -44,7 +44,7 @@ public class LojaConfig {
 
 	// Contato
 	@Column(length = 32)
-	private String whatsapp; // ex: 98678-9299
+	private String whatsapp; // ex: 1196111-8141
 
 	// Endereço (linha única conforme informado)
 	@Column(length = 255)

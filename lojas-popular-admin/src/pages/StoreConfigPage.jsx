@@ -70,7 +70,7 @@ export default function StoreConfigPage() {
             </div>
             <div className="col-md-4">
               <label className="form-label">WhatsApp</label>
-              <input name="whatsapp" className="form-control" value={cfg.whatsapp || ""} onChange={handleChange} placeholder="98678-9299" />
+              <input name="whatsapp" className="form-control" value={cfg.whatsapp || ""} onChange={handleChange} placeholder="119611-8141" />
             </div>
             <div className="col-md-8">
               <label className="form-label">Endereço</label>
