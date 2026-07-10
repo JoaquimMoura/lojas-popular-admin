@@ -14,7 +14,7 @@
 
   <groupId>br.com.lojaspopular</groupId>
   <artifactId>lojas-popular-backend</artifactId>
-  <version>1.0.2</version>
+  <version>1.0.3</version>
   <name>Lojas Popular Backend</name>
   <description>API Backend para Lojas Popular (Spring Boot, JPA, MapStruct e Lombok)</description>
 
