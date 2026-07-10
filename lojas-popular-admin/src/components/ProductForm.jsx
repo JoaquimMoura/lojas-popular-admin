@@ -253,7 +253,7 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
               </div>
               <div className="col-md-2">
                 <label className="form-label">Categoria</label>
-                <select name="categoriaId" className="form-select" value={form.categoriaId} onChange={handleChange}>
+                <select name="categoriaId" className="form-select" value={form.categoriaId} onChange={handleChange} required>
                   <option value="">— selecione —</option>
                   {catsOptions}
                 </select>
