@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -60,6 +61,32 @@ public class ApiExceptionHandler {
       "status", 404,
       "error", "Not Found",
       "message", ex.getMessage()
+    ));
+  }
+
+  /**
+   * Conflito de versão otimista (registro modificado por outro usuário)
+   */
+  @ExceptionHandler(ConflitoVersaoException.class)
+  public ResponseEntity<?> handleConflitoVersao(ConflitoVersaoException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+      "timestamp", Instant.now().toString(),
+      "status", 409,
+      "error", "Conflito de concorrência",
+      "message", ex.getMessage()
+    ));
+  }
+
+  /**
+   * Falha de lock otimista detectada pelo próprio Hibernate (edições concorrentes na mesma janela)
+   */
+  @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+  public ResponseEntity<?> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+      "timestamp", Instant.now().toString(),
+      "status", 409,
+      "error", "Conflito de concorrência",
+      "message", "Este registro foi modificado por outro usuário. Recarregue os dados e tente novamente."
     ));
   }
 

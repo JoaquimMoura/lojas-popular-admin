@@ -12,7 +12,7 @@ function resolveMenu(user) {
     return {
       label: "Admin",
       links: [
-        { to: "/admin", text: "Dashboard" },
+        { to: "/admin", text: "Dashboard", end: true },
         { to: "/admin/produtos", text: "Produtos" },
         { to: "/admin/categorias", text: "Categorias" },
         { to: "/admin/fanpage", text: "Fanpage" },
@@ -24,7 +24,7 @@ function resolveMenu(user) {
     return {
       label: "Vendedor",
       links: [
-        { to: "/vendedor", text: "Painel" },
+        { to: "/vendedor", text: "Painel", end: true },
         { to: "/vendedor/produtos", text: "Produtos" },
         { to: "/vendedor/categorias", text: "Categorias" },
       ],
@@ -152,7 +152,7 @@ export default function NavBar() {
                     <ul className="dropdown-menu dropdown-menu-end">
                       {menu.links.map((link) => (
                         <li key={link.to}>
-                          <NavLink className="dropdown-item" to={link.to}>
+                          <NavLink className="dropdown-item" to={link.to} end={link.end}>
                             {link.text}
                           </NavLink>
                         </li>

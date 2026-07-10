@@ -15,7 +15,7 @@ export const storeApi = {
       if (categoriaId) params.set("categoriaId", categoriaId);
       if (categoria) params.set("categoria", categoria);
 
-      const { data } = await api.get(`/api/v1/produtos?${params.toString()}`);
+      const { data } = await api.get(`/produtos?${params.toString()}`);
 
       if (Array.isArray(data)) {
         return data;
@@ -38,7 +38,7 @@ export const storeApi = {
    */
   getProduct: async (id) => {
     try {
-      const { data } = await api.get(`/api/v1/produtos/${id}`);
+      const { data } = await api.get(`/produtos/${id}`);
       return data;
     } catch (error) {
       console.error("Erro ao buscar produto:", error);
@@ -51,7 +51,7 @@ export const storeApi = {
    */
   getStoreInfo: async () => {
     try {
-      const { data } = await api.get(`/api/v1/config/loja`);
+      const { data } = await api.get(`/config/loja`);
       return data;
     } catch (error) {
       console.error("Erro ao buscar informacoes da loja:", error);

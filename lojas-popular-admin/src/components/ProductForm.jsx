@@ -11,6 +11,7 @@ const EMPTY = {
   categoriaId: "",
   largura: "", altura: "", profundidade: "", peso: "", volumes: "",
   diferenciais: [],
+  version: null,
 };
 
 /**
@@ -30,14 +31,24 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
   const [galleryPreview, setGalleryPreview] = useState([]);
   const [difInput, setDifInput]       = useState("");
   const [cropModal, setCropModal]     = useState(null);
+  const [catsError, setCatsError]     = useState(false);
+  const [saving, setSaving]           = useState(false);
+  const [saveError, setSaveError]     = useState(null);
 
   // refs to reset file inputs after crop so the same file can be re-selected
   const coverInputRef    = useRef(null);
   const galleryInputRef  = useRef(null);
   const varInputRefs     = useRef({});
 
+  function loadCats() {
+    setCatsError(false);
+    categoriesApi.list()
+      .then(data => setCats(Array.isArray(data) ? data : []))
+      .catch(() => setCatsError(true));
+  }
+
   useEffect(() => {
-    categoriesApi.list().then(data => setCats(Array.isArray(data) ? data : []));
+    loadCats();
   }, []);
 
   useEffect(() => {
@@ -57,6 +68,7 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
         peso:          String(initial.peso        ?? ""),
         volumes:       String(initial.volumes     ?? ""),
         diferenciais:  initial.diferenciais ?? [],
+        version:       initial.version ?? null,
       });
       setVariacoes(
         (initial.variacoes ?? []).map(v => ({
@@ -172,8 +184,9 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
   }
 
   // ── Submit ────────────────────────────────────────────────────────
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
+    if (saving) return;
     const n = (v) => v !== "" && v !== null && v !== undefined ? Number(v) : null;
 
     const payload = {
@@ -191,6 +204,7 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
       peso:          n(form.peso),
       volumes:       n(form.volumes),
       diferenciais:  form.diferenciais,
+      version:       form.version,
       variacoes: variacoes.map(v => ({
         cor:           v.cor || null,
         tamanho:       v.tamanho || null,
@@ -206,7 +220,15 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
       if (v._file) variacaoImages[i] = v._file;
     });
 
-    onSubmit(payload, { cover, gallery, variacaoImages });
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onSubmit(payload, { cover, gallery, variacaoImages });
+    } catch (err) {
+      setSaveError(err?.response?.data?.message || err?.message || "Falha ao salvar o produto. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const catsOptions = useMemo(() =>
@@ -257,6 +279,14 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
                   <option value="">— selecione —</option>
                   {catsOptions}
                 </select>
+                {catsError && (
+                  <div className="text-danger small mt-1">
+                    Falha ao carregar categorias.{" "}
+                    <button type="button" className="btn btn-link btn-sm p-0 align-baseline" onClick={loadCats}>
+                      Tentar novamente
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="col-12">
                 <label className="form-label">Descrição</label>
@@ -494,11 +524,14 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
         </div>
 
         {/* ── Ações ── */}
+        {saveError && (
+          <div className="alert alert-danger" role="alert">{saveError}</div>
+        )}
         <div className="d-flex gap-2">
-          <button className="btn btn-danger px-4" type="submit">
-            {initial ? "Salvar alterações" : "Criar produto"}
+          <button className="btn btn-danger px-4" type="submit" disabled={saving}>
+            {saving ? "Salvando…" : initial ? "Salvar alterações" : "Criar produto"}
           </button>
-          <button className="btn btn-outline-secondary" type="button" onClick={onCancel}>Cancelar</button>
+          <button className="btn btn-outline-secondary" type="button" onClick={onCancel} disabled={saving}>Cancelar</button>
         </div>
       </form>
     </>

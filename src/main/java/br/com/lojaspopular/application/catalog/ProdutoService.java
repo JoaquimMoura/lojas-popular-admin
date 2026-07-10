@@ -20,6 +20,7 @@ import br.com.lojaspopular.domain.catalog.model.Produto;
 import br.com.lojaspopular.domain.catalog.model.ProdutoVariacao;
 import br.com.lojaspopular.domain.catalog.repository.CategoriaRepository;
 import br.com.lojaspopular.domain.catalog.repository.ProdutoRepository;
+import br.com.lojaspopular.exception.ConflitoVersaoException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -63,6 +64,11 @@ public class ProdutoService {
 	@Transactional
 	public Produto atualizar(@NonNull Long id, Produto novo) {
 		var atual = buscar(id);
+
+		if (novo.getVersion() != null && !novo.getVersion().equals(atual.getVersion())) {
+			throw new ConflitoVersaoException(
+				"Este produto foi modificado por outro usuário. Recarregue os dados e tente novamente.");
+		}
 
 		// Preserva imagemUrl das variações existentes por SKU
 		Map<String, String> imagesBySku = atual.getVariacoes().stream()

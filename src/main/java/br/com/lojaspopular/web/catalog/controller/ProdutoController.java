@@ -132,6 +132,7 @@ public class ProdutoController {
         .profundidade(req.profundidade())
         .peso(req.peso())
         .volumes(req.volumes())
+        .version(req.version())
         .build();
 
     if (req.diferenciais() != null) {
@@ -239,6 +240,7 @@ public class ProdutoController {
         produto.getVolumes(),
         produto.getDiferenciais(),
         variacoes,
-        galeria);
+        galeria,
+        produto.getVersion());
   }
 }

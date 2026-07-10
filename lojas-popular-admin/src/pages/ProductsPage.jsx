@@ -60,8 +60,12 @@ export default function ProductsPage() {
 
   async function onDelete(id) {
     if (!confirm("Excluir este produto?")) return;
-    await productsApi.remove(id);
-    await load();
+    try {
+      await productsApi.remove(id);
+      await load();
+    } catch (err) {
+      alert(err?.response?.data?.message || err?.message || "Falha ao excluir o produto. Tente novamente.");
+    }
   }
 
   return (

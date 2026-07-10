@@ -18,7 +18,8 @@ public record ProdutoRequest(
     BigDecimal peso,
     Integer volumes,
     List<String> diferenciais,
-    List<VariacaoRequest> variacoes
+    List<VariacaoRequest> variacoes,
+    Long version
 ) {
   public record VariacaoRequest(
       String cor,

@@ -22,7 +22,8 @@ public record ProdutoResponse(
     Integer volumes,
     List<String> diferenciais,
     List<VariacaoResponse> variacoes,
-    List<String> galeria
+    List<String> galeria,
+    Long version
 ) {
   public record VariacaoResponse(
       Long id,
