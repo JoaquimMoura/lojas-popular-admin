@@ -13,6 +13,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Manipulador global de exceções da API.
@@ -106,6 +107,19 @@ public class ApiExceptionHandler {
       "status", 409,
       "error", "Conflito de dados",
       "message", message
+    ));
+  }
+
+  /**
+   * Recurso estático inexistente (ex.: imagem apagada, favicon) — 404 em vez de 500.
+   */
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<?> handleNoResourceFound(NoResourceFoundException ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+      "timestamp", Instant.now().toString(),
+      "status", 404,
+      "error", "Not Found",
+      "message", "Recurso não encontrado: " + ex.getResourcePath()
     ));
   }
 
