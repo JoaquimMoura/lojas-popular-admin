@@ -1,0 +1,30 @@
+/* src/styles/ProductCarousel.css */
+.product-carousel-track {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  padding: 0.25rem 0.25rem 1rem;
+}
+
+.product-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.product-carousel-item {
+  flex: 0 0 auto;
+  width: 260px;
+}
+
+@media (max-width: 768px) {
+  .product-carousel-item {
+    width: 220px;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-carousel-item {
+    width: 180px;
+  }
+}

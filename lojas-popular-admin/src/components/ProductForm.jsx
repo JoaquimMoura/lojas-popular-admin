@@ -262,7 +262,7 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
           <div className="card-body">
             <div className="row g-2">
               <div className="col-md-6">
-                <label className="form-label">Nome do produto *</label>
+                <label className="form-label">Nome do produto <span className="text-danger">*</span></label>
                 <input name="nome" className="form-control" value={form.nome} onChange={handleChange} required />
               </div>
               <div className="col-md-2">
@@ -274,7 +274,7 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
                 <input name="sku" className="form-control" value={form.sku} onChange={handleChange} />
               </div>
               <div className="col-md-2">
-                <label className="form-label">Categoria</label>
+                <label className="form-label">Categoria <span className="text-danger">*</span></label>
                 <select name="categoriaId" className="form-select" value={form.categoriaId} onChange={handleChange} required>
                   <option value="">— selecione —</option>
                   {catsOptions}
@@ -302,7 +302,7 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
           <div className="card-body">
             <div className="row g-2">
               <div className="col-md-3">
-                <label className="form-label">Preço (R$) *</label>
+                <label className="form-label">Preço (R$) <span className="text-danger">*</span></label>
                 <input name="preco" type="number" step="0.01" min="0" className="form-control"
                   value={form.preco} onChange={handleChange} required />
               </div>
@@ -312,7 +312,7 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
                   placeholder="Deixe vazio se sem desconto" value={form.precoOriginal} onChange={handleChange} />
               </div>
               <div className="col-md-3">
-                <label className="form-label">Estoque *</label>
+                <label className="form-label">Estoque <span className="text-danger">*</span></label>
                 <input name="estoque" type="number" min="0" className="form-control"
                   value={form.estoque} onChange={handleChange} required />
               </div>

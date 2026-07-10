@@ -3,12 +3,16 @@ package br.com.lojaspopular.web.catalog.dto;
 import java.math.BigDecimal;
 import java.util.List;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+
 public record ProdutoRequest(
-    String nome,
+    @NotBlank(message = "Nome é obrigatório") String nome,
     String descricao,
-    BigDecimal preco,
+    @NotNull(message = "Preço é obrigatório") @PositiveOrZero(message = "Preço não pode ser negativo") BigDecimal preco,
     BigDecimal precoOriginal,
-    Integer estoque,
+    @NotNull(message = "Estoque é obrigatório") @PositiveOrZero(message = "Estoque não pode ser negativo") Integer estoque,
     String sku,
     String codigo,
     Long categoriaId,

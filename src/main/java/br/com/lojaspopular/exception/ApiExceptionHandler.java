@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -107,6 +108,21 @@ public class ApiExceptionHandler {
       "status", 409,
       "error", "Conflito de dados",
       "message", message
+    ));
+  }
+
+  /**
+   * Falhas de acesso a dados não mapeadas acima (ex.: schema desatualizado, coluna
+   * inexistente). Evita expor a mensagem crua do SQL/driver ao cliente.
+   */
+  @ExceptionHandler(DataAccessException.class)
+  public ResponseEntity<?> handleDataAccess(DataAccessException ex) {
+    log.error("Erro de acesso a dados", ex);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+      "timestamp", Instant.now().toString(),
+      "status", 500,
+      "error", "Erro ao acessar o banco de dados",
+      "message", "Não foi possível completar a operação. Tente novamente ou contate o suporte."
     ));
   }
 

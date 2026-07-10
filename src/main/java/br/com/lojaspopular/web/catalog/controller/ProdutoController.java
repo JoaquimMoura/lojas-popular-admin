@@ -29,6 +29,7 @@ import br.com.lojaspopular.domain.catalog.model.ProdutoImagem;
 import br.com.lojaspopular.domain.catalog.model.ProdutoVariacao;
 import br.com.lojaspopular.web.catalog.dto.ProdutoRequest;
 import br.com.lojaspopular.web.catalog.dto.ProdutoResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -62,7 +63,7 @@ public class ProdutoController {
   @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
   @PostMapping
   @Transactional
-  public ProdutoResponse criar(@RequestBody ProdutoRequest req) {
+  public ProdutoResponse criar(@Valid @RequestBody ProdutoRequest req) {
     var cat = req.categoriaId() != null ? service.buscarCategoria(req.categoriaId()) : null;
 
     Produto produto = Produto.builder()
@@ -103,7 +104,7 @@ public class ProdutoController {
   @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
   @PutMapping("/{id}")
   @Transactional
-  public ProdutoResponse atualizar(@PathVariable Long id, @RequestBody ProdutoRequest req) {
+  public ProdutoResponse atualizar(@PathVariable Long id, @Valid @RequestBody ProdutoRequest req) {
     var cat = req.categoriaId() != null ? service.buscarCategoria(req.categoriaId()) : null;
 
     List<ProdutoVariacao> variacoes = new ArrayList<>();
