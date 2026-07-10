@@ -253,7 +253,7 @@ export default function Fanpage() {
         <div className="hero-content rounded-4 shadow-sm">
           <div className="hero-text">
             <img
-              src="/uploads/logo-lojas-popular.svg"
+              src="/logo-lojas-popular.svg"
               alt="Lojas Popular - um novo jeito de comprar"
               className="hero-logo mb-3"
             />

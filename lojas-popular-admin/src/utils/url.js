@@ -8,6 +8,7 @@ export const DEFAULT_IMAGE = "/assets/no-image.png";
 export function absUrl(path = "") {
   if (!path) return "";
   if (path.startsWith("http")) return path;
+  if (path.startsWith("/uploads/")) return path;
   if (!path.startsWith("/")) path = "/" + path;
   return `${API_BASE}${path}`;
 }
@@ -25,6 +26,7 @@ export function resolveImageUrl(url) {
     url.startsWith("/assets/") ||
     url.startsWith("/static/") ||
     url.startsWith("/images/") ||
+    url.startsWith("/uploads/") ||
     url === DEFAULT_IMAGE
   ) {
     return url;
