@@ -78,7 +78,7 @@ whatsapp:
   provider: zenvia
   base-url: https://api.zenvia.com/v2/channels/whatsapp/messages
   api-key: TEST-LOCAL-ZENVIA-KEY-123456789
-  remetente: Lojas Popular Moveis (DEV)
+  remetente: Lojas Popular Móveis (DEV)
 
 mercadopago:
   access-token: TEST-LOCAL-TOKEN-1234567890

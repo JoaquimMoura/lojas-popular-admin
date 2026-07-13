@@ -80,11 +80,11 @@ import "../styles/pages/Fanpage.css";
     "Kits completos com armrios, mesas, cadeiras e acessorios que cabem no seu espaco e no seu bolso.",
   ctaTitle: "Atendimento personalizado",
   ctaDescription:
-    "Conte para a nossa equipe como e o seu comodo e receba um projeto com os moveis perfeitos para o seu espaco.",
+    "Conte para a nossa equipe como e o seu comodo e receba um projeto com os móveis perfeitos para o seu espaco.",
   ctaHighlights: [
     "Plantão de segunda a sexta das 8h às 19hs",
     "Sábado das 8h às 18hs",
-    "Simulacao de pagamento em tempo real com as melhores condições.",
+    "Simulação de pagamento em tempo real com as melhores condições.",
   ],
   testimonials: [
     {
@@ -186,7 +186,7 @@ export default function Fanpage() {
     return FALLBACK_HERO_IMAGE;
   }, [fanpageConfig.heroBannerUrl, storeInfo]);
 
-  const lojaNome = storeInfo?.nomeLoja ?? "Popular Moveis";
+  const lojaNome = storeInfo?.nomeLoja ?? "Popular Móveis";
   const lojaEndereco = storeInfo?.endereco ?? "Avenida Presidente Medici, 417";
   const lojaWhatsapp = storeInfo?.whatsapp ?? null;
 
@@ -315,7 +315,7 @@ export default function Fanpage() {
             className="hero-banner rounded-4"
             style={{ backgroundImage: `url(${heroBanner})` }}
             role="img"
-            aria-label="Ambiente planejado Popular Moveis"
+            aria-label="Ambiente planejado Popular Móveis"
           >
             <div className="hero-info-card shadow">
               <p className="mb-1 fw-semibold">{lojaNome}</p>
@@ -422,7 +422,7 @@ export default function Fanpage() {
         <section className="container my-5">
           <SectionTitle
             title="Ambientes completos"
-            subtitle="Combine moveis da mesma linha para montar um ambiente harmonioso e funcional."
+            subtitle="Combine móveis da mesma linha para montar um ambiente harmonioso e funcional."
           />
 
           <div className="row gy-5">
@@ -469,7 +469,7 @@ export default function Fanpage() {
               <WhatsAppButton
                 phone={lojaWhatsapp}
                 label="Quero montar meu combo"
-                text="Olá! Quero montar um combo completo com a Popular Moveis."
+                text="Olá! Quero montar um combo completo com a Popular Móveis."
                 className="btn btn-success btn-lg px-4"
               />
             </div>
@@ -491,7 +491,7 @@ export default function Fanpage() {
           center
           subtitleClassName="mx-auto mb-4"
           title="O que nossos clientes dizem"
-          subtitle="Mais de 1.000 familias ja transformaram seus lares com a Popular Moveis."
+          subtitle="Mais de 1.000 familias ja transformaram seus lares com a Popular Móveis."
         />
 
         <div className="row g-4">
@@ -553,7 +553,7 @@ export default function Fanpage() {
               <WhatsAppButton
                 phone={lojaWhatsapp}
                 label="Iniciar atendimento"
-                text="Olá! Quero falar com a Popular Moveis para montar meu ambiente."
+                text="Olá! Quero falar com a Popular Móveis para montar meu ambiente."
                 className="btn btn-success btn-lg flex-fill"
               />
               <Link to="/loja" className="btn btn-outline-secondary btn-lg flex-fill">

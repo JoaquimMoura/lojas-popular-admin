@@ -79,7 +79,7 @@ public class FanpageConfigService {
 
         private FanpageConfig createDefault() {
                 FanpageConfig config = FanpageConfig.builder()
-                                .heroTitle("Popular Moveis — moveis planejados com preço popular")
+                                .heroTitle("Popular Móveis — móveis planejados com preço popular")
                                 .heroSubtitle("Sua casa renovada sem complicacoes")
                                 .heroDescription(
                                                 "Kits completos de sala, cozinha, quarto e escritorio com condicoes especiais. Entregamos e montamos em tempo recorde para voce usar no mesmo dia.")
@@ -95,7 +95,7 @@ public class FanpageConfigService {
                                                 "Kits completos com armrios, mesas, cadeiras e acessorios que cabem no seu espaco e no seu bolso.")
                                 .ctaTitle("Atendimento personalizado")
                                 .ctaDescription(
-                                                "Conte para a nossa equipe como e o seu comodo e receba um projeto com os moveis perfeitos para o seu espaco.")
+                                                "Conte para a nossa equipe como e o seu comodo e receba um projeto com os móveis perfeitos para o seu espaco.")
                                 .build();
 
                 List<FanpageBenefit> benefits = List.of(
@@ -132,8 +132,7 @@ public class FanpageConfigService {
                 config.getCollections().addAll(collections);
 
                 config.getCtaHighlights().addAll(new ArrayList<>(List.of(
-                                "Plantao de segunda a sábado das 8h as 20h;",
-                                "Envio de catalogo atualizado em PDF e video tour dos produtos;",
+                                "Plantão de segunda a sexta-feira das 8h às 19hs;",
                                 "Simulacao de pagamento em tempo real com as melhores condicoes.")));
 
                 return repository.save(config);

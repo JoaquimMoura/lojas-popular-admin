@@ -75,9 +75,9 @@ export default function StoreHome() {
 
   return (
     <div className="container py-4">
-      <h2 className="text-center mb-4 text-danger fw-bold">Popular Moveis</h2>
+      <h2 className="text-center mb-4 text-danger fw-bold">Popular Móveis</h2>
       <p className="text-center text-muted mb-5">
-        {busca ? `Resultados para "${busca}"` : "Moveis com qualidade e preco popular!"}
+        {busca ? `Resultados para "${busca}"` : "Móveis com qualidade e preco popular!"}
       </p>
 
       {loading && <div className="text-center text-muted py-5">Carregando produtos...</div>}

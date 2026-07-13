@@ -57,8 +57,8 @@ export default function FanpageConfigPage() {
           ctaHighlightsText: (data.ctaHighlights ?? []).join("\n"),
         });
       } catch (err) {
-        console.error("Erro ao carregar configuracao da fanpage", err);
-        setFeedback({ type: "danger", message: "Nao foi possivel carregar os dados atuais." });
+        console.error("Erro ao carregar configuração da fanpage", err);
+        setFeedback({ type: "danger", message: "Nao foi possível carregar os dados atuais." });
       } finally {
         setLoading(false);
       }
@@ -144,18 +144,18 @@ export default function FanpageConfigPage() {
         heroBannerUrl: updated.heroBannerUrl ?? prev.heroBannerUrl,
       }));
     } catch (err) {
-      console.error("Erro ao salvar configuracao da fanpage", err);
+      console.error("Erro ao salvar configuração da fanpage", err);
       const status = err.response?.status;
       const serverMsg = err.response?.data?.message || err.response?.data?.error;
       let message;
       if (!err.response) {
-        message = "Erro de conexao. Verifique se o servidor esta rodando.";
+        message = "Erro de conexão. Verifique se o servidor esta rodando.";
       } else if (status === 403) {
         message = "Sem permissao. Certifique-se de estar logado como ADMIN.";
       } else if (status === 400) {
-        message = serverMsg ? `Campos invalidos: ${serverMsg}` : "Campos invalidos. Verifique os dados e tente novamente.";
+        message = serverMsg ? `Campos inválidos: ${serverMsg}` : "Campos inválidos. Verifique os dados e tente novamente.";
       } else {
-        message = serverMsg || `Erro ${status || ""}: Nao foi possivel salvar. Tente novamente.`;
+        message = serverMsg || `Erro ${status || ""}: Nao foi possível salvar. Tente novamente.`;
       }
       setFeedback({ type: "danger", message });
     } finally {
@@ -165,7 +165,7 @@ export default function FanpageConfigPage() {
 
   return (
     <div>
-      <h2 className="mb-4">Configuracao da Fanpage</h2>
+      <h2 className="mb-4">Configuração da Fanpage</h2>
 
       <p className="text-muted">
         Atualize os textos e destaques exibidos na pagina inicial/fanpage. Utilize os formatos
@@ -203,7 +203,7 @@ export default function FanpageConfigPage() {
         </div>
 
         <div className="col-12">
-          <label className="form-label">Descricao do Hero</label>
+          <label className="form-label">Descrição do Hero</label>
           <textarea
             className="form-control"
             name="heroDescription"
@@ -283,7 +283,7 @@ export default function FanpageConfigPage() {
             onChange={handleChange}
             disabled={loading || saving}
           />
-          <div className="form-text">Formato: Titulo|Descricao</div>
+          <div className="form-text">Formato: Titulo|Descrição</div>
         </div>
 
         <div className="col-12">
@@ -296,7 +296,7 @@ export default function FanpageConfigPage() {
             onChange={handleChange}
             disabled={loading || saving}
           />
-          <div className="form-text">Formato: Nome|Descricao|ImagemURL</div>
+          <div className="form-text">Formato: Nome|Descrição|ImagemURL</div>
         </div>
 
         <div className="col-md-6">
@@ -311,7 +311,7 @@ export default function FanpageConfigPage() {
         </div>
 
         <div className="col-md-6">
-          <label className="form-label">Descricao das ofertas</label>
+          <label className="form-label">Descrição das ofertas</label>
           <input
             className="form-control"
             name="offersDescription"
@@ -333,7 +333,7 @@ export default function FanpageConfigPage() {
         </div>
 
         <div className="col-md-6">
-          <label className="form-label">Descricao dos combos</label>
+          <label className="form-label">Descrição dos combos</label>
           <input
             className="form-control"
             name="combosDescription"
@@ -355,7 +355,7 @@ export default function FanpageConfigPage() {
         </div>
 
         <div className="col-md-6">
-          <label className="form-label">Descricao da chamada final</label>
+          <label className="form-label">Descrição da chamada final</label>
           <input
             className="form-control"
             name="ctaDescription"
@@ -379,7 +379,7 @@ export default function FanpageConfigPage() {
 
         <div className="col-12 d-flex justify-content-end">
           <button type="submit" className="btn btn-primary" disabled={saving || loading}>
-            {saving ? "Salvando..." : "Salvar configuracao"}
+            {saving ? "Salvando..." : "Salvar configuração"}
           </button>
         </div>
       </form>

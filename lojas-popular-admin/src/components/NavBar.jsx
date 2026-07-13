@@ -80,7 +80,7 @@ export default function NavBar() {
       <nav className="site-navbar navbar navbar-expand-lg navbar-dark">
         <div className="container">
           <Link className="navbar-brand fw-bold" to="/">
-            Popular Moveis
+            Popular Móveis
           </Link>
 
           <button
