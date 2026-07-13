@@ -1,24 +1,53 @@
 /* ============================================================
-   NavBar — identidade de marca (sem azul padrão do Bootstrap)
+   NavBar — barra escura com identidade de marca (vermelho/amarelo)
+   Estrutura inspirada em painéis institucionais: faixa sólida
+   escura + linha de destaque em amarelo + trilha de categorias
+   em botões sólidos.
    ============================================================ */
 
+.site-navbar {
+  background: linear-gradient(135deg, var(--color-brand-red), var(--color-brand-red-dark));
+  border-bottom: 3px solid var(--color-brand-yellow);
+  box-shadow: var(--shadow-sm);
+}
+
 .site-navbar .navbar-brand {
-  color: var(--color-primary);
-  font-size: 1.25rem;
+  color: var(--color-brand-yellow);
+  font-size: 1.3rem;
+  letter-spacing: 0.02em;
+}
+
+.site-navbar .navbar-brand:hover {
+  color: var(--color-brand-red-light);
+}
+
+.site-navbar .navbar-nav {
+  align-items: center;
 }
 
 .site-navbar .nav-link {
-  color: var(--color-text);
+  color: var(--color-brand-yellow);
 }
 
 .site-navbar .nav-link:hover,
 .site-navbar .nav-link:focus,
 .site-navbar .nav-link.active {
-  color: var(--color-primary);
+  color: var(--color-brand-red-light);
+}
+
+.site-navbar .dropdown-menu {
+  border-top: 3px solid var(--color-brand-yellow);
+  border-radius: var(--radius-sm);
+}
+
+.site-navbar .dropdown-item:hover,
+.site-navbar .dropdown-item:focus {
+  background-color: var(--color-brand-yellow-light);
+  color: var(--color-ink);
 }
 
 .navbar-admin-link {
-  color: var(--color-text-muted);
+  color: var(--color-text-on-dark-muted);
   font-size: 0.82rem;
   text-decoration: none;
   border: none;
@@ -28,7 +57,24 @@
 
 .navbar-admin-link:hover,
 .navbar-admin-link:focus {
-  color: var(--color-primary);
+  color: var(--color-brand-yellow);
+}
+
+.navbar-logout-btn {
+  border: 1.5px solid var(--color-brand-yellow) !important;
+  color: var(--color-brand-yellow) !important;
+  background: transparent !important;
+  font-weight: 600;
+  padding: 0.3rem 0.9rem;
+  position: relative;
+  top: 3px;
+}
+
+.navbar-logout-btn:hover,
+.navbar-logout-btn:focus {
+  background: var(--color-brand-red) !important;
+  border-color: var(--color-brand-red) !important;
+  color: #fff !important;
 }
 
 .navbar-search {
@@ -40,7 +86,7 @@
 }
 
 .navbar-search input[type="search"] {
-  border: 1px solid var(--color-border);
+  border: 1px solid transparent;
   border-radius: var(--radius-pill);
   padding: 0.35rem 0.9rem;
   font-size: 0.9rem;
@@ -49,14 +95,15 @@
 
 .navbar-search input[type="search"]:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.15);
+  border-color: var(--color-brand-yellow);
+  box-shadow: 0 0 0 2px rgba(255, 202, 40, 0.35);
 }
 
 .navbar-search button {
-  border: 1px solid var(--color-primary);
-  background: var(--color-primary);
-  color: #fff;
+  border: 1px solid var(--color-brand-yellow);
+  background: var(--color-brand-yellow);
+  color: var(--color-ink);
+  font-weight: 600;
   border-radius: var(--radius-pill);
   padding: 0.35rem 0.9rem;
   font-size: 0.9rem;
@@ -65,8 +112,8 @@
 
 .navbar-search button:hover,
 .navbar-search button:focus {
-  background: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
+  background: var(--color-brand-yellow-dark);
+  border-color: var(--color-brand-yellow-dark);
 }
 
 .navbar-whatsapp {
@@ -74,20 +121,33 @@
   padding: 0.35rem 0.9rem;
 }
 
-/* ── Linha de categorias ── */
-.category-pills .nav-link {
-  border-radius: var(--radius-pill);
-  color: var(--color-text-muted);
+/* ── Trilha de categorias — apenas texto vermelho, sem caixa ── */
+.category-bar {
+  background: #fff;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.category-pills .nav-link,
+.category-pills .nav-link:visited {
+  display: inline-block;
+  padding: 0.4rem 0.6rem;
+  background-color: transparent;
+  border: none;
+  color: var(--color-primary) !important;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: color 0.15s ease;
+}
+
+.category-pills .nav-link:hover:not(.active),
+.category-pills .nav-link:focus:not(.active) {
+  color: var(--color-primary-dark) !important;
+  text-decoration: underline !important;
 }
 
 .category-pills .nav-link.active {
-  background-color: var(--color-primary);
-  color: #fff;
-  font-weight: 600;
-}
-
-.category-pills .nav-link:hover:not(.active) {
-  color: var(--color-primary);
+  color: var(--color-primary-dark) !important;
+  text-decoration: underline !important;
 }
 
 @media (max-width: 991.98px) {

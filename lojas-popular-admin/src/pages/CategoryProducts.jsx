@@ -69,7 +69,7 @@ export default function CategoryProducts() {
 
       <div className="text-center mt-5">
         <WhatsAppButton
-          text="Ola! Gostaria de falar com um atendente sobre os produtos da categoria."
+          text="Olá! Gostaria de falar com um atendente sobre os produtos da categoria."
           label="Falar com um atendente"
         />
       </div>

@@ -15,7 +15,7 @@ export default function CartPage() {
     );
   }
 
-  const message = `Ola! Gostaria de comprar os seguintes produtos:\n\n${cartItems
+  const message = `Olá! Gostaria de comprar os seguintes produtos:\n\n${cartItems
     .map((item) => `${item.nome} - R$ ${item.preco.toFixed(2)}`)
     .join("\n")}\n\nTotal: R$ ${total.toFixed(2)}`;
 

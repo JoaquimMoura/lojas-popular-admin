@@ -7,7 +7,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DataIntegrityViOlátionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -33,11 +33,10 @@ public class ApiExceptionHandler {
     String message = ex.getBindingResult().getAllErrors().get(0).getDefaultMessage();
 
     return ResponseEntity.badRequest().body(Map.of(
-      "timestamp", Instant.now().toString(),
-      "status", 400,
-      "error", "Bad Request",
-      "message", message
-    ));
+        "timestamp", Instant.now().toString(),
+        "status", 400,
+        "error", "Bad Request",
+        "message", message));
   }
 
   /**
@@ -46,11 +45,10 @@ public class ApiExceptionHandler {
   @ExceptionHandler(NegocioException.class)
   public ResponseEntity<?> handleNegocio(NegocioException ex) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
-      "timestamp", Instant.now().toString(),
-      "status", 400,
-      "error", "Negócio Inválido",
-      "message", ex.getMessage()
-    ));
+        "timestamp", Instant.now().toString(),
+        "status", 400,
+        "error", "Negócio Inválido",
+        "message", ex.getMessage()));
   }
 
   /**
@@ -59,11 +57,10 @@ public class ApiExceptionHandler {
   @ExceptionHandler(NotFoundException.class)
   public ResponseEntity<?> handleNotFound(NotFoundException ex) {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-      "timestamp", Instant.now().toString(),
-      "status", 404,
-      "error", "Not Found",
-      "message", ex.getMessage()
-    ));
+        "timestamp", Instant.now().toString(),
+        "status", 404,
+        "error", "Not Found",
+        "message", ex.getMessage()));
   }
 
   /**
@@ -72,31 +69,30 @@ public class ApiExceptionHandler {
   @ExceptionHandler(ConflitoVersaoException.class)
   public ResponseEntity<?> handleConflitoVersao(ConflitoVersaoException ex) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-      "timestamp", Instant.now().toString(),
-      "status", 409,
-      "error", "Conflito de concorrência",
-      "message", ex.getMessage()
-    ));
+        "timestamp", Instant.now().toString(),
+        "status", 409,
+        "error", "Conflito de concorrência",
+        "message", ex.getMessage()));
   }
 
   /**
-   * Falha de lock otimista detectada pelo próprio Hibernate (edições concorrentes na mesma janela)
+   * Falha de lock otimista detectada pelo próprio Hibernate (edições concorrentes
+   * na mesma janela)
    */
   @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
   public ResponseEntity<?> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-      "timestamp", Instant.now().toString(),
-      "status", 409,
-      "error", "Conflito de concorrência",
-      "message", "Este registro foi modificado por outro usuário. Recarregue os dados e tente novamente."
-    ));
+        "timestamp", Instant.now().toString(),
+        "status", 409,
+        "error", "Conflito de concorrência",
+        "message", "Este registro foi modificado por outro usuário. Recarregue os dados e tente novamente."));
   }
 
   /**
-   * Violação de constraint no banco (ex.: SKU duplicado)
+   * ViOláção de constraint no banco (ex.: SKU duplicado)
    */
-  @ExceptionHandler(DataIntegrityViolationException.class)
-  public ResponseEntity<?> handleDataIntegrity(DataIntegrityViolationException ex) {
+  @ExceptionHandler(DataIntegrityViOlátionException.class)
+  public ResponseEntity<?> handleDataIntegrity(DataIntegrityViOlátionException ex) {
     String causa = ex.getMostSpecificCause().getMessage();
     String message = "Já existe um registro com esses dados.";
     if (causa != null && causa.contains("produtos_sku_key")) {
@@ -104,39 +100,38 @@ public class ApiExceptionHandler {
     }
 
     return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-      "timestamp", Instant.now().toString(),
-      "status", 409,
-      "error", "Conflito de dados",
-      "message", message
-    ));
+        "timestamp", Instant.now().toString(),
+        "status", 409,
+        "error", "Conflito de dados",
+        "message", message));
   }
 
   /**
-   * Falhas de acesso a dados não mapeadas acima (ex.: schema desatualizado, coluna
+   * Falhas de acesso a dados não mapeadas acima (ex.: schema desatualizado,
+   * coluna
    * inexistente). Evita expor a mensagem crua do SQL/driver ao cliente.
    */
   @ExceptionHandler(DataAccessException.class)
   public ResponseEntity<?> handleDataAccess(DataAccessException ex) {
     log.error("Erro de acesso a dados", ex);
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-      "timestamp", Instant.now().toString(),
-      "status", 500,
-      "error", "Erro ao acessar o banco de dados",
-      "message", "Não foi possível completar a operação. Tente novamente ou contate o suporte."
-    ));
+        "timestamp", Instant.now().toString(),
+        "status", 500,
+        "error", "Erro ao acessar o banco de dados",
+        "message", "Não foi possível completar a operação. Tente novamente ou contate o suporte."));
   }
 
   /**
-   * Recurso estático inexistente (ex.: imagem apagada, favicon) — 404 em vez de 500.
+   * Recurso estático inexistente (ex.: imagem apagada, favicon) — 404 em vez de
+   * 500.
    */
   @ExceptionHandler(NoResourceFoundException.class)
   public ResponseEntity<?> handleNoResourceFound(NoResourceFoundException ex) {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-      "timestamp", Instant.now().toString(),
-      "status", 404,
-      "error", "Not Found",
-      "message", "Recurso não encontrado: " + ex.getResourcePath()
-    ));
+        "timestamp", Instant.now().toString(),
+        "status", 404,
+        "error", "Not Found",
+        "message", "Recurso não encontrado: " + ex.getResourcePath()));
   }
 
   /**

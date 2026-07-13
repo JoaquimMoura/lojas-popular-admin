@@ -54,7 +54,7 @@ export const storeApi = {
       const { data } = await api.get(`/config/loja`);
       return data;
     } catch (error) {
-      console.error("Erro ao buscar informacoes da loja:", error);
+      console.error("Erro ao buscar informações da loja:", error);
       return null;
     }
   },

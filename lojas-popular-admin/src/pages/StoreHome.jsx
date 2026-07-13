@@ -116,7 +116,7 @@ export default function StoreHome() {
 
       <div className="text-center mt-5">
         <WhatsAppButton
-          text="Ola! Gostaria de falar com um atendente sobre os produtos."
+          text="Olá! Gostaria de falar com um atendente sobre os produtos."
           label="Falar com um atendente"
         />
       </div>

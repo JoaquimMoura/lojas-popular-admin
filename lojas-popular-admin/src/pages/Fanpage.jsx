@@ -20,24 +20,37 @@ import "../styles/pages/Fanpage.css";
 // ============================================================
 // Fallback completo — tudo configurável via fanpageApi
 // ============================================================
-const FALLBACK_CONFIG = {
-  announcements: [
-    "🚚 Entrega em até 48h na Grande São Paulo",
-    "💳 Parcelamento em até 12x sem juros",
-    "🔧 Montagem inclusa em todos os combos",
+  const FALLBACK_CONFIG = {
+    announcements: [
+      "🚚 Entrega em até 5 dias úteis",
+      "💳 Parcelamos em até 12x no cartão de crédito",
+      "📋 Crediário próprio em até 36x",
+      "🔧 Montagem inclusa em todos os móveis",
   ],
-  heroTitle: "Popular Moveis — moveis planejados com preco popular",
-  heroSubtitle: "Sua casa renovada sem complicacoes",
+  heroTitle: "Popular Móveis — móveis modulados com preço popular",
+  heroSubtitle: "Sua casa renovada sem complicações",
   heroDescription:
-    "Kits completos de sala, cozinha, quarto e escritorio com condicoes especiais. Entregamos e montamos em tempo recorde para voce usar no mesmo dia.",
+    "Kits completos de sala, cozinha, quarto e escritório com condições especiais. Entregamos e montamos em tempo recorde para você usar.",
   heroPrimaryLabel: "Quero ser atendido agora",
-  heroPrimaryMessage: "Ola! Vi as ofertas na fanpage e quero montar meu ambiente.",
-  heroSecondaryLabel: "Ver toda a colecao",
+  heroPrimaryMessage: "Olá! Vi as ofertas na fanpage e quero montar meu ambiente.",
+  heroSecondaryLabel: "Ver toda a coleção",
   heroSecondaryUrl: "/loja",
   benefits: [
-    { icon: "🔧", title: "Montagem rapida", description: "Equipe propria e agenda flexivel." },
-    { icon: "🚚", title: "Entrega expressa", description: "Despacho em ate 48h na capital." },
-    { icon: "💳", title: "Pagamento facilitado", description: "Parcelamento em ate 12x sem juros." },
+    {
+      icon: "🔧",
+      title: "Montagem rápida",
+      description: "Equipe própria e agenda flexível.",
+    },
+    {
+      icon: "🚚",
+      title: "Entrega expressa",
+      description: "Despacho em até 5 dias úteis na capital.",
+    },
+    {
+      icon: "💳",
+      title: "Pagamento facilitado",
+      description: "Parcelamento em até 12x sem juros.",
+    },
   ],
   collections: [
     {
@@ -48,7 +61,7 @@ const FALLBACK_CONFIG = {
     },
     {
       name: "Cozinhas Compactas",
-      description: "Kits completos com armarios, balcoes e torres.",
+      description: "Kits completos com armrios, balcoes e torres.",
       imageUrl:
         "https://images.unsplash.com/photo-1588853431081-02531f0526eb?auto=format&fit=crop&w=1200&q=80",
     },
@@ -59,19 +72,19 @@ const FALLBACK_CONFIG = {
         "https://images.unsplash.com/photo-1505692794403-55b39b05e08c?auto=format&fit=crop&w=1200&q=80",
     },
   ],
-  offersTitle: "Ofertas imperdiveis da semana",
+  offersTitle: "Ofertas imperdíveis da semana",
   offersDescription:
     "Conjuntos selecionados para renovar sua casa com descontos exclusivos da fanpage.",
   combosTitle: "Combos planejados",
   combosDescription:
-    "Kits completos com armarios, mesas, cadeiras e acessorios que cabem no seu espaco e no seu bolso.",
+    "Kits completos com armrios, mesas, cadeiras e acessorios que cabem no seu espaco e no seu bolso.",
   ctaTitle: "Atendimento personalizado",
   ctaDescription:
     "Conte para a nossa equipe como e o seu comodo e receba um projeto com os moveis perfeitos para o seu espaco.",
   ctaHighlights: [
-    "Plantao de segunda a sabado das 8h as 20h;",
-    "Envio de catalogo atualizado em PDF e video tour dos produtos;",
-    "Simulacao de pagamento em tempo real com as melhores condicoes.",
+    "Plantão de segunda a sexta das 8h às 19hs",
+    "Sábado das 8h às 18hs",
+    "Simulacao de pagamento em tempo real com as melhores condições.",
   ],
   testimonials: [
     {
@@ -100,7 +113,7 @@ const FALLBACK_CONFIG = {
     },
   ],
   // Sem logos reais de parceiros ainda — placeholders neutros até existir conteúdo configurável.
-  brands: ["Pix", "Mercado Pago", "Visa", "Mastercard", "Elo", "Boleto"],
+  brands: ["Pix", "Visa", "Mastercard", "Elo", "Boleto", "Brasil Card"],
 };
 
 const FALLBACK_HERO_IMAGE =
@@ -328,7 +341,7 @@ export default function Fanpage() {
       {/* ── Coleções ── */}
       <section className="container my-5">
         <SectionTitle
-          title="Colecoes para cada ambiente"
+          title="Colecões para cada ambiente"
           subtitle="Ambientes completos inspirados nas principais tendencias de decoracao, prontos para caber no seu orcamento."
         />
 
@@ -349,11 +362,11 @@ export default function Fanpage() {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Ver mais opcoes
+                      Ver mais opcões
                     </a>
                   ) : (
                     <Link to={colecao.link} className="btn btn-light btn-sm">
-                      Ver mais opcoes
+                      Ver mais opcões
                     </Link>
                   )}
                 </div>
@@ -456,7 +469,7 @@ export default function Fanpage() {
               <WhatsAppButton
                 phone={lojaWhatsapp}
                 label="Quero montar meu combo"
-                text="Ola! Quero montar um combo completo com a Popular Moveis."
+                text="Olá! Quero montar um combo completo com a Popular Moveis."
                 className="btn btn-success btn-lg px-4"
               />
             </div>
@@ -540,7 +553,7 @@ export default function Fanpage() {
               <WhatsAppButton
                 phone={lojaWhatsapp}
                 label="Iniciar atendimento"
-                text="Ola! Quero falar com a Popular Moveis para montar meu ambiente."
+                text="Olá! Quero falar com a Popular Moveis para montar meu ambiente."
                 className="btn btn-success btn-lg flex-fill"
               />
               <Link to="/loja" className="btn btn-outline-secondary btn-lg flex-fill">

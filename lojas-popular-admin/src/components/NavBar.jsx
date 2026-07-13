@@ -77,7 +77,7 @@ export default function NavBar() {
 
   return (
     <>
-      <nav className="site-navbar navbar navbar-expand-lg bg-body-tertiary border-bottom">
+      <nav className="site-navbar navbar navbar-expand-lg navbar-dark">
         <div className="container">
           <Link className="navbar-brand fw-bold" to="/">
             Popular Moveis
@@ -126,7 +126,7 @@ export default function NavBar() {
             <WhatsAppButton
               phone={storeWhatsapp}
               label="WhatsApp"
-              text="Ola! Vim pelo site e gostaria de mais informacoes."
+              text="Olá! Vim pelo site e gostaria de mais informações."
               className="btn btn-success navbar-whatsapp ms-lg-3"
             />
 
@@ -160,7 +160,7 @@ export default function NavBar() {
                     </ul>
                   </li>
                   <li className="nav-item ms-2">
-                    <button className="btn btn-outline-danger btn-sm" onClick={exit}>
+                    <button className="btn navbar-logout-btn btn-sm" onClick={exit}>
                       Sair
                     </button>
                   </li>
@@ -172,16 +172,14 @@ export default function NavBar() {
       </nav>
 
       {categories.length > 0 && (
-        <div className="bg-white border-bottom mb-3">
+        <div className="category-bar mb-3">
           <div className="container py-2">
-            <div className="category-pills nav nav-pills flex-wrap gap-2">
+            <div className="category-pills nav flex-wrap gap-2">
               {categories.map((categoria) => (
                 <NavLink
                   key={categoria.id}
                   to={`/categoria/${categoria.id}`}
-                  className={({ isActive }) =>
-                    `nav-link px-3 py-1 ${isActive ? "active fw-semibold" : "text-secondary"}`
-                  }
+                  className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
                 >
                   {categoria.nome}
                 </NavLink>

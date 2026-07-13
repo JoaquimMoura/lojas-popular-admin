@@ -33,7 +33,7 @@ export default function Footer() {
     };
   }, []);
 
-  const lojaNome = storeInfo?.nomeLoja ?? "Popular Moveis";
+  const lojaNome = storeInfo?.nomeLoja ?? "Popular Móveis";
   const lojaEndereco = storeInfo?.endereco ?? null;
   const lojaWhatsapp = storeInfo?.whatsapp ?? null;
   const ano = new Date().getFullYear();
@@ -45,12 +45,12 @@ export default function Footer() {
           <div className="footer-col footer-brand">
             <p className="footer-brand-name">{lojaNome}</p>
             <p className="footer-tagline">
-              Móveis planejados com preço popular, entrega e montagem inclusas.
+              Móveis modulados com preço popular, entrega e montagem inclusas.
             </p>
             <WhatsAppButton
               phone={lojaWhatsapp}
               label="Falar no WhatsApp"
-              text="Ola! Vim pelo site e gostaria de mais informacoes."
+              text="Olá! Vim pelo site e gostaria de mais informações."
               className="btn btn-brand btn-sm"
             />
           </div>
