@@ -55,7 +55,7 @@ import "../styles/pages/Fanpage.css";
   collections: [
     {
       name: "Salas Planejadas",
-      description: "Paineis, racks e sofas que deixam o ambiente completo.",
+      description: "Paineis, racks e sofás que deixam o ambiente completo.",
       imageUrl:
         "https://images.unsplash.com/photo-1484100356142-db6ab6244067?auto=format&fit=crop&w=1200&q=80",
     },

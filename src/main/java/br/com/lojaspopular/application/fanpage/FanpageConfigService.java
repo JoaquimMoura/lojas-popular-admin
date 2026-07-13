@@ -99,11 +99,11 @@ public class FanpageConfigService {
                                 .build();
 
                 List<FanpageBenefit> benefits = List.of(
-                                FanpageBenefit.builder().title("Montagem rapida")
-                                                .description("Equipe propria e agenda flexivel.")
+                                FanpageBenefit.builder().title("Montagem rápida")
+                                                .description("Equipe própria e agenda flexível.")
                                                 .build(),
                                 FanpageBenefit.builder().title("Entrega expressa")
-                                                .description("Despacho em ate 48h na capital.")
+                                                .description("Despacho em até 5 dias úteis na capital.")
                                                 .build(),
                                 FanpageBenefit.builder().title("Pagamento facilitado")
                                                 .description("Parcelamento em ate 12x sem juros.")
@@ -113,7 +113,7 @@ public class FanpageConfigService {
                 List<FanpageCollectionBlock> collections = List.of(
                                 FanpageCollectionBlock.builder()
                                                 .name("Salas Planejadas")
-                                                .description("Paineis, racks e sofas que deixam o ambiente completo.")
+                                                .description("Painéis, racks e sofás que deixam o ambiente completo.")
                                                 .imageUrl(
                                                                 "https://images.unsplash.com/photo-1484100356142-db6ab6244067?auto=format&fit=crop&w=1200&q=80")
                                                 .build(),
