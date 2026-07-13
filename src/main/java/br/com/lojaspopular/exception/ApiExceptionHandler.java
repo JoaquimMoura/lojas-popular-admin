@@ -7,7 +7,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
-import org.springframework.dao.DataIntegrityViOlátionException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -91,8 +91,8 @@ public class ApiExceptionHandler {
   /**
    * ViOláção de constraint no banco (ex.: SKU duplicado)
    */
-  @ExceptionHandler(DataIntegrityViOlátionException.class)
-  public ResponseEntity<?> handleDataIntegrity(DataIntegrityViOlátionException ex) {
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  public ResponseEntity<?> handleDataIntegrity(DataIntegrityViolationException ex) {
     String causa = ex.getMostSpecificCause().getMessage();
     String message = "Já existe um registro com esses dados.";
     if (causa != null && causa.contains("produtos_sku_key")) {
