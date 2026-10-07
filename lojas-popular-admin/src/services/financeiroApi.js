@@ -66,4 +66,20 @@ export const financeiroApi = {
   aprovarFechamento: (mes) => api.post("/financeiro/fechamento/aprovar", { mes }).then(dados),
   reabrirFechamento: (mes, justificativa) =>
     api.post("/financeiro/fechamento/reabrir", { mes, justificativa }).then(dados),
+
+  // relatórios gerenciais (somente leitura)
+  relVendas: (params) => api.get("/financeiro/relatorios/vendas", { params: limpar(params) }).then(dados),
+  relRecebimentos: (params) => api.get("/financeiro/relatorios/recebimentos", { params: limpar(params) }).then(dados),
+  relContasPendentes: () => api.get("/financeiro/relatorios/contas-pendentes").then(dados),
+  relEstoque: () => api.get("/financeiro/relatorios/estoque").then(dados),
+  relEntregas: (params) => api.get("/financeiro/relatorios/entregas", { params: limpar(params) }).then(dados),
+  relComissoes: (params) => api.get("/financeiro/relatorios/comissoes", { params: limpar(params) }).then(dados),
+  relMetas: (mes) => api.get("/financeiro/relatorios/metas", { params: { mes } }).then(dados),
+
+  // custos (consulta: gerente e proprietário; gravação: só proprietário)
+  custos: () => api.get("/financeiro/custos").then(dados),
+  historicoCusto: (produtoId) => api.get(`/financeiro/custos/historico/${produtoId}`).then(dados),
+  itensSemCusto: () => api.get("/financeiro/custos/itens-sem-custo").then(dados),
+  registrarCusto: (body) => api.post("/financeiro/custos", body).then(dados),
+  informarCustoItem: (itemId, body) => api.post(`/financeiro/custos/itens/${itemId}`, body).then(dados),
 };

@@ -39,6 +39,8 @@ import ComissoesPage, { MinhasComissoesPage } from "./pages/gestao/financeiro/Co
 import MetasPage, { MinhaMetaPage } from "./pages/gestao/financeiro/MetasPage";
 import FechamentoPage from "./pages/gestao/financeiro/FechamentoPage";
 import RestituicoesPage from "./pages/gestao/financeiro/RestituicoesPage";
+import RelatoriosPage from "./pages/gestao/financeiro/RelatoriosPage";
+import CustosPage from "./pages/gestao/financeiro/CustosPage";
 
 function RootLayout() {
   const matches = useMatches();
@@ -162,6 +164,8 @@ export const router = createBrowserRouter([
                   { path: "metas", element: <MetasPage /> },
                   { path: "fechamento", element: <FechamentoPage /> },
                   { path: "restituicoes", element: <RestituicoesPage /> },
+                  { path: "relatorios", element: <RelatoriosPage /> },
+                  { path: "custos", element: <CustosPage /> },
                 ],
               },
               {

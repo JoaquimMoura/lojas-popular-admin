@@ -8,6 +8,8 @@ const ABAS = [
   { to: "metas", text: "Metas" },
   { to: "fechamento", text: "Fechamento" },
   { to: "restituicoes", text: "Restituições" },
+  { to: "relatorios", text: "Relatórios" },
+  { to: "custos", text: "Custos" },
 ];
 
 export function FinanceiroIndex() {
