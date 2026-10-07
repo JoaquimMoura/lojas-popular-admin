@@ -38,6 +38,9 @@ public class SecurityConfig {
             .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
         )
         .authorizeHttpRequests(auth -> auth
+            // O 403 do container vira um redirecionamento interno para /error; sem isto o cliente
+            // recebia 401 (e o frontend tratava como sessão expirada, deslogando o usuário).
+            .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .requestMatchers("/h2-console/**").permitAll()
             .requestMatchers("/uploads/**").permitAll()
@@ -47,9 +50,14 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.GET, "/api/v1/produtos/**", "/api/v1/categorias/**", "/api/v1/config/loja", "/api/v1/fanpage/**").permitAll()
 
             .requestMatchers("/api/v1/auditoria/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/vendedores").hasAnyRole("ADMIN", "GERENTE", "VENDEDOR")
+            .requestMatchers("/api/v1/usuarios/**").hasRole("ADMIN")
+            .requestMatchers("/api/v1/config/comercial/**").hasAnyRole("ADMIN", "GERENTE")
+            .requestMatchers("/api/v1/clientes/**", "/api/v1/vendas/**", "/api/v1/estoque/**")
+                .hasAnyRole("ADMIN", "GERENTE", "VENDEDOR")
             .requestMatchers("/api/v1/fanpage/**").hasRole("ADMIN")
-            .requestMatchers("/api/v1/produtos/**", "/api/v1/categorias/**").hasAnyRole("ADMIN", "VENDEDOR")
-            .requestMatchers("/api/v1/pedidos/**", "/api/v1/payments/**").hasAnyRole("CLIENTE", "ADMIN", "VENDEDOR")
+            .requestMatchers("/api/v1/produtos/**", "/api/v1/categorias/**").hasAnyRole("ADMIN", "GERENTE", "VENDEDOR")
+            .requestMatchers("/api/v1/pedidos/**", "/api/v1/payments/**").hasAnyRole("CLIENTE", "ADMIN", "GERENTE", "VENDEDOR")
 
             .anyRequest().authenticated()
         )

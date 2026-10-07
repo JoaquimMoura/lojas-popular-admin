@@ -6,10 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import br.com.lojaspopular.domain.catalog.enums.ModalidadeProduto;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -85,6 +88,15 @@ public class Produto {
 	private BigDecimal peso;
 
 	private Integer volumes;
+
+	/** Pronta entrega, encomenda ou ambas. */
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	@Builder.Default
+	private ModalidadeProduto modalidade = ModalidadeProduto.PRONTA_ENTREGA;
+
+	/** Prazo de encomenda em dias (decisão D08 pendente: nulo até ser definido). */
+	private Integer prazoEncomendaDias;
 
 	@ElementCollection(fetch = FetchType.EAGER)
 	@CollectionTable(name = "produto_diferenciais", joinColumns = @JoinColumn(name = "produto_id"))

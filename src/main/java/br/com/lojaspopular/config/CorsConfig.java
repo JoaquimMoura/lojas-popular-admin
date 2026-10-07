@@ -53,7 +53,8 @@ public class CorsConfig {
             "Content-Type",
             "X-Requested-With",
             "Accept",
-            "Origin"
+            "Origin",
+            "Idempotency-Key"
         ));
         config.setExposedHeaders(List.of("Authorization")); // ✅ frontend consegue ler o Bearer
         

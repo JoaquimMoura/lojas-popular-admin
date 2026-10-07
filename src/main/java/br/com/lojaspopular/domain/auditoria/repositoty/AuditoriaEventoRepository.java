@@ -11,4 +11,6 @@ import br.com.lojaspopular.domain.auditoria.model.AuditoriaEvento;
 @Repository
 public interface AuditoriaEventoRepository extends JpaRepository<AuditoriaEvento, Long> {
   List<AuditoriaEvento> findAllByOrderByDataEventoDesc();
+
+  List<AuditoriaEvento> findByEntidadeAndEntidadeIdOrderByDataEventoAsc(String entidade, Long entidadeId);
 }

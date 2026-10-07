@@ -44,7 +44,7 @@ public class CategoriaController {
     return ResponseEntity.ok(mapper.toResponse(categoria));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @PostMapping
   public ResponseEntity<CategoriaResponse> criar(@Valid @RequestBody CategoriaRequest req) {
     var entidade = mapper.toEntity(req);
@@ -52,7 +52,7 @@ public class CategoriaController {
     return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(salva));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @PutMapping("/{id}")
   public ResponseEntity<CategoriaResponse> atualizar(
       @PathVariable Long id,
@@ -62,14 +62,14 @@ public class CategoriaController {
     return ResponseEntity.ok(mapper.toResponse(atualizada));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> excluir(@PathVariable Long id) {
     service.excluir(id);
     return ResponseEntity.noContent().build();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @PostMapping("/{id}/imagem")
   public ResponseEntity<String> uploadImagem(
       @PathVariable Long id,

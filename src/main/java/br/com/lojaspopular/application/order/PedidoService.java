@@ -15,6 +15,7 @@ import br.com.lojaspopular.domain.order.model.Pedido;
 import br.com.lojaspopular.domain.order.repository.PedidoRepository;
 import br.com.lojaspopular.domain.user.User;
 import br.com.lojaspopular.domain.user.UserRepository;
+import br.com.lojaspopular.exception.NegocioException;
 import br.com.lojaspopular.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -66,6 +67,10 @@ public class PedidoService {
   public Pedido alterarStatus(Long id, PedidoStatus status) {
     Pedido pedido = pedidoRepo.findById(id)
         .orElseThrow(() -> new NotFoundException("Pedido não encontrado"));
+    if (!pedido.isLegado()) {
+      // Vendas do fluxo de gestão têm ciclo próprio (confirmação, reserva, cancelamento com liberação).
+      throw new NegocioException("Esta venda é gerida em Vendas: use confirmar/cancelar, não a alteração direta de status.");
+    }
     pedido.setStatus(status);
     return pedidoRepo.save(pedido);
   }

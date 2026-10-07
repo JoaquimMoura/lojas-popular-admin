@@ -11,6 +11,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -49,6 +50,46 @@ public class ApiExceptionHandler {
         "status", 400,
         "error", "Negócio Inválido",
         "message", ex.getMessage()));
+  }
+
+  /**
+   * Função bloqueada por configuração comercial pendente (422).
+   */
+  @ExceptionHandler(ConfiguracaoPendenteException.class)
+  public ResponseEntity<?> handleConfiguracaoPendente(ConfiguracaoPendenteException ex) {
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+        "timestamp", Instant.now().toString(),
+        "status", 422,
+        "error", "Configuração pendente",
+        "code", "CONFIGURACAO_PENDENTE",
+        "message", ex.getMessage(),
+        "pendencias", ex.getPendencias()));
+  }
+
+  /**
+   * Possível cliente duplicado (409).
+   */
+  @ExceptionHandler(DuplicidadeClienteException.class)
+  public ResponseEntity<?> handleDuplicidadeCliente(DuplicidadeClienteException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+        "timestamp", Instant.now().toString(),
+        "status", 409,
+        "error", "Cliente possivelmente duplicado",
+        "code", ex.isBloqueante() ? "CLIENTE_DUPLICADO" : "CLIENTE_POSSIVEL_DUPLICADO",
+        "message", ex.getMessage(),
+        "duplicados", ex.getDuplicados()));
+  }
+
+  /**
+   * Acesso negado por perfil (lançado por @PreAuthorize dentro do controller).
+   */
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<?> handleAccessDenied(AccessDeniedException ex) {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+        "timestamp", Instant.now().toString(),
+        "status", 403,
+        "error", "Forbidden",
+        "message", "Você não tem permissão para esta operação."));
   }
 
   /**

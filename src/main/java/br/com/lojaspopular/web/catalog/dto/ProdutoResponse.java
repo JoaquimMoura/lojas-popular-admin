@@ -3,6 +3,8 @@ package br.com.lojaspopular.web.catalog.dto;
 import java.math.BigDecimal;
 import java.util.List;
 
+import br.com.lojaspopular.domain.catalog.enums.ModalidadeProduto;
+
 public record ProdutoResponse(
     Long id,
     String nome,
@@ -23,7 +25,9 @@ public record ProdutoResponse(
     List<String> diferenciais,
     List<VariacaoResponse> variacoes,
     List<String> galeria,
-    Long version
+    Long version,
+    ModalidadeProduto modalidade,
+    Integer prazoEncomendaDias
 ) {
   public record VariacaoResponse(
       Long id,

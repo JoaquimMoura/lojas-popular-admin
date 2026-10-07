@@ -39,6 +39,10 @@ public class AuthService {
     var user = userRepository.findByEmail(email)
         .orElseThrow(() -> new IllegalArgumentException("Credenciais invalidas"));
 
+    if (!user.isEnabled()) {
+      throw new IllegalArgumentException("Credenciais invalidas");
+    }
+
     log.info("Validando senha para usuario {}", email);
 
     if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
@@ -61,6 +65,9 @@ public class AuthService {
 
     var user = userRepository.findByEmail(email)
         .orElseThrow(() -> new IllegalArgumentException("Usuario invalido"));
+    if (!user.isEnabled()) {
+      throw new IllegalArgumentException("Usuario invalido");
+    }
 
     return generateTokens(user);
   }

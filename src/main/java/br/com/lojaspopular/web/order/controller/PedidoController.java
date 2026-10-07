@@ -54,7 +54,7 @@ public class PedidoController {
   }
 
   @GetMapping
-  @PreAuthorize("hasAnyRole('CLIENTE','ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('CLIENTE','ADMIN','GERENTE','VENDEDOR')")
   public List<PedidoResponse> listar() {
     return service.listarPedidosDoUsuario().stream()
         .map(this::toResponse)
@@ -62,7 +62,7 @@ public class PedidoController {
   }
 
   @GetMapping("/gerenciar")
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   public List<PedidoResponse> listarTodos() {
     return service.listarTodos().stream()
         .map(this::toResponse)
@@ -70,7 +70,7 @@ public class PedidoController {
   }
 
   @PutMapping("/{id}/status")
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   public PedidoResponse alterarStatus(@PathVariable Long id, @RequestParam PedidoStatus status) {
     Pedido pedido = service.alterarStatus(id, status);
     return toResponse(pedido);

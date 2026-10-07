@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import br.com.lojaspopular.application.catalog.ProdutoService;
+import br.com.lojaspopular.domain.catalog.enums.ModalidadeProduto;
 import br.com.lojaspopular.domain.catalog.model.Produto;
 import br.com.lojaspopular.domain.catalog.model.ProdutoImagem;
 import br.com.lojaspopular.domain.catalog.model.ProdutoVariacao;
@@ -60,7 +61,7 @@ public class ProdutoController {
     return toResponse(service.buscar(id));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @PostMapping
   @Transactional
   public ProdutoResponse criar(@Valid @RequestBody ProdutoRequest req) {
@@ -80,6 +81,8 @@ public class ProdutoController {
         .profundidade(req.profundidade())
         .peso(req.peso())
         .volumes(req.volumes())
+        .modalidade(req.modalidade() != null ? req.modalidade() : ModalidadeProduto.PRONTA_ENTREGA)
+        .prazoEncomendaDias(req.prazoEncomendaDias())
         .build();
 
     if (req.diferenciais() != null) {
@@ -101,7 +104,7 @@ public class ProdutoController {
     return toResponse(result);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @PutMapping("/{id}")
   @Transactional
   public ProdutoResponse atualizar(@PathVariable Long id, @Valid @RequestBody ProdutoRequest req) {
@@ -116,6 +119,7 @@ public class ProdutoController {
           .adicionalPreco(v.adicionalPreco())
           .estoque(v.estoque())
           .imagemUrl(v.imagemUrl())
+          .id(v.id())
           .build()));
     }
 
@@ -133,6 +137,8 @@ public class ProdutoController {
         .profundidade(req.profundidade())
         .peso(req.peso())
         .volumes(req.volumes())
+        .modalidade(req.modalidade() != null ? req.modalidade() : ModalidadeProduto.PRONTA_ENTREGA)
+        .prazoEncomendaDias(req.prazoEncomendaDias())
         .version(req.version())
         .build();
 
@@ -145,14 +151,14 @@ public class ProdutoController {
     return toResponse(att);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> excluir(@PathVariable Long id) {
     service.excluir(id);
     return ResponseEntity.noContent().build();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @PostMapping("/{id}/imagem")
   @Transactional
   public ResponseEntity<String> uploadCapa(@PathVariable Long id, @RequestParam("file") MultipartFile file)
@@ -164,7 +170,7 @@ public class ProdutoController {
     return ResponseEntity.ok(url);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @PostMapping("/{produtoId}/variacoes/{variacaoId}/imagem")
   @Transactional
   public ResponseEntity<String> uploadVariacaoImagem(
@@ -175,7 +181,7 @@ public class ProdutoController {
     return ResponseEntity.ok(url);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @PostMapping("/{id}/galeria")
   @Transactional
   public ResponseEntity<List<String>> uploadGaleria(
@@ -195,14 +201,14 @@ public class ProdutoController {
     return ResponseEntity.ok(urls);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @DeleteMapping("/{id}/galeria")
   public ResponseEntity<Void> removerImagemGaleria(@PathVariable Long id, @RequestParam("url") String url) {
     service.removerImagemGaleria(id, url);
     return ResponseEntity.noContent().build();
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','VENDEDOR')")
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @PutMapping("/{id}/galeria/reordena")
   public ResponseEntity<Void> reordenarGaleria(@PathVariable Long id, @RequestBody List<String> urlsNaOrdem) {
     service.reordenarGaleria(id, urlsNaOrdem);
@@ -242,6 +248,8 @@ public class ProdutoController {
         produto.getDiferenciais(),
         variacoes,
         galeria,
-        produto.getVersion());
+        produto.getVersion(),
+        produto.getModalidade(),
+        produto.getPrazoEncomendaDias());
   }
 }

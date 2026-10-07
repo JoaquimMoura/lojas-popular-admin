@@ -20,7 +20,11 @@ import br.com.lojaspopular.domain.catalog.model.Produto;
 import br.com.lojaspopular.domain.catalog.model.ProdutoVariacao;
 import br.com.lojaspopular.domain.catalog.repository.CategoriaRepository;
 import br.com.lojaspopular.domain.catalog.repository.ProdutoRepository;
+import br.com.lojaspopular.application.estoque.EstoqueService;
+import br.com.lojaspopular.domain.estoque.repository.ReservaEstoqueRepository;
+import br.com.lojaspopular.domain.order.repository.ItemPedidoRepository;
 import br.com.lojaspopular.exception.ConflitoVersaoException;
+import br.com.lojaspopular.exception.NegocioException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +34,8 @@ public class ProdutoService {
 
 	private final ProdutoRepository repository;
 	private final CategoriaRepository categoriaRepository;
+	private final ItemPedidoRepository itemPedidoRepository;
+	private final ReservaEstoqueRepository reservaEstoqueRepository;
 	
     @Value("${app.upload-dir:uploads}")
     private String baseUploadDir;
@@ -70,14 +76,6 @@ public class ProdutoService {
 				"Este produto foi modificado por outro usuário. Recarregue os dados e tente novamente.");
 		}
 
-		// Preserva imagemUrl das variações existentes por SKU
-		Map<String, String> imagesBySku = atual.getVariacoes().stream()
-			.filter(v -> v.getSku() != null && v.getImagemUrl() != null)
-			.collect(java.util.stream.Collectors.toMap(
-				ProdutoVariacao::getSku,
-				ProdutoVariacao::getImagemUrl,
-				(a, b) -> a));
-
 		atual.setNome(novo.getNome());
 		atual.setDescricao(novo.getDescricao());
 		atual.setPreco(novo.getPreco());
@@ -91,26 +89,74 @@ public class ProdutoService {
 		atual.setProfundidade(novo.getProfundidade());
 		atual.setPeso(novo.getPeso());
 		atual.setVolumes(novo.getVolumes());
+		if (novo.getModalidade() != null) {
+			atual.setModalidade(novo.getModalidade());
+		}
+		atual.setPrazoEncomendaDias(novo.getPrazoEncomendaDias());
 
 		atual.getDiferenciais().clear();
 		atual.getDiferenciais().addAll(novo.getDiferenciais() != null ? novo.getDiferenciais() : List.of());
 
-		atual.getVariacoes().clear();
-		if (novo.getVariacoes() != null) {
-			for (ProdutoVariacao v : novo.getVariacoes()) {
-				// Restaura imagem existente se não veio nova no request
-				if (v.getImagemUrl() == null && v.getSku() != null && imagesBySku.containsKey(v.getSku())) {
-					v.setImagemUrl(imagesBySku.get(v.getSku()));
-				}
-				atual.addVariacao(v);
-			}
-		}
+		atualizarVariacoes(atual, novo.getVariacoes() != null ? novo.getVariacoes() : List.of());
 		return atual;
 	}
 	
+	/**
+	 * Atualiza as variações NO LUGAR (por id, ou por SKU quando o id não vem), preservando a identidade
+	 * das já existentes: vendas e reservas referenciam a variação pelo id, então recriá-las a cada
+	 * edição do produto quebraria esses vínculos. Variação com vendas não pode ser removida.
+	 */
+	private void atualizarVariacoes(Produto atual, List<ProdutoVariacao> recebidas) {
+		Map<Long, ProdutoVariacao> porId = new java.util.HashMap<>();
+		Map<String, ProdutoVariacao> porSku = new java.util.HashMap<>();
+		for (ProdutoVariacao v : atual.getVariacoes()) {
+			porId.put(v.getId(), v);
+			if (v.getSku() != null) {
+				porSku.putIfAbsent(v.getSku(), v);
+			}
+		}
+
+		List<ProdutoVariacao> resultado = new java.util.ArrayList<>();
+		for (ProdutoVariacao v : recebidas) {
+			ProdutoVariacao existente = v.getId() != null ? porId.get(v.getId())
+				: (v.getSku() != null ? porSku.get(v.getSku()) : null);
+			if (existente != null && !resultado.contains(existente)) {
+				existente.setCor(v.getCor());
+				existente.setTamanho(v.getTamanho());
+				existente.setSku(v.getSku());
+				existente.setAdicionalPreco(v.getAdicionalPreco());
+				existente.setEstoque(v.getEstoque());
+				if (v.getImagemUrl() != null) {
+					existente.setImagemUrl(v.getImagemUrl());
+				}
+				resultado.add(existente);
+			} else {
+				v.setId(null);
+				v.setProduto(atual);
+				resultado.add(v);
+			}
+		}
+
+		for (ProdutoVariacao antiga : atual.getVariacoes()) {
+			if (!resultado.contains(antiga)
+					&& (itemPedidoRepository.existsByVariacaoId(antiga.getId())
+						|| reservaEstoqueRepository.existsByVariacaoId(antiga.getId()))) {
+				throw new NegocioException("A variação \"" + EstoqueService.descricao(antiga)
+					+ "\" já foi vendida e não pode ser removida. Zere o estoque dela se não for mais vendida.");
+			}
+		}
+
+		atual.getVariacoes().clear();
+		atual.getVariacoes().addAll(resultado);
+	}
+
 	@Transactional
 	public void excluir(@NonNull Long id) {
 		var p = buscar(id);
+		if (itemPedidoRepository.existsByProdutoId(id)) {
+			throw new NegocioException(
+				"Este produto possui vendas registradas e não pode ser excluído. Zere o estoque para deixar de vendê-lo.");
+		}
 
 		deleteFileQuietly(p.getImagemUrl());
 		p.getGaleria().forEach(img -> deleteFileQuietly(img.getUrl()));

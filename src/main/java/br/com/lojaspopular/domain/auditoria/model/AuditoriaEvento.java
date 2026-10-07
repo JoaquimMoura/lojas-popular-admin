@@ -5,6 +5,7 @@ import java.time.Instant;
 
 import br.com.lojaspopular.domain.auditoria.enums.AuditoriaTipo;
 import br.com.lojaspopular.domain.user.User;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -34,6 +35,12 @@ public class AuditoriaEvento {
   private AuditoriaTipo tipo;
 
   private String descricao;
+
+  /** Entidade afetada (ex.: PEDIDO, CLIENTE, USUARIO), para montar linha do tempo. */
+  @Column(length = 40)
+  private String entidade;
+
+  private Long entidadeId;
 
   private Instant dataEvento = Instant.now();
 

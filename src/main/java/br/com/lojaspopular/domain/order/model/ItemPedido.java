@@ -3,7 +3,9 @@ package br.com.lojaspopular.domain.order.model;
 import java.math.BigDecimal;
 
 import br.com.lojaspopular.domain.catalog.model.Produto;
-import br.com.lojaspopular.domain.payment.enums.PaymentMethod;
+import br.com.lojaspopular.domain.catalog.model.ProdutoVariacao;
+import br.com.lojaspopular.domain.order.enums.ModalidadeItem;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -38,9 +40,33 @@ public class ItemPedido {
   @JoinColumn(name = "produto_id", nullable = false)
   private Produto produto;
 
+  /** Variação vendida (nulo no fluxo legado e em produtos sem variação). */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "variacao_id")
+  private ProdutoVariacao variacao;
+
+  @Column(length = 60)
+  private String skuHistorico;
+
+  @Column(length = 300)
+  private String descricaoHistorica;
+
   private Integer quantidade;
+
+  /** Preço de catálogo (produto + adicional da variação) no momento da venda. */
+  private BigDecimal precoBase;
+
+  /** Preço unitário aplicado (já com a condição de pagamento), preservado no pedido. */
   private BigDecimal precoUnitario;
+
   private BigDecimal total;
+
+  @Enumerated(EnumType.STRING)
+  @Column(length = 20)
+  private ModalidadeItem modalidade;
+
+  /** Custo histórico, quando disponível (o catálogo ainda não guarda custo). */
+  private BigDecimal custoUnitario;
 
   @PrePersist
   public void prePersist() {

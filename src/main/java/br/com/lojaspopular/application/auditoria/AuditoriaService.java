@@ -21,6 +21,10 @@ public class AuditoriaService {
   private final UserRepository userRepo;
 
   public void registrar(AuditoriaTipo tipo, String descricao) {
+    registrar(tipo, descricao, null, null);
+  }
+
+  public void registrar(AuditoriaTipo tipo, String descricao, String entidade, Long entidadeId) {
     User usuario = null;
     try {
       var auth = SecurityContextHolder.getContext().getAuthentication();
@@ -31,11 +35,17 @@ public class AuditoriaService {
 
     AuditoriaEvento evento = AuditoriaEvento.builder()
         .tipo(tipo)
-        .descricao(descricao)
+        .descricao(descricao != null && descricao.length() > 255 ? descricao.substring(0, 255) : descricao)
+        .entidade(entidade)
+        .entidadeId(entidadeId)
         .usuario(usuario)
         .build();
 
     auditoriaRepo.save(evento);
+  }
+
+  public List<AuditoriaEvento> listarPorEntidade(String entidade, Long entidadeId) {
+    return auditoriaRepo.findByEntidadeAndEntidadeIdOrderByDataEventoAsc(entidade, entidadeId);
   }
 
   public List<AuditoriaEvento> listarTodos() {

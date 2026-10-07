@@ -1,0 +1,37 @@
+# Perfil de testes: H2 em memória, sem Flyway (o schema vem das entidades) e sem integrações externas.
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:lojas-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false
+
+security:
+  jwt:
+    secret: teste-teste-teste-teste-teste-teste-teste-teste-0123456789
+
+rabbitmq:
+  host: localhost
+  port: 5672
+  username: guest
+  password: guest
+
+whatsapp:
+  api-key: teste
+
+mercadopago:
+  access-token: teste
+  webhook:
+    secret: teste
+
+cors:
+  allowed-origins:
+    - http://localhost:5173

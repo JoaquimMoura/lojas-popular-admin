@@ -3,6 +3,7 @@ package br.com.lojaspopular.web.catalog.dto;
 import java.math.BigDecimal;
 import java.util.List;
 
+import br.com.lojaspopular.domain.catalog.enums.ModalidadeProduto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -23,7 +24,9 @@ public record ProdutoRequest(
     Integer volumes,
     List<String> diferenciais,
     List<VariacaoRequest> variacoes,
-    Long version
+    Long version,
+    ModalidadeProduto modalidade,
+    Integer prazoEncomendaDias
 ) {
   public record VariacaoRequest(
       String cor,
@@ -31,6 +34,7 @@ public record ProdutoRequest(
       String sku,
       BigDecimal adicionalPreco,
       Integer estoque,
-      String imagemUrl
+      String imagemUrl,
+      Long id
   ) {}
 }

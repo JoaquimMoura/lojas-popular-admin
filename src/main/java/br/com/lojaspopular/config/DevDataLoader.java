@@ -23,6 +23,7 @@ public class DevDataLoader implements CommandLineRunner {
   @Override
   public void run(String... args) {
     seedUser("admin@loja.com",    "123456", Set.of(Role.ADMIN));
+    seedUser("gerente@loja.com",  "123456", Set.of(Role.GERENTE));
     seedUser("vendedor@loja.com", "123456", Set.of(Role.VENDEDOR));
     seedUser("cliente@loja.com",  "123456", Set.of(Role.CLIENTE));
   }
