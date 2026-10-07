@@ -403,6 +403,7 @@ class AtendimentoServiceTest {
 
     // ... mas a ENTREGA ao CLIENTE continua indivisível: sem o restante, a saída é recusada
     expedicao.agendarEntrega(v.id(), LocalDate.now().plusDays(1), PeriodoAgenda.MANHA, null, null);
+    assertThat(vendas.obter(v.id()).acoes().podeRegistrarSaida()).isFalse();   // a tela já mostra o bloqueio
     assertThatThrownBy(() -> expedicao.registrarSaida(v.id(), chave()))
         .isInstanceOf(NegocioException.class).hasMessageContaining("não há entrega parcial");
     assertThat(saldoDe(p).fisico()).isEqualTo(1);

@@ -373,9 +373,12 @@ public class ExpedicaoService {
       return "A regra exige pagamento quitado para a saída e esta venda ainda não está paga.";
     }
     if (p.getSaidaRealizadaEm() == null) {
-      var sem = p.getItens().stream().filter(i -> estoque.reservasDoPedido(p.getId()).stream()
-          .noneMatch(r -> r.getItem().getId().equals(i.getId())
-              && r.getStatus() == br.com.lojaspopular.domain.estoque.enums.StatusReserva.ATIVA))
+      var reservas = estoque.reservasDoPedido(p.getId());
+      // encomenda parcialmente recebida tem reserva apenas das unidades chegadas: a entrega ao cliente exige todas
+      var sem = p.getItens().stream().filter(i -> reservas.stream()
+          .filter(r -> r.getItem().getId().equals(i.getId())
+              && r.getStatus() == br.com.lojaspopular.domain.estoque.enums.StatusReserva.ATIVA)
+          .mapToInt(r -> r.getQuantidade()).sum() < i.getQuantidade())
           .map(i -> i.getDescricaoHistorica()).toList();
       if (!sem.isEmpty()) {
         return "Itens sem reserva ativa (não há entrega parcial): " + String.join("; ", sem) + ".";

@@ -40,7 +40,8 @@ import lombok.RequiredArgsConstructor;
  * (fornecedor, referência, previsão) e o recebimento físico. Nada é enviado ao fornecedor.
  *
  * <p>O recebimento gera a entrada de estoque vinculada à encomenda e, na sequência, a reserva do item
- * (reserva posterior). Para não permitir entrega parcial, o recebimento precisa cobrir a quantidade vendida.
+ * (reserva posterior), de forma progressiva: o fornecedor pode entregar em partes (a entrega parcial ao cliente
+ * é que continua proibida, e é verificada na saída).
  */
 @Service
 @RequiredArgsConstructor
