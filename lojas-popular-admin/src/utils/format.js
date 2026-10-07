@@ -39,7 +39,7 @@ export const ROTULOS = {
     CONFIRMADA: "Confirmada",
     CANCELADA: "Cancelada",
   },
-  pagamento: { NAO_INFORMADO: "Não informado", PENDENTE: "Pendente", PAGO: "Pago" },
+  pagamento: { NAO_INFORMADO: "Não informado", PENDENTE: "Pendente", PARCIAL: "Parcial", PAGO: "Pago" },
   entrega: {
     NAO_INFORMADO: "Não informada",
     NAO_AGENDADA: "Não agendada",
@@ -66,6 +66,7 @@ export const ROTULOS = {
   encomenda: {
     AGUARDANDO_PEDIDO: "Aguardando pedido",
     PEDIDO_REALIZADO: "Pedido realizado",
+    PARCIALMENTE_RECEBIDA: "Parcialmente recebida",
     RECEBIDA: "Recebida",
     CANCELADA: "Cancelada",
   },
@@ -94,6 +95,21 @@ export const ROTULOS = {
   },
   reserva: { ATIVA: "Ativa", LIBERADA: "Liberada", CONSUMIDA: "Consumida" },
   desconto: { PENDENTE: "Pendente", APROVADA: "Aprovada", REJEITADA: "Rejeitada", INVALIDADA: "Invalidada" },
+  recebimento: { REGISTRADO: "Registrado", ESTORNADO: "Estornado" },
+  recebivel: { PREVISTO: "Previsto", LIQUIDADO: "Liquidado", CANCELADO: "Cancelado" },
+  restituicao: { SOLICITADA: "Solicitada", AUTORIZADA: "Autorizada", EFETIVADA: "Efetivada", CANCELADA: "Cancelada" },
+  conta: { ABERTA: "Aberta", PAGA: "Paga", CANCELADA: "Cancelada" },
+  comissao: {
+    PREVISTA: "Prevista",
+    DEVIDA: "Devida",
+    EM_CONTA: "Em conta a pagar",
+    PAGA: "Paga",
+    REVERTIDA: "Revertida",
+    LANCADA: "Lançada",
+    COMPENSADA: "Compensada",
+  },
+  sessaoCaixa: { ABERTA: "Aberto", FECHADA: "Fechado" },
+  fechamento: { APROVADO: "Aprovado", REABERTO: "Reaberto" },
 };
 
 export const COR = {
@@ -104,7 +120,7 @@ export const COR = {
     CONFIRMADA: "success",
     CANCELADA: "danger",
   },
-  pagamento: { NAO_INFORMADO: "secondary", PENDENTE: "warning", PAGO: "success" },
+  pagamento: { NAO_INFORMADO: "secondary", PENDENTE: "warning", PARCIAL: "info", PAGO: "success" },
   entrega: {
     NAO_INFORMADO: "secondary",
     NAO_AGENDADA: "secondary",
@@ -115,7 +131,7 @@ export const COR = {
   },
   entregaRegistro: { AGENDADA: "info", SAIU: "primary", TENTATIVA_FRUSTRADA: "danger", ENTREGUE: "success", CANCELADA: "secondary" },
   eventoEntrega: { AGENDADA: "info", REAGENDADA: "info", SAIDA: "primary", TENTATIVA_FRUSTRADA: "danger", ENTREGUE: "success", CANCELADA: "secondary" },
-  encomenda: { AGUARDANDO_PEDIDO: "warning", PEDIDO_REALIZADO: "info", RECEBIDA: "success", CANCELADA: "secondary" },
+  encomenda: { AGUARDANDO_PEDIDO: "warning", PEDIDO_REALIZADO: "info", PARCIALMENTE_RECEBIDA: "info", RECEBIDA: "success", CANCELADA: "secondary" },
   ocorrencia: { ABERTA: "warning", DEVOLUCAO_RECEBIDA: "info", RESOLVIDA: "success", CANCELADA: "secondary" },
   tipoOcorrencia: { ASSISTENCIA: "secondary", TROCA: "primary", DEVOLUCAO: "dark" },
   condicao: { APTA_REVENDA: "success", NAO_APTA: "danger" },
@@ -125,6 +141,21 @@ export const COR = {
   montagem: { NAO_INFORMADO: "secondary", NAO_AGENDADA: "secondary", AGENDADA: "info", CONCLUIDA: "success", NAO_NECESSARIA: "light" },
   reserva: { ATIVA: "success", LIBERADA: "secondary", CONSUMIDA: "primary" },
   desconto: { PENDENTE: "warning", APROVADA: "success", REJEITADA: "danger", INVALIDADA: "secondary" },
+  recebimento: { REGISTRADO: "success", ESTORNADO: "secondary" },
+  recebivel: { PREVISTO: "warning", LIQUIDADO: "success", CANCELADO: "secondary" },
+  restituicao: { SOLICITADA: "warning", AUTORIZADA: "info", EFETIVADA: "success", CANCELADA: "secondary" },
+  conta: { ABERTA: "warning", PAGA: "success", CANCELADA: "secondary" },
+  comissao: {
+    PREVISTA: "secondary",
+    DEVIDA: "warning",
+    EM_CONTA: "info",
+    PAGA: "success",
+    REVERTIDA: "danger",
+    LANCADA: "primary",
+    COMPENSADA: "dark",
+  },
+  sessaoCaixa: { ABERTA: "success", FECHADA: "secondary" },
+  fechamento: { APROVADO: "success", REABERTO: "warning" },
 };
 
 export const FORMAS = { DINHEIRO: "Dinheiro", PIX: "Pix", CARTAO: "Cartão" };
@@ -142,11 +173,46 @@ export const ARREDONDAMENTOS = {
   DOWN: "Sempre para baixo (trunca)",
   UP: "Sempre para cima",
 };
+export const LIVROS = { CAIXA: "Caixa (dinheiro)", BANCO: "Banco" };
+export const TIPOS_CONTA = { PAGAR: "A pagar", RECEBER: "A receber" };
+export const ORIGENS_LANCAMENTO = {
+  RECEBIMENTO: "Recebimento de venda",
+  LIQUIDACAO_CARTAO: "Liquidação de cartão",
+  RESTITUICAO: "Restituição",
+  PAGAMENTO_CONTA: "Pagamento de conta",
+  RECEBIMENTO_CONTA: "Recebimento de conta",
+  SUPRIMENTO_CAIXA: "Suprimento de caixa",
+  RETIRADA_CAIXA: "Retirada de caixa",
+};
+export const ORIGENS_CONTA = { MANUAL: "Manual", COMISSAO: "Comissão", DIFERENCA_TROCA: "Diferença de troca" };
+export const EVENTOS_CONTA = {
+  CRIADA: "Criada",
+  ALTERADA: "Alterada",
+  PAGA: "Baixada",
+  ESTORNADA: "Baixa estornada",
+  CANCELADA: "Cancelada",
+};
 export const PERFIS = { ADMIN: "Proprietário", GERENTE: "Gerente", VENDEDOR: "Vendedor" };
 
 export const LIMITE_ARQUIVO_MB = 5;
 export function arquivoGrande(arquivo) {
   return !!arquivo && arquivo.size > LIMITE_ARQUIVO_MB * 1024 * 1024;
+}
+
+export function isAdmin(user) {
+  return (user?.roles ?? []).includes("ADMIN");
+}
+
+/** Mês atual em aaaa-mm. */
+export function mesAtual() {
+  return hojeIso().slice(0, 7);
+}
+
+/** aaaa-mm em "mm/aaaa". */
+export function fmtMes(v) {
+  if (!v) return "—";
+  const [a, m] = String(v).slice(0, 7).split("-");
+  return a && m ? `${m}/${a}` : String(v);
 }
 
 export function isGestor(user) {

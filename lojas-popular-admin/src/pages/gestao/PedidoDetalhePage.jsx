@@ -8,6 +8,7 @@ import ConfirmModal from "../../components/gestao/ConfirmModal";
 import { Secao, Linha } from "../../components/gestao/Secao";
 import { EntregaSecao, MontagemSecao } from "../../components/gestao/AtendimentoExpedicao";
 import { EncomendasSecao, MovimentacoesSecao, OcorrenciasSecao } from "../../components/gestao/AtendimentoPosVenda";
+import PagamentoSecao from "../../components/gestao/financeiro/PagamentoSecao";
 import { useAuth } from "../../context/AuthContext";
 import {
   CANAIS,
@@ -349,6 +350,8 @@ export default function PedidoDetalhePage() {
           </Secao>
         </div>
       </div>
+
+      <PagamentoSecao venda={venda} onVenda={setVenda} />
 
       <Secao titulo="Solicitações de desconto">
         {(venda.descontos ?? []).length === 0 ? (

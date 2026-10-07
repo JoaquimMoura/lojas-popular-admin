@@ -4,6 +4,7 @@ import { comercialApi } from "../../services/comercialApi";
 import { useAuth } from "../../context/AuthContext";
 import PendenciasAlert from "../../components/gestao/PendenciasAlert";
 import ErroAlert from "../../components/gestao/ErroAlert";
+import DecisoesFinanceiras from "../../components/gestao/financeiro/DecisoesFinanceiras";
 import { ARREDONDAMENTOS, FORMAS, PERFIS, fmtPercent } from "../../utils/format";
 
 const PERFIS_CANCELAMENTO = ["ADMIN", "GERENTE", "VENDEDOR"];
@@ -129,7 +130,7 @@ export default function ConfiguracaoComercialPage() {
     <div>
       <h3 className="mb-3">Configuração comercial</h3>
 
-      <PendenciasAlert pendencias={cfg?.pendencias} titulo="Pendências de configuração" />
+      <PendenciasAlert pendencias={(cfg?.pendencias ?? []).filter((p) => p.area !== "FINANCEIRO")} titulo="Pendências de configuração" />
       <ErroAlert erro={erro} onClose={() => setErro(null)} />
 
       <form className="card mb-4" onSubmit={salvarConfig}>
@@ -187,6 +188,8 @@ export default function ConfiguracaoComercialPage() {
           </div>
         </div>
       </form>
+
+      <DecisoesFinanceiras key={JSON.stringify(cfg?.financeiro ?? {})} cfg={cfg} ehAdmin={!!ehAdmin} onSalvo={aplicar} />
 
       <div className="card mb-4">
         <div className="card-header">Condições de pagamento</div>

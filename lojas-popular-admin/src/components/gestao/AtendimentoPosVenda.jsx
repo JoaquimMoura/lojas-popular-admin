@@ -242,8 +242,15 @@ export function EncomendasSecao({ venda, gestor }) {
             {e.prazoPadrao && <div className="small text-muted">Prazo padrão: {e.prazoPadrao}</div>}
             <div className="small">
               Reserva: {e.reserva ? <StatusBadge tipo="reserva" valor={e.reserva} /> : "—"}
-              {e.recebidaEm ? ` · Recebida em ${fmtDateTime(e.recebidaEm)} (${e.quantidadeRecebida ?? 0} un.)` : ""}
+              {e.recebidaEm ? ` · Recebida em ${fmtDateTime(e.recebidaEm)}` : ""}
             </div>
+            <div className="small">
+              Vendido: {e.quantidade} · Recebido do fornecedor: {e.quantidadeRecebida ?? 0} · Reservado ao cliente:{" "}
+              {e.quantidadeReservada ?? 0} · Faltante: {e.quantidadeFaltante ?? 0}
+            </div>
+            {e.status === "PARCIALMENTE_RECEBIDA" && (
+              <div className="small text-muted">A entrega ao cliente continua só quando tudo estiver recebido e reservado.</div>
+            )}
             {e.observacao && <div className="small text-muted">{e.observacao}</div>}
           </div>
         ))}

@@ -31,6 +31,14 @@ import AgendaPage from "./pages/gestao/AgendaPage";
 import EncomendasPage from "./pages/gestao/EncomendasPage";
 import PosVendaPage from "./pages/gestao/PosVendaPage";
 import PosVendaDetalhePage from "./pages/gestao/PosVendaDetalhePage";
+import FinanceiroLayout, { FinanceiroIndex } from "./pages/gestao/financeiro/FinanceiroLayout";
+import CaixaPage from "./pages/gestao/financeiro/CaixaPage";
+import ContasPage from "./pages/gestao/financeiro/ContasPage";
+import CartaoPage from "./pages/gestao/financeiro/CartaoPage";
+import ComissoesPage, { MinhasComissoesPage } from "./pages/gestao/financeiro/ComissoesPage";
+import MetasPage, { MinhaMetaPage } from "./pages/gestao/financeiro/MetasPage";
+import FechamentoPage from "./pages/gestao/financeiro/FechamentoPage";
+import RestituicoesPage from "./pages/gestao/financeiro/RestituicoesPage";
 
 function RootLayout() {
   const matches = useMatches();
@@ -135,6 +143,40 @@ export const router = createBrowserRouter([
                 element: (
                   <PrivateRoute roles={["ADMIN", "GERENTE"]}>
                     <PosVendaDetalhePage />
+                  </PrivateRoute>
+                ),
+              },
+              {
+                path: "financeiro",
+                element: (
+                  <PrivateRoute roles={["ADMIN", "GERENTE"]}>
+                    <FinanceiroLayout />
+                  </PrivateRoute>
+                ),
+                children: [
+                  { index: true, element: <FinanceiroIndex /> },
+                  { path: "caixa", element: <CaixaPage /> },
+                  { path: "contas", element: <ContasPage /> },
+                  { path: "cartao", element: <CartaoPage /> },
+                  { path: "comissoes", element: <ComissoesPage /> },
+                  { path: "metas", element: <MetasPage /> },
+                  { path: "fechamento", element: <FechamentoPage /> },
+                  { path: "restituicoes", element: <RestituicoesPage /> },
+                ],
+              },
+              {
+                path: "minhas-comissoes",
+                element: (
+                  <PrivateRoute roles={["ADMIN", "GERENTE", "VENDEDOR"]}>
+                    <MinhasComissoesPage />
+                  </PrivateRoute>
+                ),
+              },
+              {
+                path: "minha-meta",
+                element: (
+                  <PrivateRoute roles={["ADMIN", "GERENTE", "VENDEDOR"]}>
+                    <MinhaMetaPage />
                   </PrivateRoute>
                 ),
               },

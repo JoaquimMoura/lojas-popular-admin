@@ -8,7 +8,7 @@ import StatusBadge from "../../components/gestao/StatusBadge";
 import { useChave } from "../../components/gestao/useChave";
 import { ROTULOS, fmtDate, fmtDateTime } from "../../utils/format";
 
-const ABERTAS = ["AGUARDANDO_PEDIDO", "PEDIDO_REALIZADO"];
+const ABERTAS = ["AGUARDANDO_PEDIDO", "PEDIDO_REALIZADO", "PARCIALMENTE_RECEBIDA"];
 
 function EditarModal({ e, onClose, onSalvo }) {
   const [fornecedor, setFornecedor] = useState(e.fornecedor ?? "");
@@ -51,25 +51,35 @@ function EditarModal({ e, onClose, onSalvo }) {
 }
 
 function ReceberModal({ e, onClose, onRecebida }) {
-  const [qtd, setQtd] = useState(String(e.quantidade));
+  const jaRecebido = e.quantidadeRecebida ?? 0;
+  const restante = Math.max(e.quantidade - jaRecebido, 0);
+  const [qtd, setQtd] = useState(String(restante));
   const chave = useChave();
   const n = Number(qtd);
+  const completa = Number.isInteger(n) && n >= restante;
   return (
     <FormModal titulo={`Receber encomenda #${e.id}`} submitLabel="Registrar recebimento" variant="success" size="md"
-      submitDisabled={!Number.isInteger(n) || n < 1} onClose={onClose}
+      submitDisabled={!Number.isInteger(n) || n < 1 || n > restante} onClose={onClose}
       onSubmit={async () => {
-        const r = await encomendasApi.receber(e.id, n, chave.obter(`${e.id}:${n}`));
+        const r = await encomendasApi.receber(e.id, n, chave.obter(`${e.id}:${jaRecebido}:${n}`));
         chave.limpar();
-        toast.success("Recebimento registrado.");
+        toast.success(completa ? "Recebimento completo registrado." : "Recebimento parcial registrado.");
         onRecebida(r);
       }}>
-      <div className="fw-semibold mb-2">{e.descricao} — vendido: {e.quantidade} un.</div>
-      <div className="alert alert-info">
-        Não há entrega parcial: o recebimento precisa cobrir a quantidade vendida. Ao receber, o sistema gera a
-        entrada no estoque e a reserva do item para este pedido.
+      <div className="fw-semibold mb-2">
+        {e.descricao} — vendido: {e.quantidade} un. · já recebido: {jaRecebido} un. · falta: {restante} un.
       </div>
-      <label className="form-label">Quantidade recebida <span className="text-danger">*</span></label>
-      <input type="number" min="1" className="form-control" value={qtd} onChange={(x) => setQtd(x.target.value)} autoFocus />
+      <div className="alert alert-info">
+        Pode informar menos do que o vendido: o recebimento parcial do <strong>fornecedor</strong> gera a entrada no
+        estoque e reserva as unidades ao cliente aos poucos. Isso <strong>não é entrega parcial ao cliente</strong>: a
+        entrega só continua quando tudo estiver recebido e reservado.
+      </div>
+      <label className="form-label">Quantidade recebida nesta remessa <span className="text-danger">*</span></label>
+      <input type="number" min="1" max={restante} className="form-control" value={qtd}
+        onChange={(x) => setQtd(x.target.value)} autoFocus />
+      <div className={`form-text ${n > restante ? "text-danger" : ""}`}>
+        {n > restante ? `Máximo de ${restante} un. (o que ainda falta).` : completa ? "Completa o pedido do cliente." : `Ficarão faltando ${restante - n} un.`}
+      </div>
     </FormModal>
   );
 }
@@ -159,10 +169,31 @@ export default function EncomendasPage() {
                   </div>
                   {e.prazoPadrao && <div className="small text-muted">Prazo padrão: {e.prazoPadrao}</div>}
                   <div className="small">Reserva: {e.reserva ? <StatusBadge tipo="reserva" valor={e.reserva} /> : "—"}</div>
-                  {e.recebidaEm && (
+                  <div className="small">
+                    Vendido: <strong>{e.quantidade}</strong> · Recebido do fornecedor: <strong>{e.quantidadeRecebida ?? 0}</strong>
+                    {" "}· Reservado ao cliente: <strong>{e.quantidadeReservada ?? 0}</strong>
+                    {" "}· Faltante: <strong className={(e.quantidadeFaltante ?? 0) > 0 ? "text-danger" : ""}>{e.quantidadeFaltante ?? 0}</strong>
+                  </div>
+                  {e.status === "PARCIALMENTE_RECEBIDA" && (
                     <div className="small text-muted">
-                      Recebida em {fmtDateTime(e.recebidaEm)} ({e.quantidadeRecebida ?? 0} un.)
+                      Recebimento parcial do fornecedor: a entrega ao cliente continua só quando tudo estiver recebido e reservado.
                     </div>
+                  )}
+                  {e.recebidaEm && (
+                    <div className="small text-muted">Recebida por completo em {fmtDateTime(e.recebidaEm)}</div>
+                  )}
+                  {(e.recebimentos ?? []).length > 0 && (
+                    <details className="mt-1">
+                      <summary className="small">Histórico de recebimentos ({e.recebimentos.length})</summary>
+                      <ul className="small mb-0 mt-1 ps-3">
+                        {e.recebimentos.map((r) => (
+                          <li key={r.id}>
+                            {r.quantidade} un. em {fmtDateTime(r.recebidoEm)}{r.usuario ? ` por ${r.usuario}` : ""}
+                            {r.observacao ? ` — ${r.observacao}` : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
                   )}
                   {e.observacao && <div className="small text-muted">{e.observacao}</div>}
                   {aberta && (

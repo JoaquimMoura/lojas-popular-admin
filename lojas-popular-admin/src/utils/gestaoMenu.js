@@ -15,6 +15,10 @@ export function gestaoLinks(user) {
   if (gestor) {
     links.push({ to: "/gestao/encomendas", text: "Encomendas" });
     links.push({ to: "/gestao/pos-venda", text: "Pós-venda" });
+    links.push({ to: "/gestao/financeiro", text: "Financeiro" });
+  } else if (roles.includes("VENDEDOR")) {
+    links.push({ to: "/gestao/minhas-comissoes", text: "Minhas comissões" });
+    links.push({ to: "/gestao/minha-meta", text: "Minha meta" });
   }
   if (gestor) links.push({ to: "/gestao/config-comercial", text: "Configuração comercial" });
   if (admin) links.push({ to: "/gestao/usuarios", text: "Usuários" });

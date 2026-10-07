@@ -9,6 +9,7 @@ import ArquivoInput from "../../components/gestao/ArquivoInput";
 import ArquivoLink from "../../components/gestao/ArquivoLink";
 import { Secao, Linha } from "../../components/gestao/Secao";
 import { useChave } from "../../components/gestao/useChave";
+import RestituicaoBloco from "../../components/gestao/financeiro/RestituicaoBloco";
 import { ROTULOS, arquivoGrande, fmtDateTime, fmtMoney } from "../../utils/format";
 
 function EvidenciaModal({ o, onClose, onSalvo }) {
@@ -168,7 +169,7 @@ export default function PosVendaDetalhePage() {
               <Linha rotulo="Quantidade">{o.trocaQuantidade ?? "—"}</Linha>
               <Linha rotulo="Diferença calculada">
                 {fmtMoney(o.diferencaCalculada)}
-                <div className="small text-muted">informativa — nenhum valor é cobrado ou restituído</div>
+                <div className="small text-muted">cálculo informativo — a cobrança ou restituição é feita no bloco financeiro abaixo</div>
               </Linha>
             </Secao>
           )}
@@ -184,6 +185,8 @@ export default function PosVendaDetalhePage() {
           )}
         </div>
       </div>
+
+      <RestituicaoBloco o={o} onFeito={carregar} />
 
       <Secao titulo="Evidências">
         {(o.evidencias ?? []).length === 0 ? (
