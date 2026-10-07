@@ -250,7 +250,7 @@ public class FechamentoService {
       faltantes.add("D06: critério de competência da receita não definido (usada a data de confirmação, apenas de forma provisória).");
     }
     if (semCusto > 0) {
-      faltantes.add(semCusto + " item(ns) vendido(s) sem custo informado: o catálogo ainda não guarda custo de produto.");
+      faltantes.add(semCusto + " item(ns) vendido(s) sem custo histórico: cadastre o custo do produto (vale para vendas futuras) ou informe o custo do item vendido, com motivo. Custos ausentes nunca são tratados como zero.");
     }
     if (cfg.getComissaoPercentual() == null) {
       faltantes.add("D01: percentual de comissão não definido (comissões não apuradas).");

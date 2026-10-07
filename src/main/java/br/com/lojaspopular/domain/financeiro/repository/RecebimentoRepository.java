@@ -18,6 +18,8 @@ public interface RecebimentoRepository extends JpaRepository<Recebimento, Long> 
 
   List<Recebimento> findByPedidoIdOrderByIdAsc(Long pedidoId);
 
+  List<Recebimento> findByDataPagamentoBetweenOrderByIdAsc(java.time.LocalDate de, java.time.LocalDate ate);
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select r from Recebimento r where r.id = :id")
   Optional<Recebimento> findByIdForUpdate(@Param("id") Long id);

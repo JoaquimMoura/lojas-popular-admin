@@ -90,7 +90,7 @@ public class ConfiguracaoComercialService {
           "Valor devido/pago de comissões (permanece apenas como previsão)", fin));
     }
     if (cfg.getCompetenciaReceita() == null) {
-      p.add(new Pendencia("D06", "Critério de competência da receita não definido (e o catálogo ainda não guarda custos).",
+      p.add(new Pendencia("D06", "Critério de competência da receita (por confirmação ou por entrega) não definido.",
           "Resultado definitivo do mês (só é apresentado como provisório)", fin));
     }
     if (cfg.getPerfisRestituicao() == null || cfg.getPerfisRestituicao().isBlank()) {
@@ -120,6 +120,9 @@ public class ConfiguracaoComercialService {
       p.add(new Pendencia("D11", "Nenhuma taxa/prazo de operadora de cartão cadastrada.",
           "Recebimentos em cartão", fin));
     }
+    // D12 é uma proposta em vigor (não bloqueia nada): ADMIN e GERENTE operam o financeiro até a loja aprovar a matriz
+    p.add(new Pendencia("D12", "Permissões financeiras por operação (consultar, receber, pagar, estornar, restituir) ainda são uma proposta: ADMIN e GERENTE.",
+        "Nada (a proposta ADMIN + GERENTE está em vigor até a aprovação; a aprovação do fechamento é só do proprietário)", fin));
     return p;
   }
 

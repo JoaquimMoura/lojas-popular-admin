@@ -65,8 +65,12 @@ public class ItemPedido {
   @Column(length = 20)
   private ModalidadeItem modalidade;
 
-  /** Custo histórico, quando disponível (o catálogo ainda não guarda custo). */
+  /** Custo histórico congelado na confirmação (nulo = custo não informado; nunca é preenchido com zero). */
   private BigDecimal custoUnitario;
+
+  /** CATALOGO (congelado do cadastro de custos) ou MANUAL (informado depois, com motivo e auditoria). */
+  @Column(length = 20)
+  private String custoOrigem;
 
   @PrePersist
   public void prePersist() {

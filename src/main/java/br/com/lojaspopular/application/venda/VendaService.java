@@ -99,6 +99,7 @@ public class VendaService {
   private final PosVendaService posVenda;
   private final ComissaoService comissoes;
   private final RecebimentoService recebimentoService;
+  private final br.com.lojaspopular.application.financeiro.CustoService custos;
 
   // =====================================================================
   // Registro e edição
@@ -321,6 +322,7 @@ public class VendaService {
     p.setStatusComercial(StatusComercial.CONFIRMADA);
     p.setChaveConfirmacao(chave);
     p.setConfirmadoEm(Instant.now());
+    custos.congelar(p);
     comissoes.aoConfirmar(p);
     auditoria.registrar(AuditoriaTipo.VENDA_CONFIRMADA, "Venda #" + p.getId() + " confirmada (total " + p.getTotal() + ")",
         ENTIDADE, p.getId());

@@ -9,6 +9,11 @@ import br.com.lojaspopular.domain.order.model.ItemPedido;
 
 public interface ItemPedidoRepository extends JpaRepository<ItemPedido, Long> {
 
+  /** Itens de vendas confirmadas sem custo histórico (o custo nunca é presumido como zero). */
+  @Query("select i from ItemPedido i join fetch i.pedido p where p.statusComercial = 'CONFIRMADA' "
+      + "and i.custoUnitario is null order by p.id desc")
+  List<ItemPedido> confirmadosSemCusto();
+
   boolean existsByProdutoId(Long produtoId);
 
   boolean existsByVariacaoId(Long variacaoId);
