@@ -4,30 +4,33 @@ import { useAuth } from "../context/AuthContext";
 import { categoriesApi } from "../services/categoriesApi";
 import { storeConfigApi } from "../services/storeConfigApi";
 import WhatsAppButton from "./WhatsAppButton";
+import { gestaoLinks } from "../utils/gestaoMenu";
 import "../styles/navbar.css";
 
 function resolveMenu(user) {
   const roles = user?.roles ?? [];
+  const gestao = gestaoLinks(user);
   if (roles.includes("ADMIN")) {
     return {
       label: "Admin",
       links: [
         { to: "/admin", text: "Dashboard", end: true },
-        { to: "/admin/produtos", text: "Produtos" },
-        { to: "/admin/categorias", text: "Categorias" },
+        { header: "Gestão de vendas" },
+        ...gestao,
+        { header: "Loja" },
         { to: "/admin/fanpage", text: "Fanpage" },
-        { to: "/admin/config", text: "Configuracao da Loja" },
+        { to: "/admin/config", text: "Configuração da Loja" },
+        { to: "/admin/emails", text: "Emails" },
       ],
     };
+  }
+  if (roles.includes("GERENTE")) {
+    return { label: "Gerência", links: gestao };
   }
   if (roles.includes("VENDEDOR")) {
     return {
       label: "Vendedor",
-      links: [
-        { to: "/vendedor", text: "Painel", end: true },
-        { to: "/vendedor/produtos", text: "Produtos" },
-        { to: "/vendedor/categorias", text: "Categorias" },
-      ],
+      links: [{ to: "/vendedor", text: "Painel", end: true }, ...gestao],
     };
   }
   return null;
@@ -150,13 +153,19 @@ export default function NavBar() {
                       {menu.label}
                     </button>
                     <ul className="dropdown-menu dropdown-menu-end">
-                      {menu.links.map((link) => (
-                        <li key={link.to}>
-                          <NavLink className="dropdown-item" to={link.to} end={link.end}>
-                            {link.text}
-                          </NavLink>
-                        </li>
-                      ))}
+                      {menu.links.map((link) =>
+                        link.header ? (
+                          <li key={`h-${link.header}`}>
+                            <h6 className="dropdown-header">{link.header}</h6>
+                          </li>
+                        ) : (
+                          <li key={link.to}>
+                            <NavLink className="dropdown-item" to={link.to} end={link.end}>
+                              {link.text}
+                            </NavLink>
+                          </li>
+                        ),
+                      )}
                     </ul>
                   </li>
                   <li className="nav-item ms-2">

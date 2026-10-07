@@ -12,6 +12,8 @@ const EMPTY = {
   largura: "", altura: "", profundidade: "", peso: "", volumes: "",
   diferenciais: [],
   version: null,
+  modalidade: "PRONTA_ENTREGA",
+  prazoEncomendaDias: "",
 };
 
 /**
@@ -69,6 +71,8 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
         volumes:       String(initial.volumes     ?? ""),
         diferenciais:  initial.diferenciais ?? [],
         version:       initial.version ?? null,
+        modalidade:    initial.modalidade ?? "PRONTA_ENTREGA",
+        prazoEncomendaDias: String(initial.prazoEncomendaDias ?? ""),
       });
       setVariacoes(
         (initial.variacoes ?? []).map(v => ({
@@ -205,7 +209,10 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
       volumes:       n(form.volumes),
       diferenciais:  form.diferenciais,
       version:       form.version,
+      modalidade:    form.modalidade || "PRONTA_ENTREGA",
+      prazoEncomendaDias: n(form.prazoEncomendaDias),
       variacoes: variacoes.map(v => ({
+        id:            v.id ?? null,
         cor:           v.cor || null,
         tamanho:       v.tamanho || null,
         sku:           v.sku || null,
@@ -315,6 +322,20 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
                 <label className="form-label">Estoque <span className="text-danger">*</span></label>
                 <input name="estoque" type="number" min="0" className="form-control"
                   value={form.estoque} onChange={handleChange} required />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label">Modalidade de venda</label>
+                <select name="modalidade" className="form-select" value={form.modalidade} onChange={handleChange}>
+                  <option value="PRONTA_ENTREGA">Pronta entrega</option>
+                  <option value="ENCOMENDA">Encomenda</option>
+                  <option value="AMBAS">Pronta entrega e encomenda</option>
+                </select>
+              </div>
+              <div className="col-md-3">
+                <label className="form-label">Prazo de encomenda (dias)</label>
+                <input name="prazoEncomendaDias" type="number" min="0" className="form-control"
+                  value={form.prazoEncomendaDias} onChange={handleChange} />
+                <div className="form-text">Opcional — prazo ainda a definir.</div>
               </div>
             </div>
           </div>

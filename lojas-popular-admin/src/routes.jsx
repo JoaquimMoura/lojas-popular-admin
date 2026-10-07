@@ -19,6 +19,15 @@ import CategoryProducts from "./pages/CategoryProducts";
 import ProductDetails from "./pages/ProductDetails";
 import CartPage from "./pages/CartPage";
 
+import GestaoLayout from "./pages/gestao/GestaoLayout";
+import PedidosPage from "./pages/gestao/PedidosPage";
+import PedidoDetalhePage from "./pages/gestao/PedidoDetalhePage";
+import NovaVendaPage from "./pages/gestao/NovaVendaPage";
+import ClientesPage from "./pages/gestao/ClientesPage";
+import EstoquePage from "./pages/gestao/EstoquePage";
+import ConfiguracaoComercialPage from "./pages/gestao/ConfiguracaoComercialPage";
+import UsuariosPage from "./pages/gestao/UsuariosPage";
+
 function RootLayout() {
   const matches = useMatches();
   const fullBleed = matches.some((m) => m.handle?.fullBleed);
@@ -68,12 +77,58 @@ export const router = createBrowserRouter([
       },
       {
         path: "vendedor",
-        element: <PrivateRoute roles={["VENDEDOR"]} />,
         handle: { noFooter: true },
         children: [
-          { index: true, element: <VendorDashboard /> },
-          { path: "produtos", element: <ProductsPage /> },
-          { path: "categorias", element: <CategoriesPage /> },
+          {
+            element: <PrivateRoute roles={["VENDEDOR"]} />,
+            children: [{ index: true, element: <VendorDashboard /> }],
+          },
+          {
+            element: <PrivateRoute roles={["VENDEDOR", "GERENTE"]} />,
+            children: [
+              { path: "produtos", element: <ProductsPage /> },
+              { path: "categorias", element: <CategoriesPage /> },
+            ],
+          },
+        ],
+      },
+
+      // gestão de vendas (Etapa 1)
+      {
+        path: "gestao",
+        element: <PrivateRoute roles={["ADMIN", "GERENTE", "VENDEDOR"]} />,
+        handle: { noFooter: true },
+        children: [
+          {
+            element: <GestaoLayout />,
+            children: [
+              { index: true, element: <PedidosPage /> },
+              { path: "pedidos", element: <PedidosPage /> },
+              { path: "pedidos/:id", element: <PedidoDetalhePage /> },
+              { path: "vendas/nova", element: <NovaVendaPage /> },
+              { path: "vendas/:id/editar", element: <NovaVendaPage /> },
+              { path: "clientes", element: <ClientesPage /> },
+              { path: "estoque", element: <EstoquePage /> },
+              { path: "produtos", element: <ProductsPage /> },
+              { path: "categorias", element: <CategoriesPage /> },
+              {
+                path: "config-comercial",
+                element: (
+                  <PrivateRoute roles={["ADMIN", "GERENTE"]}>
+                    <ConfiguracaoComercialPage />
+                  </PrivateRoute>
+                ),
+              },
+              {
+                path: "usuarios",
+                element: (
+                  <PrivateRoute roles={["ADMIN"]}>
+                    <UsuariosPage />
+                  </PrivateRoute>
+                ),
+              },
+            ],
+          },
         ],
       },
     ],

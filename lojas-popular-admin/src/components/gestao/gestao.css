@@ -1,0 +1,18 @@
+/* Área de gestão — ajustes mobile-first sobre o bootstrap */
+.gestao-page .btn { min-height: 44px; }
+.gestao-page .btn-sm { min-height: 36px; }
+.gestao-page .form-control,
+.gestao-page .form-select { min-height: 44px; }
+.gestao-page h3 { color: var(--color-primary-dark); }
+.gestao-page .card-header { background: var(--color-ink); color: var(--color-brand-yellow); font-weight: 600; }
+.gestao-nav .nav-link { color: var(--color-primary); }
+.gestao-nav .nav-link.active { background: var(--color-primary); color: #fff; }
+.gestao-card-link { text-decoration: none; color: inherit; display: block; }
+.gestao-card-link:hover .card { border-color: var(--color-primary); }
+.gestao-step { flex: 1; text-align: center; padding: 8px 4px; font-size: .85rem; border-bottom: 3px solid var(--color-border); color: var(--color-text-muted); }
+.gestao-step.ativo { border-color: var(--color-primary); color: var(--color-primary); font-weight: 700; }
+.gestao-step.feito { border-color: var(--color-brand-yellow-dark); }
+.gestao-timeline { list-style: none; padding-left: 0; margin: 0; border-left: 3px solid var(--color-brand-yellow); }
+.gestao-timeline li { position: relative; padding: 0 0 12px 14px; }
+.gestao-timeline li::before { content: ""; position: absolute; left: -8px; top: 5px; width: 13px; height: 13px; border-radius: 50%; background: var(--color-primary); }
+@media (min-width: 576px) { .w-sm-auto { width: auto !important; } }
