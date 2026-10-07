@@ -284,30 +284,40 @@ def encomendas(c):
     check("vendedor não atualiza encomenda (403)", call("PUT", "/encomendas/%s" % enc["id"], vt, {"fornecedor": "x"})[0] == 403)
     s, b = call("POST", "/encomendas/%s/receber" % enc["id"], gt, {"quantidade": 2})
     check("receber sem Idempotency-Key é recusado (400)", s == 400 and "Idempotency" in str(g(b, "message")), (s, b))
-    s, b = call("POST", "/encomendas/%s/receber" % enc["id"], gt, {"quantidade": 1}, {"Idempotency-Key": L.chave()})
-    check("receber quantidade menor que a vendida é recusado ('cobrir a quantidade vendida')", s == 400 and "cobrir a quantidade vendida" in str(g(b, "message")), (s, b))
     check("receber quantidade zero é recusado (400)", call("POST", "/encomendas/%s/receber" % enc["id"], gt, {"quantidade": 0}, {"Idempotency-Key": L.chave()})[0] == 400)
+    # Recebimento PARCIAL do fornecedor é aceito (Etapa 3): a proibição vale só para a entrega parcial ao cliente
+    pe_ini = fis(c, pe)
+    kp = L.chave()
+    s, b = call("POST", "/encomendas/%s/receber" % enc["id"], gt, {"quantidade": 1}, {"Idempotency-Key": kp})
+    check("recebimento parcial do fornecedor: PARCIALMENTE_RECEBIDA, 1 reservada e 1 faltante",
+          s == 200 and g(b, "status") == "PARCIALMENTE_RECEBIDA" and g(b, "quantidadeReservada") == 1 and g(b, "quantidadeFaltante") == 1, (s, b))
+    check("recebimento parcial: físico +1 e reservado +1 (a unidade chegada não é vendida a outro)",
+          fis(c, pe) == (pe_ini[0] + 1, pe_ini[1] + 1, pe_ini[2]), (pe_ini, fis(c, pe)))
+    s, b = call("POST", "/encomendas/%s/receber" % enc["id"], gt, {"quantidade": 1}, {"Idempotency-Key": kp})
+    check("repetir o recebimento parcial (mesma chave): sem nova entrada", s == 200 and fis(c, pe)[0] == pe_ini[0] + 1, (s, fis(c, pe)))
 
     # saída exige TODOS os itens reservados
     agendar(c, vid)
     d = detalhe(c, vid)
-    check("detalhe: saída bloqueada por item de encomenda sem reserva", "reserva" in str(g(d, "acoes", "bloqueios", "saida")).lower(), g(d, "acoes"))
+    d = detalhe(c, vid)
+    check("detalhe: saída bloqueada enquanto a encomenda não foi recebida por completo",
+          g(d, "acoes", "podeRegistrarSaida") is False and "não há entrega parcial" in str(g(d, "acoes", "bloqueios", "saida")).lower(), g(d, "acoes"))
     s, b = saida(c, vid, L.chave())
-    check("saída com item de encomenda não recebido é recusada (400, sem entrega parcial)",
-          s == 400 and "todos os itens" in str(g(b, "message")) and "encomenda ainda não recebida" in str(g(b, "message")), (s, b))
+    check("saída com encomenda só parcialmente recebida é recusada (400, sem ENTREGA parcial ao cliente)",
+          s == 400 and "não há entrega parcial" in str(g(b, "message")).lower() and "encomenda ainda não recebida por completo" in str(g(b, "message")), (s, b))
     check("nada foi baixado do item pronto", fis(c, pa)[0] == pa0[0], (pa0, fis(c, pa)))
 
     # recebimento completo
-    pe0 = fis(c, pe)
+    pe0 = pe_ini
     k = L.chave()
-    s, b = call("POST", "/encomendas/%s/receber" % enc["id"], gt, {"quantidade": 2}, {"Idempotency-Key": k})
-    check("receber quantidade completa: RECEBIDA e reserva ATIVA", s == 200 and g(b, "status") == "RECEBIDA" and g(b, "reserva") == "ATIVA", (s, b))
+    s, b = call("POST", "/encomendas/%s/receber" % enc["id"], gt, {"quantidade": 1}, {"Idempotency-Key": k})
+    check("receber o restante: RECEBIDA e reserva ATIVA", s == 200 and g(b, "status") == "RECEBIDA" and g(b, "reserva") == "ATIVA", (s, b))
     check("recebimento: físico +2 e reservado +2 do produto encomendado", fis(c, pe) == (pe0[0] + 2, pe0[1] + 2, pe0[2]), (pe0, fis(c, pe)))
     mv = [m for m in movs(c, vid) if m["tipo"] == "ENTRADA_ENCOMENDA"]
-    check("movimentação ENTRADA_ENCOMENDA de +2 registrada", len(mv) == 1 and mv[0]["quantidade"] == 2, mv)
-    s, b = call("POST", "/encomendas/%s/receber" % enc["id"], gt, {"quantidade": 2}, {"Idempotency-Key": k})
+    check("duas movimentações ENTRADA_ENCOMENDA (+1 e +1) registradas", len(mv) == 2 and sorted(m["quantidade"] for m in mv) == [1, 1], mv)
+    s, b = call("POST", "/encomendas/%s/receber" % enc["id"], gt, {"quantidade": 1}, {"Idempotency-Key": k})
     check("repetir o recebimento com a mesma chave: 200 sem nova entrada", s == 200 and fis(c, pe)[0] == pe0[0] + 2, (s, fis(c, pe)))
-    s, b = call("POST", "/encomendas/%s/receber" % enc["id"], gt, {"quantidade": 2}, {"Idempotency-Key": L.chave()})
+    s, b = call("POST", "/encomendas/%s/receber" % enc["id"], gt, {"quantidade": 1}, {"Idempotency-Key": L.chave()})
     check("receber de novo com outra chave é recusado (400)", s == 400, (s, b))
     s, b = call("PUT", "/encomendas/%s" % enc["id"], gt, {"fornecedor": "Outro"})
     check("encomenda recebida não pode mais ser alterada (400)", s == 400, (s, b))

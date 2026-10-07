@@ -184,8 +184,10 @@ def pendencias(adm, ger, v1, cliente, pr):
     s, cfg = call("GET", "/vendas/configuracao", vt)
     cods = sorted({p["codigo"] for p in g(cfg, "pendencias", default=[])})
     check("pendências listadas: D03, D04, D05 e D07", cods == ["D03", "D04", "D05", "D07"], cods)
-    cods_cfg = sorted({p["codigo"] for p in g(call("GET", "/config/comercial", gt)[1], "pendencias", default=[])})
-    check("gerente vê as mesmas pendências na configuração comercial", cods_cfg == cods, cods_cfg)
+    pend_cfg = g(call("GET", "/config/comercial", gt)[1], "pendencias", default=[])
+    cods_cfg = sorted({p["codigo"] for p in pend_cfg if p.get("area") != "FINANCEIRO"})
+    check("gerente vê as mesmas pendências de vendas e atendimento na configuração comercial (as financeiras vêm à parte)",
+          cods_cfg == cods, cods_cfg)
     s, b = call("POST", "/clientes", vt, L.cliente_body("Pendente Val %s" % L.SUFIXO))
     check("cadastrar cliente NÃO é bloqueado pela configuração pendente", s == 200, (s, b))
     check("vitrine/produtos públicos seguem funcionando sem token", call("GET", "/produtos?nome=Produto")[0] == 200)

@@ -226,7 +226,7 @@ def principal():
                 pg_a.wait_for_load_state("networkidle")
                 itens_pend = " ".join(pg_a.locator(".alert-warning li").all_inner_texts())
                 check("%s config: D03/D04/D07 definidos pela interface; D05 segue pendente" % n,
-                      "D05" in itens_pend and not any(x in itens_pend for x in ("D03", "D04", "D07")), itens_pend)
+                      "D05" in itens_pend and not any(x in itens_pend for x in ("D03", "D04")) and "cancelamento" not in itens_pend.lower(), itens_pend)
                 shot(pg_a, "config_comercial")
 
                 # ---------- Etapa 1: venda com desconto acima do limite, aprovação, confirmação, reserva, cancelamento
@@ -408,9 +408,16 @@ def principal():
                 card.get_by_role("button", name="Receber").click()
                 mcampo(pg_g, "Quantidade recebida").fill("1")
                 mbtn(pg_g, "Registrar recebimento").click()
-                pg_g.locator(".modal").get_by_text("cobrir a quantidade vendida").first.wait_for()
-                check("%s recebimento menor que o vendido recusado, com mensagem no modal" % n, True)
-                mcampo(pg_g, "Quantidade recebida").fill("2")
+                fechou(pg_g)
+                pg_g.locator(".badge", has_text="Parcialmente recebida").first.wait_for()
+                check("%s recebimento parcial do fornecedor aceito (Parcialmente recebida)" % n, True)
+                pedido(pg_g, p2)
+                check("%s com a encomenda só parcialmente recebida a saída segue bloqueada (sem entrega parcial)" % n,
+                      pg_g.get_by_role("button", name="Registrar saída").first.is_disabled())
+                ir(pg_g, "/gestao/encomendas")
+                card = pg_g.locator("tr, .card").filter(has_text="#%s" % p2).first
+                card.get_by_role("button", name="Receber").click()
+                mcampo(pg_g, "Quantidade recebida").fill("1")
                 mbtn(pg_g, "Registrar recebimento").click()
                 fechou(pg_g)
                 pedido(pg_g, p2)

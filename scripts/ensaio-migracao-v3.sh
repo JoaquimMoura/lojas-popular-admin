@@ -98,6 +98,20 @@ if [ "$TEM_V4" = "1" ]; then
   confere "estoque físico dos produtos inalterado pela V4" "$ANTES_ESTOQUE_PROD" "$(psql_ -c 'select coalesce(sum(estoque),0) from produtos')"
 fi
 
+# --- Etapa 3 (V5): financeiro. Nada é gerado para vendas antigas; decisões financeiras nascem pendentes (nulas)
+TEM_V5=$(psql_ -c "select count(*) from information_schema.tables where table_schema='public' and table_name='lancamentos_financeiros'")
+if [ "$TEM_V5" = "1" ]; then
+  echo "    -- V5 (recebimentos, caixa, contas, cartão, comissões, metas e fechamento)"
+  for t in encomenda_recebimentos taxas_cartao sessoes_caixa recebimentos recebiveis_cartao contas_financeiras conta_eventos restituicoes lancamentos_financeiros comissoes metas_vendedor fechamentos_mensais; do
+    confere "tabela $t criada e vazia (nenhum recebimento/comissão é inventado para vendas antigas)" "0" "$(psql_ -c "select count(*) from $t")"
+  done
+  confere "decisões financeiras D01/D02/D06/D07/D09/D10 nascem pendentes (nulas)" "0" "$(psql_ -c 'select count(*) from configuracao_comercial where comissao_percentual is not null or comissao_aquisicao is not null or competencia_receita is not null or perfis_reabertura is not null or perfis_restituicao is not null or permite_restituicao is not null or permite_cobranca_diferenca is not null or meta_desconta_devolucoes is not null or fechamento_exige_sem_pendencias is not null')"
+  confere "nenhum pedido antigo recebe status PARCIAL pela V5" "0" "$(psql_ -c "select count(*) from pedidos where status_pagamento = 'PARCIAL'")"
+  confere "estoque físico das variações inalterado pela V5" "$ANTES_ESTOQUE_VAR" "$(psql_ -c 'select coalesce(sum(estoque),0) from produto_variacoes')"
+  confere "PARCIAL aceito em pedidos.status_pagamento" "1" "$(psql_ -c "select count(*) from pg_constraint where conrelid = 'pedidos'::regclass and contype = 'c' and pg_get_constraintdef(oid) like '%PARCIAL%'")"
+  confere "PARCIALMENTE_RECEBIDA aceito em encomendas.status" "1" "$(psql_ -c "select count(*) from pg_constraint where conrelid = 'encomendas'::regclass and contype = 'c' and pg_get_constraintdef(oid) like '%PARCIALMENTE_RECEBIDA%'")"
+fi
+
 echo "==> Pontos de atenção (não são falhas)"
 SEM_SALDO=$(psql_ -c "select count(*) from produto_variacoes v where v.estoque is null")
 echo "    variações sem saldo (não poderão ser vendidas até informar o estoque): $SEM_SALDO"

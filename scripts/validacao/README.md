@@ -17,12 +17,14 @@ e nunca são impressas. `validacao-out/` e `scripts/validacao/.ambiente.env` est
 
 | Arquivo | Para quê |
 |---|---|
-| `ambiente-pg.sh` | `up`/`down`: PostgreSQL 15 descartável, migrações V1..V4, proprietário, catálogo de exemplo |
+| `ambiente-pg.sh` | `up`/`down`: PostgreSQL 15 descartável, migrações V1..V5, proprietário, catálogo de exemplo |
 | `iniciar-app.sh` / `parar-app.sh` | backend (JAR), build do frontend e proxy que emula o Traefik; PIDs em `validacao-out/pids` |
 | `servidor_proxy.js` | proxy em Node puro: `/api` e `/uploads` -> backend; o resto -> build do frontend (fallback SPA) |
 | `lib.py` | módulo comum (HTTP/multipart, verificações, usuários de teste, config comercial, dados de teste) |
 | `api_etapa1.py` | roteiro de API da Etapa 1 (venda com reserva) |
 | `api_etapa2.py` | roteiro de API da Etapa 2 (saída, entrega, montagem, encomendas, inventário, pós-venda, agenda) |
+| `ui_etapa3.py` | navegador (computador e celular) do financeiro: pagamento no pedido, caixa, abas, fechamento, vendedor |
+| `api_etapa3.py` | roteiro de API da Etapa 3 (recebimentos, caixa, contas, cartão, comissões, metas, restituição, fechamento) |
 | `ui_fluxo.py` | roteiro de navegador (Playwright): fluxo completo da Etapa 1 e 2 em computador e celular, mais a vitrine pública |
 
 ## Requisitos
@@ -64,11 +66,13 @@ export LP_ADMIN_EMAIL='dono@example.invalid'
 export LP_ADMIN_PASSWORD='uma-senha-de-teste-aqui'      # não grave em arquivos versionados
 export LP_JAVA_HOME='C:\Program Files\Java\jdk-21'      # se o java do PATH não for 21+
 
-scripts/validacao/ambiente-pg.sh up         # banco descartável, V1..V4, proprietário e catálogo de exemplo
+scripts/validacao/ambiente-pg.sh up         # banco descartável, V1..V5, proprietário e catálogo de exemplo
 scripts/validacao/iniciar-app.sh            # compila e sobe backend + frontend + proxy (http://localhost:4180)
 
 python3 scripts/validacao/api_etapa1.py     # Etapa 1
 python3 scripts/validacao/api_etapa2.py     # Etapa 2
+python3 scripts/validacao/api_etapa3.py     # Etapa 3 (financeiro)
+python3 scripts/validacao/ui_etapa3.py      # navegador: financeiro (Etapa 3)
 python3 scripts/validacao/ui_fluxo.py       # navegador (computador e celular) + vitrine pública
 
 scripts/validacao/parar-app.sh              # encerra backend e proxy
@@ -151,8 +155,8 @@ página inicial) podem aparecer no navegador e não são do sistema.
 3. **Montagem**: concluir exige entrega concluída e evidência; "não necessária" exige motivo e bloqueia novo
    agendamento; cancelar antes da saída encerra entrega e montagem.
 4. **D05 = verdadeiro**: venda não paga tem a saída recusada.
-5. **Encomendas**: `GET /encomendas`, atualizar previsão (atrasada), receber quantidade menor recusado
-   ("cobrir a quantidade vendida"), recebimento completo gera entrada + reserva, idempotência do recebimento,
+5. **Encomendas**: `GET /encomendas`, atualizar previsão (atrasada), recebimento **parcial** do fornecedor aceito
+   (PARCIALMENTE_RECEBIDA, reserva progressiva), saída recusada até o recebimento completo, idempotência do recebimento,
    saída só com **todos** os itens reservados (nada baixado antes do recebimento), cancelamento.
 6. **Inventário**: `POST /estoque/ajustes` (motivo e `Idempotency-Key` obrigatórios, não abaixo do reservado,
    mesma chave idempotente, primeira contagem de saldo nulo), histórico em `/estoque/movimentacoes`.
@@ -163,6 +167,40 @@ página inicial) podem aparecer no navegador e não são do sistema.
 
 Ao final, cada roteiro **restaura a configuração comercial original** (bloco `finally`) e desativa os usuários
 que criou. Condições de pagamento criadas pelo roteiro não podem ser removidas pela API: ficam **inativas**.
+
+### `api_etapa3.py`
+
+Os valores financeiros são de **TESTE** (comissão 5%, aquisição por quitação, competência na confirmação, taxa de
+cartão 4% em 3x com 30/30 dias, perfis e políticas D07/D09/D10 definidos só durante o roteiro) e as decisões
+financeiras originais são **restauradas** ao final.
+
+1. **Decisões financeiras pendentes** (D01, D02, D06, D07, D09, D10 listadas como pendências da área FINANCEIRO),
+   só o proprietário as altera, o vendedor não acessa o financeiro nem vê as pendências financeiras na venda,
+   e com D01 pendente nenhuma comissão é calculada.
+2. **Pix**: `Idempotency-Key` obrigatória, valor acima do saldo recusado, recebimento parcial (`PARCIAL`),
+   repetição com a mesma chave sem duplicar, Pix no BANCO (nunca no caixa), venda quitada não recebe mais,
+   cancelamento bloqueado com recebimento ativo, estorno (motivo obrigatório; repetido é idempotente; outro
+   estorno recusado) e novo recebimento depois do estorno.
+3. **D05 = verdadeiro**: a saída só é aceita com o pagamento **quitado** (parcial não basta).
+4. **Dinheiro e caixa**: sem caixa aberto é recusado; não abre dois caixas; entrada no CAIXA; suprimento
+   idempotente; retirada acima do saldo recusada; fechamento com diferença exige motivo e fica registrado.
+5. **Cartão**: operadora sem taxa (D11) bloqueia; exige o valor total; parcelas com bruto/taxa/líquido e previsão
+   30/60/90; **nenhuma entrada de dinheiro** antes da liquidação; liquidação única (idempotente), divergência
+   registrada sem inventar valor; recebimento com parcela liquidada não é estornado; estorno da liquidação.
+6. **Concorrência** (threads): recebimentos com a mesma chave, recebimentos com chaves diferentes (saldo),
+   estornos e baixas de conta simultâneos.
+7. **Contas**: criação, baixa idempotente por BANCO/CAIXA, estorno com histórico, cancelamento e conta a receber.
+8. **Comissões**: previsão, aquisição por quitação, regra **histórica** (mudar o percentual não altera vendas
+   antigas), pagamento por conta (só o proprietário), reversão por cancelamento, D02 pendente mantém PREVISTA,
+   vendedor lê só a própria.
+9. **Restituição (D09/D07)**: D09 pendente e "não permite" bloqueiam; exige devolução física recebida; limite do
+   item; solicitar → autorizar (não o próprio solicitante) → efetivar uma vez; recebimento restituído não é
+   estornado; reversão proporcional da comissão.
+10. **Metas**: definição pelo gerente, acompanhamento, atingimento **provisório** com D09 pendente, vendedor lê
+    só a própria.
+11. **Fechamento mensal**: prévia sem lucro definitivo e com `faltantes`; caixa e banco separados; mês corrente
+    não aprova; D10 pendente bloqueia; só o proprietário aprova; **lançamentos em período fechado são
+    bloqueados** (recebimento e conta); reabertura com justificativa e D07; nova versão preserva a anterior.
 
 ## Como interpretar a saída
 
@@ -198,9 +236,9 @@ para fora, a pasta de uploads **somente** se ela foi criada por este script (mar
 ## O que NÃO está coberto
 
 - **Dispositivos reais**: o celular é emulado (tamanho de tela e toque) no Chromium; não há Firefox/Safari.
-- **Pagamento quitado** (`statusPagamento = PAGO`) e a regra D05 = verdadeiro com venda paga: a quitação vem do
-  fluxo de pagamento (Etapa 3), que não é simulado; só se verifica a recusa de venda não paga.
-- Cancelamento de venda paga (D07/D09), restituição e crédito de troca (D09 não definida).
+- Pagamento pelo **Mercado Pago** (webhook/PaymentService) não é simulado em ponto a ponto: as regras do
+  `PaymentService` (valor divergente, evento repetido, rejeição não cancela) são cobertas por teste de integração.
+- Crédito/haver de diferença de troca e reposição física automática da troca (não implementados).
 - Concorrência real (requisições simultâneas), carga e desempenho.
 - Migração sobre dados reais de produção: ver `scripts/ensaio-migracao-v3.sh` e `docs/gestao-vendas-etapa1.md`.
 - Pedidos legados (`LEGADO`), pagamentos via Mercado Pago/WhatsApp (as chaves usadas são fictícias; o RabbitMQ

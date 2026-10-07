@@ -20,7 +20,7 @@ A Etapa 1 está concluída; o **ensaio da V3 em cópia do banco de produção se
 
 - **Frete gratuito**: não existe valor de frete na entrega; a resposta traz `frete: "Gratuito"`.
 - **Montagem inclusa**: não existe preço de montagem; a resposta traz "Inclusa, sem cobrança adicional". Nenhum total do pedido muda por entrega ou montagem.
-- **Sem entrega parcial**: há **uma entrega por pedido**, cobrindo todos os itens. A saída exige que **todos** os itens tenham reserva ativa integral; se um item é encomenda ainda não recebida, a saída é recusada e **nada é baixado**. O recebimento de encomenda também precisa cobrir a quantidade vendida.
+- **Sem entrega parcial**: há **uma entrega por pedido**, cobrindo todos os itens. A saída exige que **todos** os itens tenham reserva ativa integral; se um item é encomenda ainda não recebida, a saída é recusada e **nada é baixado**. > **Revisado na Etapa 3**: a proibição vale para a **entrega ao cliente**. O **recebimento parcial do fornecedor é aceito** (entrada de estoque e reserva progressivas); a saída continua só quando todos os itens estão reservados por completo. Ver [gestao-vendas-etapa3.md](gestao-vendas-etapa3.md).
 - **Baixa física na saída** (e não na confirmação): a confirmação continua só reservando.
 
 ## Estados
@@ -65,7 +65,7 @@ Ocorrência: ASSISTENCIA: ABERTA -> RESOLVIDA            TROCA/DEVOLUCAO: ABERTA
 
 **Regras mínimas adotadas e que podem ser alteradas** (não afetam dinheiro; foram necessárias para o fluxo funcionar):
 1. *Comprovação da entrega*: exige **nome de quem recebeu e/ou arquivo** (foto/PDF até 5 MB). A montagem exige **arquivo e/ou descrição** do serviço.
-2. *Recebimento de encomenda*: deve cobrir a quantidade vendida (sem recebimento parcial), para não gerar entrega parcial.
+2. *Recebimento de encomenda* (**revisado na Etapa 3**): a versão original exigia o lote completo, o que confundia recebimento do fornecedor com entrega parcial ao cliente. Agora o fornecedor pode entregar em partes: cada recebimento gera entrada de estoque e reserva até a quantidade vendida; a saída ao cliente segue indivisível.
 3. *Devolução*: só volta ao saldo disponível se a condição física avaliada for **APTA_REVENDA**; "NAO_APTA" exige descrição e fica registrada sem entrada de estoque.
 4. *Quem opera*: saída, entrega, montagem, encomendas, inventário e pós-venda são do **gerente e do proprietário**; o vendedor consulta as próprias vendas, a agenda e os comprovantes das próprias vendas.
 5. *Pós-venda* só depois da entrega concluída; a quantidade devolvida/trocada não pode exceder o vendido.
@@ -117,7 +117,7 @@ Ambiente: PostgreSQL **15.19** com V1 aplicada e V2–V4 pelo Flyway, backend em
 
 Cobertura dos testes automatizados da Etapa 2 (`AtendimentoServiceTest`, `SegurancaApiTest`): saída bloqueada por D05 pendente; D05 verdadeiro exige pagamento; **baixa única** (repetição com a mesma chave e saídas simultâneas em duas threads); sem entrega parcial (item de encomenda sem reserva bloqueia e nada é baixado); saldo físico insuficiente não grava nada; tentativa frustrada, reagendamento sem nova baixa e cancelamento bloqueado após a saída; comprovação e evidência obrigatórias; montagem só após a entrega; encomenda (previsão, recebimento total, reserva posterior, idempotência, cancelamento da venda); saldo nulo orienta a contagem; inventário (motivo, idempotência, respeito às reservas, 1ª contagem); devolução apta/não apta, cota de quantidade, troca com diferença informativa e bloqueio D09, assistência com evidência; arquivos privados (tipo, assinatura, tamanho, path traversal, `/uploads/privado` negado, escopo do vendedor).
 
-No navegador (computador, 1366 px): D05 pendente bloqueia o botão com a explicação; o proprietário define a regra pela tela; **clique duplo em Registrar saída baixa uma vez**; tentativa frustrada → reagendar → nova saída sem nova baixa; conclusão exige comprovação e o comprovante abre pelo endpoint autenticado (HTTP 200); montagem com evidência; devolução apta volta ao estoque e exibe o D09; encomenda com recebimento parcial recusado e **pedido misto bloqueado até a chegada** (depois sai de uma vez); inventário com motivo e histórico; vendedor sem ações de atendimento e sem acesso a Encomendas. No celular (390 px): sem rolagem horizontal em detalhe do pedido, encomendas, pós-venda, estoque, agenda e lista de pedidos.
+No navegador (computador, 1366 px): D05 pendente bloqueia o botão com a explicação; o proprietário define a regra pela tela; **clique duplo em Registrar saída baixa uma vez**; tentativa frustrada → reagendar → nova saída sem nova baixa; conclusão exige comprovação e o comprovante abre pelo endpoint autenticado (HTTP 200); montagem com evidência; devolução apta volta ao estoque e exibe o D09; encomenda com recebimento parcial **aceito (Etapa 3)** e **saída bloqueada até a chegada completa** (depois sai de uma vez); inventário com motivo e histórico; vendedor sem ações de atendimento e sem acesso a Encomendas. No celular (390 px): sem rolagem horizontal em detalhe do pedido, encomendas, pós-venda, estoque, agenda e lista de pedidos.
 
 ### Problemas encontrados e correção
 
@@ -140,7 +140,7 @@ Observação fora do escopo: o navegador registra bloqueios de imagens externas 
 - **Contagem física antes de usar a saída em produção**: variações com saldo nulo não são movimentadas; defina-as por inventário (Estoque). A baixa passa a existir de verdade.
 - **Decisões abertas**: D05 (a saída continua bloqueada até alguém definir), D08 (prazo de encomenda), D09 (restituição/diferença de troca), além de D01/D02/D06/D10 (Etapa 3). As regras mínimas adotadas (acima) devem ser confirmadas pela loja.
 - **Troca**: o sistema registra a ocorrência, recebe a devolução e calcula a diferença, mas **não gera automaticamente a saída do item de reposição nem lança valores** (depende de D09). A reposição física precisa de nova venda/saída manual por enquanto.
-- **Recebimento de encomenda** só aceita o lote completo (evita entrega parcial); se o fornecedor entregar em partes, registrar quando completar.
+- ~~Recebimento de encomenda só aceita o lote completo~~: **resolvido na Etapa 3** (recebimento parcial do fornecedor aceito; entrega parcial ao cliente continua proibida).
 - **Pagamento quitado** só existe pelo fluxo de pagamento existente (Mercado Pago) e pela Etapa 3 (registros manuais): o caminho "D05 = exigir pagamento com venda paga" foi coberto por teste de unidade, não por roteiro de ponta a ponta.
 - Notificações (cliente/vendedor) sobre agendamento, saída e conclusão não foram criadas.
 - Teste em **dispositivo físico** e em outros navegadores não foi feito (celular emulado no Chromium).
