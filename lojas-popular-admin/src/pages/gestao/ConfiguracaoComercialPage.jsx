@@ -51,6 +51,7 @@ export default function ConfiguracaoComercialPage() {
   const [limite, setLimite] = useState("");
   const [arred, setArred] = useState("");
   const [perfis, setPerfis] = useState([]);
+  const [d05, setD05] = useState("null");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [erro, setErro] = useState(null);
@@ -61,6 +62,7 @@ export default function ConfiguracaoComercialPage() {
     setLimite(data.limiteDescontoPercentual ?? "");
     setArred(data.arredondamento ?? "");
     setPerfis(data.perfisCancelamento ?? []);
+    setD05(data.exigePagamentoExpedir === true ? "true" : data.exigePagamentoExpedir === false ? "false" : "null");
   }, []);
 
   useEffect(() => {
@@ -96,6 +98,7 @@ export default function ConfiguracaoComercialPage() {
           limiteDescontoPercentual: limite === "" ? null : Number(limite),
           arredondamento: arred || null,
           perfisCancelamento: perfis,
+          exigePagamentoExpedir: d05 === "true" ? true : d05 === "false" ? false : null,
         }),
       "Configuração salva.",
     );
@@ -149,6 +152,17 @@ export default function ConfiguracaoComercialPage() {
                   <option key={k} value={k}>{v}</option>
                 ))}
               </select>
+            </div>
+            <div className="col-12 col-md-6">
+              <label className="form-label">Pagamento para a saída da entrega (D05)</label>
+              <select className="form-select" value={d05} onChange={(e) => setD05(e.target.value)}>
+                <option value="null">Não definido (saída bloqueada)</option>
+                <option value="true">Exigir pagamento quitado para a saída</option>
+                <option value="false">Não exigir pagamento para a saída</option>
+              </select>
+              <div className="form-text">
+                Enquanto não for definido, o registro de saída das entregas permanece bloqueado.
+              </div>
             </div>
             <div className="col-12">
               <label className="form-label d-block">Perfis autorizados a cancelar vendas</label>

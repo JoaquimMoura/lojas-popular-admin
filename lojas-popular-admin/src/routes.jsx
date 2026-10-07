@@ -27,6 +27,10 @@ import ClientesPage from "./pages/gestao/ClientesPage";
 import EstoquePage from "./pages/gestao/EstoquePage";
 import ConfiguracaoComercialPage from "./pages/gestao/ConfiguracaoComercialPage";
 import UsuariosPage from "./pages/gestao/UsuariosPage";
+import AgendaPage from "./pages/gestao/AgendaPage";
+import EncomendasPage from "./pages/gestao/EncomendasPage";
+import PosVendaPage from "./pages/gestao/PosVendaPage";
+import PosVendaDetalhePage from "./pages/gestao/PosVendaDetalhePage";
 
 function RootLayout() {
   const matches = useMatches();
@@ -109,6 +113,31 @@ export const router = createBrowserRouter([
               { path: "vendas/:id/editar", element: <NovaVendaPage /> },
               { path: "clientes", element: <ClientesPage /> },
               { path: "estoque", element: <EstoquePage /> },
+              { path: "agenda", element: <AgendaPage /> },
+              {
+                path: "encomendas",
+                element: (
+                  <PrivateRoute roles={["ADMIN", "GERENTE"]}>
+                    <EncomendasPage />
+                  </PrivateRoute>
+                ),
+              },
+              {
+                path: "pos-venda",
+                element: (
+                  <PrivateRoute roles={["ADMIN", "GERENTE"]}>
+                    <PosVendaPage />
+                  </PrivateRoute>
+                ),
+              },
+              {
+                path: "pos-venda/:id",
+                element: (
+                  <PrivateRoute roles={["ADMIN", "GERENTE"]}>
+                    <PosVendaDetalhePage />
+                  </PrivateRoute>
+                ),
+              },
               { path: "produtos", element: <ProductsPage /> },
               { path: "categorias", element: <CategoriesPage /> },
               {

@@ -7,10 +7,15 @@ export function gestaoLinks(user) {
     { to: "/gestao/pedidos", text: "Pedidos" },
     { to: "/gestao/vendas/nova", text: "Nova venda" },
     { to: "/gestao/clientes", text: "Clientes" },
+    { to: "/gestao/agenda", text: "Agenda" },
     { to: "/gestao/estoque", text: "Estoque" },
     { to: "/gestao/produtos", text: "Produtos" },
     { to: "/gestao/categorias", text: "Categorias" },
   ];
+  if (gestor) {
+    links.push({ to: "/gestao/encomendas", text: "Encomendas" });
+    links.push({ to: "/gestao/pos-venda", text: "Pós-venda" });
+  }
   if (gestor) links.push({ to: "/gestao/config-comercial", text: "Configuração comercial" });
   if (admin) links.push({ to: "/gestao/usuarios", text: "Usuários" });
   return links;

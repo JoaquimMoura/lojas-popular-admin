@@ -5,6 +5,10 @@ import { vendasApi } from "../../services/vendasApi";
 import StatusBadge from "../../components/gestao/StatusBadge";
 import ErroAlert from "../../components/gestao/ErroAlert";
 import ConfirmModal from "../../components/gestao/ConfirmModal";
+import { Secao, Linha } from "../../components/gestao/Secao";
+import { EntregaSecao, MontagemSecao } from "../../components/gestao/AtendimentoExpedicao";
+import { EncomendasSecao, MovimentacoesSecao, OcorrenciasSecao } from "../../components/gestao/AtendimentoPosVenda";
+import { useAuth } from "../../context/AuthContext";
 import {
   CANAIS,
   FORMAS,
@@ -13,29 +17,14 @@ import {
   fmtDateTime,
   fmtMoney,
   fmtPercent,
+  isGestor,
   novaChave,
 } from "../../utils/format";
 
-function Secao({ titulo, children }) {
-  return (
-    <div className="card mb-3">
-      <div className="card-header">{titulo}</div>
-      <div className="card-body">{children}</div>
-    </div>
-  );
-}
-
-function Linha({ rotulo, children }) {
-  return (
-    <div className="d-flex justify-content-between gap-3 py-1">
-      <span className="text-muted">{rotulo}</span>
-      <span className="text-end">{children}</span>
-    </div>
-  );
-}
-
 export default function PedidoDetalhePage() {
   const { id } = useParams();
+  const { user } = useAuth();
+  const gestor = isGestor(user);
   const [venda, setVenda] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -77,6 +66,15 @@ export default function PedidoDetalhePage() {
       return false;
     } finally {
       setBusy(false);
+    }
+  }
+
+  // Recarrega o pedido sem tela de carregamento (ex.: após abrir uma ocorrência).
+  async function carregarSilencioso() {
+    try {
+      setVenda(await vendasApi.obter(id));
+    } catch (err) {
+      setErroAcao(err);
     }
   }
 
@@ -213,8 +211,10 @@ export default function PedidoDetalhePage() {
           )}
 
           {!acoes.podeEditar && !acoes.podeConfirmar && !acoes.podeCancelar && !acoes.podeAprovarDesconto &&
-            Object.keys(bloq).length === 0 && (
-              <span className="text-muted">Nenhuma ação disponível para este pedido.</span>
+            !bloq.confirmar && !bloq.cancelar && !bloq.aprovarDesconto && (
+              <span className="text-muted">
+                Nenhuma ação geral neste momento. Entrega, montagem e pós-venda estão nas seções abaixo.
+              </span>
             )}
         </div>
       </div>
@@ -234,7 +234,7 @@ export default function PedidoDetalhePage() {
           </Secao>
         </div>
         <div className="col-lg-6">
-          <Secao titulo="Entrega">
+          <Secao titulo="Tipo e endereço de entrega">
             <Linha rotulo="Tipo">{TIPOS_ENTREGA[venda.tipoEntrega] ?? venda.tipoEntrega ?? "—"}</Linha>
             {venda.tipoEntrega === "ENTREGA" && (
               end ? (
@@ -395,12 +395,13 @@ export default function PedidoDetalhePage() {
             )}
           </Secao>
         </div>
-        <div className="col-lg-6">
-          <Secao titulo="Ocorrências de pós-venda">
-            <div className="text-muted">Disponível na Etapa 2.</div>
-          </Secao>
-        </div>
       </div>
+
+      <EntregaSecao venda={venda} onVenda={setVenda} gestor={gestor} />
+      <MontagemSecao venda={venda} onVenda={setVenda} gestor={gestor} />
+      <EncomendasSecao venda={venda} gestor={gestor} />
+      <OcorrenciasSecao venda={venda} gestor={gestor} onNovaOcorrencia={carregarSilencioso} />
+      <MovimentacoesSecao venda={venda} />
 
       <ConfirmModal
         open={modal === "cancelar"}

@@ -17,4 +17,23 @@ export const vendasApi = {
     api.post(`/vendas/${id}/desconto/aprovar`, { motivo: motivo || null }).then((r) => r.data),
   rejeitarDesconto: (id, motivo) =>
     api.post(`/vendas/${id}/desconto/rejeitar`, { motivo: motivo || null }).then((r) => r.data),
+
+  // Etapa 2: entrega, montagem e pós-venda (as respostas são o detalhe da venda)
+  agendarEntrega: (id, body) => api.post(`/vendas/${id}/entrega/agendar`, body).then((r) => r.data),
+  reagendarEntrega: (id, body) => api.post(`/vendas/${id}/entrega/reagendar`, body).then((r) => r.data),
+  registrarSaida: (id, chave) =>
+    api.post(`/vendas/${id}/saida`, null, { headers: { "Idempotency-Key": chave } }).then((r) => r.data),
+  tentativaFrustrada: (id, body) =>
+    api.post(`/vendas/${id}/entrega/tentativa-frustrada`, body).then((r) => r.data),
+  concluirEntrega: (id, formData) =>
+    api
+      .post(`/vendas/${id}/entrega/concluir`, formData, { headers: { "Content-Type": "multipart/form-data" } })
+      .then((r) => r.data),
+  agendarMontagem: (id, body) => api.post(`/vendas/${id}/montagem/agendar`, body).then((r) => r.data),
+  concluirMontagem: (id, formData) =>
+    api
+      .post(`/vendas/${id}/montagem/concluir`, formData, { headers: { "Content-Type": "multipart/form-data" } })
+      .then((r) => r.data),
+  montagemNaoNecessaria: (id, body) => api.post(`/vendas/${id}/montagem/nao-necessaria`, body).then((r) => r.data),
+  abrirOcorrencia: (id, body) => api.post(`/vendas/${id}/ocorrencias`, body).then((r) => r.data),
 };
