@@ -47,6 +47,12 @@ public class ConfiguracaoComercial {
   @Column(length = 100)
   private String perfisCancelamento;
 
+  /**
+   * D05 — se o pagamento precisa estar quitado para a saída (baixa de estoque).
+   * Nulo = decisão pendente: a saída fica bloqueada. Não se presume quitação pela forma de pagamento.
+   */
+  private Boolean exigePagamentoExpedir;
+
   private Instant atualizadoEm;
 
   @ManyToOne(fetch = FetchType.LAZY)

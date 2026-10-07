@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.lojaspopular.application.auditoria.AuditoriaService;
-import br.com.lojaspopular.domain.auditoria.model.AuditoriaEvento;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -19,7 +18,7 @@ public class AuditoriaController {
 	private final AuditoriaService auditoriaService;
 
 	@GetMapping
-	public ResponseEntity<List<AuditoriaEvento>> listar() {
-		return ResponseEntity.ok(auditoriaService.listarTodos());
+	public ResponseEntity<List<AuditoriaService.EventoView>> listar() {
+		return ResponseEntity.ok(auditoriaService.listarEventos());
 	}
 }

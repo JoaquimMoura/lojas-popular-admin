@@ -25,6 +25,12 @@ spring:
     baseline-on-migrate: true
     default-schema: public
 
+  servlet:
+    multipart:
+      # Comprovantes e evidencias (foto/PDF) de ate 5 MB; o limite padrao do Spring e 1 MB
+      max-file-size: 6MB
+      max-request-size: 8MB
+
   # RabbitMQ desligado por enquanto (notificação WhatsApp inativa) — evita
   # tentativa de conexão/retry e o log repetido de "Connection refused".
   rabbitmq:

@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 public class ConfiguracaoComercialController {
 
   public record ConfiguracaoRequest(BigDecimal limiteDescontoPercentual, Arredondamento arredondamento,
-      Set<Role> perfisCancelamento) {
+      Set<Role> perfisCancelamento, Boolean exigePagamentoExpedir) {
   }
 
   public record CondicaoRequest(
@@ -51,7 +51,8 @@ public class ConfiguracaoComercialController {
   }
 
   public record ConfiguracaoResponse(BigDecimal limiteDescontoPercentual, Arredondamento arredondamento,
-      Set<Role> perfisCancelamento, List<Pendencia> pendencias, List<CondicaoResponse> condicoes) {
+      Set<Role> perfisCancelamento, Boolean exigePagamentoExpedir, List<Pendencia> pendencias,
+      List<CondicaoResponse> condicoes) {
   }
 
   private final ConfiguracaoComercialService service;
@@ -63,7 +64,8 @@ public class ConfiguracaoComercialController {
 
   @PutMapping
   public ConfiguracaoResponse atualizar(@RequestBody ConfiguracaoRequest req) {
-    service.atualizar(req.limiteDescontoPercentual(), req.arredondamento(), req.perfisCancelamento());
+    service.atualizar(req.limiteDescontoPercentual(), req.arredondamento(), req.perfisCancelamento(),
+        req.exigePagamentoExpedir());
     return resposta();
   }
 
@@ -81,7 +83,7 @@ public class ConfiguracaoComercialController {
   private ConfiguracaoResponse resposta() {
     var cfg = service.obter();
     return new ConfiguracaoResponse(cfg.getLimiteDescontoPercentual(), cfg.getArredondamento(),
-        service.perfisCancelamento(), service.pendencias(),
+        service.perfisCancelamento(), cfg.getExigePagamentoExpedir(), service.pendencias(),
         service.listarCondicoes(false).stream().map(this::toResponse).toList());
   }
 

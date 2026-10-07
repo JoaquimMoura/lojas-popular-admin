@@ -43,6 +43,8 @@ public class SecurityConfig {
             .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .requestMatchers("/h2-console/**").permitAll()
+            // Comprovantes e evidências (entrega, montagem, pós-venda) só saem pelo endpoint autenticado
+            .requestMatchers("/uploads/privado/**").denyAll()
             .requestMatchers("/uploads/**").permitAll()
             .requestMatchers("/categorias/**").permitAll()
 
@@ -52,8 +54,10 @@ public class SecurityConfig {
             .requestMatchers("/api/v1/auditoria/**").hasRole("ADMIN")
             .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/vendedores").hasAnyRole("ADMIN", "GERENTE", "VENDEDOR")
             .requestMatchers("/api/v1/usuarios/**").hasRole("ADMIN")
-            .requestMatchers("/api/v1/config/comercial/**").hasAnyRole("ADMIN", "GERENTE")
-            .requestMatchers("/api/v1/clientes/**", "/api/v1/vendas/**", "/api/v1/estoque/**")
+            .requestMatchers("/api/v1/config/comercial/**", "/api/v1/encomendas/**", "/api/v1/ocorrencias/**")
+                .hasAnyRole("ADMIN", "GERENTE")
+            .requestMatchers("/api/v1/clientes/**", "/api/v1/vendas/**", "/api/v1/estoque/**", "/api/v1/agenda/**",
+                "/api/v1/arquivos/**")
                 .hasAnyRole("ADMIN", "GERENTE", "VENDEDOR")
             .requestMatchers("/api/v1/fanpage/**").hasRole("ADMIN")
             .requestMatchers("/api/v1/produtos/**", "/api/v1/categorias/**").hasAnyRole("ADMIN", "GERENTE", "VENDEDOR")

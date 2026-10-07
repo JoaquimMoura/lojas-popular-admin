@@ -5,5 +5,6 @@ public enum StatusEntrega {
   NAO_AGENDADA,
   AGENDADA,
   SAIU,
+  TENTATIVA_FRUSTRADA,
   ENTREGUE
 }

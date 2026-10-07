@@ -69,6 +69,10 @@ public class ConfiguracaoComercialService {
     if (cfg.getPerfisCancelamento() == null || cfg.getPerfisCancelamento().isBlank()) {
       p.add(new Pendencia("D07", "Perfis autorizados a cancelar vendas não definidos.", "Cancelamento de vendas"));
     }
+    if (cfg.getExigePagamentoExpedir() == null) {
+      p.add(new Pendencia("D05", "Regra de pagamento exigido para a saída (expedição) não definida.",
+          "Saída de mercadoria (baixa de estoque)"));
+    }
     return p;
   }
 
@@ -126,6 +130,18 @@ public class ConfiguracaoComercialService {
     return perfis;
   }
 
+  /** Regra de pagamento para expedir; bloqueia a saída enquanto não definida (D05). */
+  @Transactional
+  public boolean exigirRegraPagamentoExpedir() {
+    var regra = obter().getExigePagamentoExpedir();
+    if (regra == null) {
+      throw new ConfiguracaoPendenteException(
+          "Configuração pendente (D05): defina se o pagamento precisa estar quitado para a saída da mercadoria.",
+          descricoes("D05"));
+    }
+    return regra;
+  }
+
   @Transactional
   public Set<Role> perfisCancelamento() {
     String csv = obter().getPerfisCancelamento();
@@ -139,9 +155,16 @@ public class ConfiguracaoComercialService {
         .collect(Collectors.toCollection(() -> EnumSet.noneOf(Role.class)));
   }
 
+  /** Mantém a regra D05 como está (compatível com chamadas anteriores à Etapa 2). */
   @Transactional
   public ConfiguracaoComercial atualizar(BigDecimal limiteDesconto, Arredondamento arredondamento,
       Set<Role> perfisCancelamento) {
+    return atualizar(limiteDesconto, arredondamento, perfisCancelamento, obter().getExigePagamentoExpedir());
+  }
+
+  @Transactional
+  public ConfiguracaoComercial atualizar(BigDecimal limiteDesconto, Arredondamento arredondamento,
+      Set<Role> perfisCancelamento, Boolean exigePagamentoExpedir) {
     User ator = usuarioAtual.get();
     var cfg = obter();
 
@@ -163,6 +186,7 @@ public class ConfiguracaoComercialService {
 
     cfg.setLimiteDescontoPercentual(limiteDesconto == null ? null : limiteDesconto.setScale(2, java.math.RoundingMode.HALF_UP));
     cfg.setArredondamento(arredondamento);
+    cfg.setExigePagamentoExpedir(exigePagamentoExpedir);
     cfg.setPerfisCancelamento(csvNovo);
     cfg.setAtualizadoEm(Instant.now());
     cfg.setAtualizadoPor(ator);
@@ -170,7 +194,8 @@ public class ConfiguracaoComercialService {
     auditoria.registrar(AuditoriaTipo.CONFIG_COMERCIAL_ALTERADA,
         "Configuração comercial: limite de desconto=" + salvo.getLimiteDescontoPercentual()
             + ", arredondamento=" + salvo.getArredondamento()
-            + ", perfis de cancelamento=" + salvo.getPerfisCancelamento(),
+            + ", perfis de cancelamento=" + salvo.getPerfisCancelamento()
+            + ", pagamento exigido para expedir=" + salvo.getExigePagamentoExpedir(),
         "CONFIG_COMERCIAL", ConfiguracaoComercial.ID_UNICO);
     return salvo;
   }

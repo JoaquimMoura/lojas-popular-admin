@@ -152,6 +152,12 @@ public class Pedido {
 	private String chaveConfirmacao;
 
 	private Instant confirmadoEm;
+
+	/** Momento da baixa física de estoque (saída). Depois dela a venda não pode mais ser cancelada. */
+	private Instant saidaRealizadaEm;
+
+	@Column(length = 80)
+	private String chaveSaida;
 	private Instant canceladoEm;
 
 	@ManyToOne(fetch = FetchType.LAZY)

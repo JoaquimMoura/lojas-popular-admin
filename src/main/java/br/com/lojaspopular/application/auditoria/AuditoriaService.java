@@ -48,6 +48,20 @@ public class AuditoriaService {
     return auditoriaRepo.findByEntidadeAndEntidadeIdOrderByDataEventoAsc(entidade, entidadeId);
   }
 
+  /** Eventos já convertidos (o usuário é lido dentro da transação). */
+  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  public List<EventoView> listarEventos() {
+    return auditoriaRepo.findAllByOrderByDataEventoDesc().stream()
+        .map(e -> new EventoView(e.getId(), e.getTipo() == null ? null : e.getTipo().name(), e.getDescricao(),
+            e.getEntidade(), e.getEntidadeId(), e.getDataEvento(),
+            e.getUsuario() == null ? null : e.getUsuario().getEmail()))
+        .toList();
+  }
+
+  public record EventoView(Long id, String tipo, String descricao, String entidade, Long entidadeId,
+      java.time.Instant dataEvento, String usuario) {
+  }
+
   public List<AuditoriaEvento> listarTodos() {
     return auditoriaRepo.findAllByOrderByDataEventoDesc();
   }

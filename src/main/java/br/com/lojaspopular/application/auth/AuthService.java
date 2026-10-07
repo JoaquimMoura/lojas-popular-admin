@@ -11,6 +11,7 @@ import br.com.lojaspopular.application.auditoria.AuditoriaService;
 import br.com.lojaspopular.domain.auditoria.enums.AuditoriaTipo;
 import br.com.lojaspopular.domain.user.User;
 import br.com.lojaspopular.domain.user.UserRepository;
+import br.com.lojaspopular.exception.CredenciaisInvalidasException;
 import br.com.lojaspopular.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,16 +38,16 @@ public class AuthService {
 
   public Tokens login(String email, String rawPassword) {
     var user = userRepository.findByEmail(email)
-        .orElseThrow(() -> new IllegalArgumentException("Credenciais invalidas"));
+        .orElseThrow(() -> new CredenciaisInvalidasException("Credenciais invalidas"));
 
     if (!user.isEnabled()) {
-      throw new IllegalArgumentException("Credenciais invalidas");
+      throw new CredenciaisInvalidasException("Credenciais invalidas");
     }
 
     log.info("Validando senha para usuario {}", email);
 
     if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
-      throw new IllegalArgumentException("Credenciais invalidas");
+      throw new CredenciaisInvalidasException("Credenciais invalidas");
     }
 
     var tokens = generateTokens(user);
@@ -58,15 +59,15 @@ public class AuthService {
     var jws = jwtUtil.parse(refreshToken);
 
     if (!"refresh".equals(jws.getBody().get("typ"))) {
-      throw new IllegalArgumentException("Token invalido");
+      throw new CredenciaisInvalidasException("Token invalido");
     }
 
     String email = jws.getBody().getSubject();
 
     var user = userRepository.findByEmail(email)
-        .orElseThrow(() -> new IllegalArgumentException("Usuario invalido"));
+        .orElseThrow(() -> new CredenciaisInvalidasException("Usuario invalido"));
     if (!user.isEnabled()) {
-      throw new IllegalArgumentException("Usuario invalido");
+      throw new CredenciaisInvalidasException("Usuario invalido");
     }
 
     return generateTokens(user);

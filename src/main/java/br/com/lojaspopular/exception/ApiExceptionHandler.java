@@ -53,6 +53,18 @@ public class ApiExceptionHandler {
   }
 
   /**
+   * Credenciais ou token inválidos no login/renovação (401, não 500).
+   */
+  @ExceptionHandler(CredenciaisInvalidasException.class)
+  public ResponseEntity<?> handleCredenciais(CredenciaisInvalidasException ex) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+        "timestamp", Instant.now().toString(),
+        "status", 401,
+        "error", "Unauthorized",
+        "message", "E-mail ou senha inválidos."));
+  }
+
+  /**
    * Função bloqueada por configuração comercial pendente (422).
    */
   @ExceptionHandler(ConfiguracaoPendenteException.class)

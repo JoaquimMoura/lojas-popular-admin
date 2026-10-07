@@ -17,7 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.lojaspopular.application.auditoria.AuditoriaService;
 import br.com.lojaspopular.application.auth.UsuarioAtual;
 import br.com.lojaspopular.application.comercial.ConfiguracaoComercialService;
+import br.com.lojaspopular.application.encomenda.EncomendaService;
 import br.com.lojaspopular.application.estoque.EstoqueService;
+import br.com.lojaspopular.application.expedicao.ExpedicaoService;
+import br.com.lojaspopular.application.posvenda.PosVendaService;
 import br.com.lojaspopular.domain.auditoria.enums.AuditoriaTipo;
 import br.com.lojaspopular.domain.catalog.enums.PedidoStatus;
 import br.com.lojaspopular.domain.catalog.model.Produto;
@@ -31,6 +34,8 @@ import br.com.lojaspopular.domain.comercial.enums.StatusSolicitacaoDesconto;
 import br.com.lojaspopular.domain.comercial.model.SolicitacaoDesconto;
 import br.com.lojaspopular.domain.comercial.repository.SolicitacaoDescontoRepository;
 import br.com.lojaspopular.domain.estoque.enums.StatusReserva;
+import br.com.lojaspopular.domain.expedicao.enums.StatusEntregaRegistro;
+import br.com.lojaspopular.domain.expedicao.enums.StatusMontagemRegistro;
 import br.com.lojaspopular.domain.estoque.model.ReservaEstoque;
 import br.com.lojaspopular.domain.order.enums.ModalidadeItem;
 import br.com.lojaspopular.domain.order.enums.StatusComercial;
@@ -86,6 +91,10 @@ public class VendaService {
   private final EstoqueService estoque;
   private final AuditoriaService auditoria;
   private final UsuarioAtual usuarioAtual;
+  private final VendaAcesso acesso;
+  private final EncomendaService encomendas;
+  private final ExpedicaoService expedicao;
+  private final PosVendaService posVenda;
 
   // =====================================================================
   // Registro e edição
@@ -303,6 +312,7 @@ public class VendaService {
     conferirPrecos(p);
     exigirDescontoAutorizado(p);
     estoque.reservar(p);
+    encomendas.criarParaPedido(p);
 
     p.setStatusComercial(StatusComercial.CONFIRMADA);
     p.setChaveConfirmacao(chave);
@@ -330,9 +340,9 @@ public class VendaService {
     if (autorizados.stream().noneMatch(r -> UsuarioAtual.tem(ator, r))) {
       throw new AccessDeniedException("Seu perfil não está autorizado a cancelar vendas.");
     }
-    if (p.getStatusEntrega() == StatusEntrega.SAIU || p.getStatusEntrega() == StatusEntrega.ENTREGUE) {
+    if (p.getSaidaRealizadaEm() != null) {
       throw new NegocioException(
-          "O produto já saiu para entrega/retirada: não é possível cancelar. Registre uma devolução.");
+          "O produto já saiu para entrega/retirada: não é possível cancelar. Registre uma devolução em Pós-venda.");
     }
     if (p.getStatusPagamento() == StatusPagamento.PAGO) {
       throw new NegocioException(
@@ -341,6 +351,8 @@ public class VendaService {
     }
 
     estoque.liberar(p, "Cancelamento da venda: " + motivo.trim());
+    encomendas.cancelarDoPedido(p);
+    expedicao.cancelarDoPedido(p, ator);
     invalidar(descontoRepo.findByPedidoIdAndStatusIn(p.getId(),
         EnumSet.of(StatusSolicitacaoDesconto.PENDENTE, StatusSolicitacaoDesconto.APROVADA)), null, p);
     p.setStatusComercial(StatusComercial.CANCELADA);
@@ -493,15 +505,11 @@ public class VendaService {
   }
 
   private BigDecimal precoBase(Produto produto, ProdutoVariacao variacao) {
-    BigDecimal base = produto.getPreco();
-    if (variacao != null && variacao.getAdicionalPreco() != null) {
-      base = base.add(variacao.getAdicionalPreco());
-    }
-    return base.setScale(2, RoundingMode.HALF_UP);
+    return Precos.base(produto, variacao);
   }
 
   static BigDecimal aplicar(BigDecimal base, BigDecimal ajustePercentual, Arredondamento arred) {
-    return base.multiply(CEM.add(ajustePercentual)).divide(CEM, 2, arred.mode());
+    return Precos.aplicar(base, ajustePercentual, arred);
   }
 
   private static BigDecimal percentual(BigDecimal desconto, BigDecimal subtotal) {
@@ -562,19 +570,12 @@ public class VendaService {
 
   /** Carrega o pedido com lock de escrita (serializa confirmação/cancelamento/edição) e confere o acesso. */
   private Pedido travar(Long id, User ator) {
-    Pedido p = pedidoRepo.findByIdForUpdate(id).orElseThrow(() -> new NotFoundException("Venda não encontrada"));
-    verificarAcesso(p, ator);
-    return p;
+    return acesso.travar(id, ator);
   }
 
   /** Gerente/proprietário veem tudo; vendedor só as vendas em que é o responsável. */
   private void verificarAcesso(Pedido p, User ator) {
-    if (UsuarioAtual.isGestor(ator)) {
-      return;
-    }
-    if (p.getVendedor() == null || !p.getVendedor().getId().equals(ator.getId())) {
-      throw new NotFoundException("Venda não encontrada");
-    }
+    acesso.verificar(p, ator);
   }
 
   private static String limpar(String s) {
@@ -630,7 +631,8 @@ public class VendaService {
         p.getTipoEntrega(), endereco, p.getFormaPagamento(), p.getParcelas(), p.getAjusteCondicaoPercentual(),
         p.getSubtotal(), p.getDesconto(), p.getFrete(), p.getTotal(), p.getObservacao(), p.getCriadoEm(),
         p.getConfirmadoEm(), p.getCanceladoEm(), p.getMotivoCancelamento(), itens, reservasDto, descontos, historico,
-        acoes(p, ator));
+        acoes(p, ator), expedicao.entregaDoPedido(p.getId()), expedicao.montagemDoPedido(p.getId()),
+        encomendas.doPedido(p.getId()), posVenda.doPedido(p.getId()), estoque.movimentacoesDoPedido(p.getId()));
   }
 
   private Acoes acoes(Pedido p, User ator) {
@@ -653,9 +655,9 @@ public class VendaService {
       } else if (perfis.stream().noneMatch(r -> UsuarioAtual.tem(ator, r))) {
         cancelar = false;
         bloqueios.put("cancelar", "Seu perfil não está autorizado a cancelar vendas.");
-      } else if (p.getStatusEntrega() == StatusEntrega.SAIU || p.getStatusEntrega() == StatusEntrega.ENTREGUE) {
+      } else if (p.getSaidaRealizadaEm() != null) {
         cancelar = false;
-        bloqueios.put("cancelar", "Produto já expedido: registre uma devolução.");
+        bloqueios.put("cancelar", "Produto já expedido: registre uma devolução em Pós-venda.");
       } else if (p.getStatusPagamento() == StatusPagamento.PAGO) {
         cancelar = false;
         bloqueios.put("cancelar", "Venda paga: restituição depende de regra ainda não definida.");
@@ -675,7 +677,40 @@ public class VendaService {
     if (p.isLegado()) {
       bloqueios.put("confirmar", "Pedido anterior à gestão de vendas.");
     }
-    return new Acoes(editar, confirmar, cancelar, aprovar, bloqueios);
+
+    // ---- Etapa 2: saída, entrega, montagem e pós-venda (operações do gerente/proprietário)
+    boolean gestor = UsuarioAtual.isGestor(ator);
+    boolean confirmada = s == StatusComercial.CONFIRMADA;
+    var entrega = expedicao.entregaDoPedido(p.getId());
+    var stEntrega = entrega == null ? null : entrega.status();
+    var montagem = expedicao.montagemDoPedido(p.getId());
+    var stMontagem = montagem == null ? null : montagem.status();
+
+    boolean agendarEntrega = gestor && confirmada && entrega == null;
+    boolean reagendarEntrega = gestor && confirmada && (stEntrega == StatusEntregaRegistro.AGENDADA
+        || stEntrega == StatusEntregaRegistro.TENTATIVA_FRUSTRADA);
+    boolean registrarSaida = false;
+    if (gestor && confirmada && stEntrega == StatusEntregaRegistro.AGENDADA) {
+      String bloqueioSaida = expedicao.bloqueioDaSaida(p);
+      registrarSaida = bloqueioSaida == null;
+      if (bloqueioSaida != null) {
+        bloqueios.put("saida", bloqueioSaida);
+      }
+    }
+    boolean frustrada = gestor && stEntrega == StatusEntregaRegistro.SAIU;
+    boolean concluirEntrega = gestor && stEntrega == StatusEntregaRegistro.SAIU;
+    boolean agendarMontagem = gestor && confirmada && (montagem == null || stMontagem == StatusMontagemRegistro.AGENDADA);
+    boolean concluirMontagem = gestor && stMontagem == StatusMontagemRegistro.AGENDADA
+        && p.getStatusEntrega() == StatusEntrega.ENTREGUE;
+    if (gestor && stMontagem == StatusMontagemRegistro.AGENDADA && !concluirMontagem) {
+      bloqueios.put("concluirMontagem", "A montagem só pode ser concluída depois da entrega.");
+    }
+    boolean dispensarMontagem = gestor && confirmada && (montagem == null || stMontagem == StatusMontagemRegistro.AGENDADA);
+    boolean abrirOcorrencia = gestor && confirmada && p.getStatusEntrega() == StatusEntrega.ENTREGUE;
+
+    return new Acoes(editar, confirmar, cancelar, aprovar, bloqueios, agendarEntrega, reagendarEntrega,
+        registrarSaida, frustrada, concluirEntrega, agendarMontagem, concluirMontagem, dispensarMontagem,
+        abrirOcorrencia);
   }
 
   private static String nome(User u) {

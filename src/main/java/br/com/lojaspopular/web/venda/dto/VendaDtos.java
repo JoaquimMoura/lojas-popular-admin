@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import br.com.lojaspopular.application.estoque.EstoqueService.MovimentacaoView;
 import br.com.lojaspopular.domain.comercial.enums.StatusSolicitacaoDesconto;
 import br.com.lojaspopular.domain.estoque.enums.StatusReserva;
 import br.com.lojaspopular.domain.order.enums.CanalVenda;
@@ -15,6 +16,10 @@ import br.com.lojaspopular.domain.order.enums.StatusEntrega;
 import br.com.lojaspopular.domain.order.enums.StatusMontagem;
 import br.com.lojaspopular.domain.order.enums.StatusPagamento;
 import br.com.lojaspopular.domain.order.enums.TipoEntrega;
+import br.com.lojaspopular.web.expedicao.AtendimentoDtos.EncomendaResponse;
+import br.com.lojaspopular.web.expedicao.AtendimentoDtos.EntregaResponse;
+import br.com.lojaspopular.web.expedicao.AtendimentoDtos.MontagemResponse;
+import br.com.lojaspopular.web.expedicao.AtendimentoDtos.OcorrenciaResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -89,7 +94,10 @@ public final class VendaDtos {
 
   /** Ações disponíveis ao usuário atual, com o motivo quando bloqueadas (ex.: configuração pendente). */
   public record Acoes(boolean podeEditar, boolean podeConfirmar, boolean podeCancelar,
-      boolean podeAprovarDesconto, Map<String, String> bloqueios) {
+      boolean podeAprovarDesconto, Map<String, String> bloqueios,
+      boolean podeAgendarEntrega, boolean podeReagendarEntrega, boolean podeRegistrarSaida,
+      boolean podeRegistrarTentativaFrustrada, boolean podeConcluirEntrega, boolean podeAgendarMontagem,
+      boolean podeConcluirMontagem, boolean podeDispensarMontagem, boolean podeAbrirOcorrencia) {
   }
 
   public record VendaResumoResponse(Long id, StatusComercial statusComercial, StatusPagamento statusPagamento,
@@ -107,7 +115,9 @@ public final class VendaDtos {
       BigDecimal subtotal, BigDecimal desconto, BigDecimal frete, BigDecimal total,
       String observacao, Instant criadoEm, Instant confirmadoEm, Instant canceladoEm, String motivoCancelamento,
       List<ItemResponse> itens, List<ReservaResponse> reservas, List<DescontoResponse> descontos,
-      List<HistoricoResponse> historico, Acoes acoes) {
+      List<HistoricoResponse> historico, Acoes acoes,
+      EntregaResponse entrega, MontagemResponse montagem, List<EncomendaResponse> encomendas,
+      List<OcorrenciaResponse> ocorrencias, List<MovimentacaoView> movimentacoes) {
   }
 
   public record Pagina<T>(List<T> conteudo, int pagina, int tamanho, long total, int totalPaginas) {
