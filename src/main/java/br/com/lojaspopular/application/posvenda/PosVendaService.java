@@ -64,6 +64,9 @@ public class PosVendaService {
   private final ArquivoService arquivos;
   private final AuditoriaService auditoria;
   private final UsuarioAtual usuarioAtual;
+  private final br.com.lojaspopular.application.financeiro.RestituicaoService restituicaoService;
+  private final br.com.lojaspopular.domain.financeiro.repository.ContaFinanceiraRepository contasRepo;
+  private final br.com.lojaspopular.application.financeiro.FinanceiroMapper financeiroMapper;
 
   @Transactional
   public OcorrenciaResponse abrir(Long pedidoId, AbrirOcorrenciaRequest req) {
@@ -261,15 +264,49 @@ public class PosVendaService {
     var evidencias = o.getEvidencias().stream().map(e -> new EvidenciaResponse(e.getId(), e.getArquivo(),
         e.getDescricao(), e.getEnviadoPor() == null ? null : nome(e.getEnviadoPor()), e.getCriadoEm())).toList();
     Map<String, String> bloqueios = new LinkedHashMap<>();
+    var cfg = config.obter();
+    boolean physical = o.getDevolucaoRecebidaEm() != null;
+    BigDecimal restituivel = BigDecimal.ZERO;
+    boolean podeSolicitar = false;
+    boolean podeCobrar = false;
     if (o.getTipo() != TipoOcorrencia.ASSISTENCIA) {
-      bloqueios.put("solucaoFinanceira", BLOQUEIO_FINANCEIRO);
+      // A solução financeira só existe conforme a política D09; a devolução física tem controles próprios.
+      boolean aFavorDoCliente = o.getTipo() == TipoOcorrencia.DEVOLUCAO
+          || (o.getDiferencaCalculada() != null && o.getDiferencaCalculada().signum() < 0);
+      boolean cobranca = o.getTipo() == TipoOcorrencia.TROCA && o.getDiferencaCalculada() != null
+          && o.getDiferencaCalculada().signum() > 0;
+      Boolean politica = cobranca ? cfg.getPermiteCobrancaDiferenca() : cfg.getPermiteRestituicao();
+      if (politica == null) {
+        bloqueios.put("solucaoFinanceira", BLOQUEIO_FINANCEIRO);
+      } else if (!politica) {
+        bloqueios.put("solucaoFinanceira", "A política da loja não permite " + (cobranca ? "cobrar a diferença de troca"
+            : "restituir valores ao cliente") + " (D09): a ocorrência segue só com o controle físico.");
+      }
+      if (aFavorDoCliente) {
+        restituivel = restituicaoService.restituivel(o);
+      }
+      boolean gestor = UsuarioAtual.isGestor(usuarioAtual.get());
+      podeSolicitar = gestor && physical && aFavorDoCliente && Boolean.TRUE.equals(cfg.getPermiteRestituicao())
+          && restituivel.signum() > 0;
+      podeCobrar = gestor && physical && cobranca && Boolean.TRUE.equals(cfg.getPermiteCobrancaDiferenca())
+          && contasRepo.findByOcorrenciaIdAndOrigemAndSituacaoNot(o.getId(),
+              br.com.lojaspopular.domain.financeiro.enums.OrigemConta.DIFERENCA_TROCA,
+              br.com.lojaspopular.domain.financeiro.enums.SituacaoConta.CANCELADA).isEmpty();
+      if (!physical) {
+        bloqueios.put("financeiro", "Receba e avalie a devolução física antes de qualquer ação financeira.");
+      }
     }
+    var contaDiferenca = contasRepo.findByOcorrenciaIdAndOrigemAndSituacaoNot(o.getId(),
+        br.com.lojaspopular.domain.financeiro.enums.OrigemConta.DIFERENCA_TROCA,
+        br.com.lojaspopular.domain.financeiro.enums.SituacaoConta.CANCELADA).stream().findFirst()
+        .map(c -> financeiroMapper.view(c, false)).orElse(null);
     return new OcorrenciaResponse(o.getId(), p.getId(), p.getCliente() == null ? null : p.getCliente().getNome(),
         o.getTipo(), o.getStatus(), o.getDescricao(), o.getItem() == null ? null : o.getItem().getId(),
         o.getItem() == null ? null : o.getItem().getDescricaoHistorica(), o.getQuantidade(), trocaItem,
         o.getTrocaQuantidade(), o.getDiferencaCalculada(), o.getCondicaoFisica(), o.getAvaliacao(),
         o.getDevolucaoRecebidaEm(), o.isEstoqueReposto(), o.getSolucao(), o.getResolvidaEm(),
-        o.getMotivoCancelamento(), nome(o.getAbertaPor()), o.getCriadaEm(), evidencias, bloqueios);
+        o.getMotivoCancelamento(), nome(o.getAbertaPor()), o.getCriadaEm(), evidencias, bloqueios,
+        restituicaoService.daOcorrencia(o.getId()), contaDiferenca, restituivel, podeSolicitar, podeCobrar);
   }
 
   private static String nome(User u) {

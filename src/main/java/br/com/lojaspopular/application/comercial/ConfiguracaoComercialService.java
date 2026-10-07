@@ -20,6 +20,7 @@ import br.com.lojaspopular.domain.comercial.model.ConfiguracaoComercial;
 import br.com.lojaspopular.domain.comercial.model.CondicaoPagamento;
 import br.com.lojaspopular.domain.comercial.repository.ConfiguracaoComercialRepository;
 import br.com.lojaspopular.domain.comercial.repository.CondicaoPagamentoRepository;
+import br.com.lojaspopular.domain.financeiro.repository.TaxaCartaoRepository;
 import br.com.lojaspopular.domain.order.enums.FormaPagamento;
 import br.com.lojaspopular.domain.user.Role;
 import br.com.lojaspopular.domain.user.User;
@@ -39,13 +40,18 @@ public class ConfiguracaoComercialService {
   /** Perfis que podem ser autorizados a cancelar vendas. */
   public static final Set<Role> PERFIS_OPERACIONAIS = EnumSet.of(Role.ADMIN, Role.GERENTE, Role.VENDEDOR);
 
-  public record Pendencia(String codigo, String descricao, String bloqueia) {
+  /** area: VENDAS, ATENDIMENTO ou FINANCEIRO (cada tela mostra só as pendências da sua área). */
+  public record Pendencia(String codigo, String descricao, String bloqueia, String area) {
+    public Pendencia(String codigo, String descricao, String bloqueia) {
+      this(codigo, descricao, bloqueia, "VENDAS");
+    }
   }
 
   private final ConfiguracaoComercialRepository configRepo;
   private final CondicaoPagamentoRepository condicaoRepo;
   private final AuditoriaService auditoria;
   private final UsuarioAtual usuarioAtual;
+  private final TaxaCartaoRepository taxas;
 
   @Transactional
   public ConfiguracaoComercial obter() {
@@ -71,13 +77,62 @@ public class ConfiguracaoComercialService {
     }
     if (cfg.getExigePagamentoExpedir() == null) {
       p.add(new Pendencia("D05", "Regra de pagamento exigido para a saída (expedição) não definida.",
-          "Saída de mercadoria (baixa de estoque)"));
+          "Saída de mercadoria (baixa de estoque)", "ATENDIMENTO"));
+    }
+    // ---- Etapa 3 (financeiro): nenhuma decisão é presumida
+    String fin = "FINANCEIRO";
+    if (cfg.getComissaoPercentual() == null) {
+      p.add(new Pendencia("D01", "Percentual de comissão não definido.",
+          "Apuração de comissões (nada é calculado: nem zero, nem estimativa)", fin));
+    }
+    if (cfg.getComissaoAquisicao() == null) {
+      p.add(new Pendencia("D02", "Momento em que a comissão passa a ser devida não definido.",
+          "Valor devido/pago de comissões (permanece apenas como previsão)", fin));
+    }
+    if (cfg.getCompetenciaReceita() == null) {
+      p.add(new Pendencia("D06", "Critério de competência da receita não definido (e o catálogo ainda não guarda custos).",
+          "Resultado definitivo do mês (só é apresentado como provisório)", fin));
+    }
+    if (cfg.getPerfisRestituicao() == null || cfg.getPerfisRestituicao().isBlank()) {
+      p.add(new Pendencia("D07", "Perfis autorizados a aprovar restituições não definidos.",
+          "Autorização de restituições", fin));
+    }
+    if (cfg.getPerfisReabertura() == null || cfg.getPerfisReabertura().isBlank()) {
+      p.add(new Pendencia("D07", "Perfis autorizados a reabrir período fechado não definidos.",
+          "Reabertura de período", fin));
+    }
+    if (cfg.getPermiteRestituicao() == null) {
+      p.add(new Pendencia("D09", "Política de restituição ao cliente não definida.", "Restituições", fin));
+    }
+    if (cfg.getPermiteCobrancaDiferenca() == null) {
+      p.add(new Pendencia("D09", "Política de cobrança da diferença de troca não definida.",
+          "Cobrança de diferença de troca", fin));
+    }
+    if (cfg.getMetaDescontaDevolucoes() == null) {
+      p.add(new Pendencia("D09", "Política de devoluções na meta do vendedor não definida.",
+          "Atingimento definitivo de metas (só provisório)", fin));
+    }
+    if (cfg.getFechamentoExigeSemPendencias() == null) {
+      p.add(new Pendencia("D10", "Regra de aprovação do fechamento mensal (tratamento de pendências) não definida.",
+          "Aprovação do fechamento mensal (a prévia segue disponível)", fin));
+    }
+    if (taxas.findByAtivaTrueOrderByOperadoraAscParcelasAsc().isEmpty()) {
+      p.add(new Pendencia("D11", "Nenhuma taxa/prazo de operadora de cartão cadastrada.",
+          "Recebimentos em cartão", fin));
     }
     return p;
   }
 
+  /** Pendências de vendas/atendimento com o código informado (as financeiras têm helper próprio). */
   private List<String> descricoes(String codigo) {
-    return pendencias().stream().filter(x -> x.codigo().equals(codigo)).map(Pendencia::descricao).toList();
+    return pendencias().stream().filter(x -> x.codigo().equals(codigo) && !"FINANCEIRO".equals(x.area()))
+        .map(Pendencia::descricao).toList();
+  }
+
+  /** Pendências financeiras cujo código e texto de bloqueio contêm o trecho informado. */
+  public List<String> descricoesFinanceiras(String codigo, String trechoBloqueia) {
+    return pendencias().stream().filter(x -> x.codigo().equals(codigo) && "FINANCEIRO".equals(x.area())
+        && x.bloqueia().toLowerCase().contains(trechoBloqueia.toLowerCase())).map(Pendencia::descricao).toList();
   }
 
   /** Arredondamento de preços; bloqueia o registro de venda enquanto não definido (D04). */
@@ -198,6 +253,59 @@ public class ConfiguracaoComercialService {
             + ", pagamento exigido para expedir=" + salvo.getExigePagamentoExpedir(),
         "CONFIG_COMERCIAL", ConfiguracaoComercial.ID_UNICO);
     return salvo;
+  }
+
+  // ---- decisões financeiras (Etapa 3): somente o proprietário ----
+
+  @Transactional
+  public ConfiguracaoComercial atualizarFinanceiro(br.com.lojaspopular.web.financeiro.FinanceiroDtos.ConfigFinanceiraRequest r) {
+    User ator = usuarioAtual.get();
+    if (!UsuarioAtual.tem(ator, Role.ADMIN)) {
+      throw new AccessDeniedException("Somente o proprietário define as regras financeiras.");
+    }
+    var cfg = obter();
+    BigDecimal pct = r.comissaoPercentual();
+    if (pct != null && (pct.signum() < 0 || pct.compareTo(new BigDecimal("100")) > 0)) {
+      throw new NegocioException("O percentual de comissão deve estar entre 0% e 100%.");
+    }
+    cfg.setComissaoPercentual(pct == null ? null : pct.setScale(2, java.math.RoundingMode.HALF_UP));
+    cfg.setComissaoAquisicao(r.comissaoAquisicao());
+    cfg.setCompetenciaReceita(r.competenciaReceita());
+    cfg.setPerfisReabertura(csvPerfis(r.perfisReabertura()));
+    cfg.setPerfisRestituicao(csvPerfis(r.perfisRestituicao()));
+    cfg.setPermiteRestituicao(r.permiteRestituicao());
+    cfg.setPermiteCobrancaDiferenca(r.permiteCobrancaDiferenca());
+    cfg.setMetaDescontaDevolucoes(r.metaDescontaDevolucoes());
+    cfg.setFechamentoExigeSemPendencias(r.fechamentoExigeSemPendencias());
+    cfg.setAtualizadoEm(Instant.now());
+    cfg.setAtualizadoPor(ator);
+    var salvo = configRepo.save(cfg);
+    auditoria.registrar(AuditoriaTipo.CONFIG_COMERCIAL_ALTERADA,
+        "Regras financeiras: comissão=" + salvo.getComissaoPercentual() + "%, aquisição=" + salvo.getComissaoAquisicao()
+            + ", competência=" + salvo.getCompetenciaReceita() + ", reabertura=" + salvo.getPerfisReabertura()
+            + ", restituição=" + salvo.getPerfisRestituicao() + ", permite restituição=" + salvo.getPermiteRestituicao()
+            + ", permite cobrança de diferença=" + salvo.getPermiteCobrancaDiferenca() + ", meta abate devoluções="
+            + salvo.getMetaDescontaDevolucoes() + ", fechamento exige sem pendências="
+            + salvo.getFechamentoExigeSemPendencias(), "CONFIG_COMERCIAL", ConfiguracaoComercial.ID_UNICO);
+    return salvo;
+  }
+
+  private String csvPerfis(Set<Role> perfis) {
+    if (perfis == null || perfis.isEmpty()) {
+      return null;
+    }
+    if (!EnumSet.of(Role.ADMIN, Role.GERENTE).containsAll(perfis)) {
+      throw new NegocioException("Somente Proprietário e Gerente podem ser autorizados para esta ação.");
+    }
+    return perfis.stream().map(Enum::name).sorted().collect(Collectors.joining(","));
+  }
+
+  public Set<Role> perfis(String csv) {
+    if (csv == null || csv.isBlank()) {
+      return Set.of();
+    }
+    return java.util.Arrays.stream(csv.split(",")).map(String::trim).filter(s -> !s.isEmpty()).map(Role::valueOf)
+        .collect(Collectors.toCollection(() -> EnumSet.noneOf(Role.class)));
   }
 
   // ---- condições de pagamento ----

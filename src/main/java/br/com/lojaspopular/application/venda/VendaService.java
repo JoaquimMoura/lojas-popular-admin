@@ -18,6 +18,8 @@ import br.com.lojaspopular.application.auditoria.AuditoriaService;
 import br.com.lojaspopular.application.auth.UsuarioAtual;
 import br.com.lojaspopular.application.comercial.ConfiguracaoComercialService;
 import br.com.lojaspopular.application.encomenda.EncomendaService;
+import br.com.lojaspopular.application.financeiro.ComissaoService;
+import br.com.lojaspopular.application.financeiro.RecebimentoService;
 import br.com.lojaspopular.application.estoque.EstoqueService;
 import br.com.lojaspopular.application.expedicao.ExpedicaoService;
 import br.com.lojaspopular.application.posvenda.PosVendaService;
@@ -95,6 +97,8 @@ public class VendaService {
   private final EncomendaService encomendas;
   private final ExpedicaoService expedicao;
   private final PosVendaService posVenda;
+  private final ComissaoService comissoes;
+  private final RecebimentoService recebimentoService;
 
   // =====================================================================
   // Registro e edição
@@ -317,6 +321,7 @@ public class VendaService {
     p.setStatusComercial(StatusComercial.CONFIRMADA);
     p.setChaveConfirmacao(chave);
     p.setConfirmadoEm(Instant.now());
+    comissoes.aoConfirmar(p);
     auditoria.registrar(AuditoriaTipo.VENDA_CONFIRMADA, "Venda #" + p.getId() + " confirmada (total " + p.getTotal() + ")",
         ENTIDADE, p.getId());
     pedidoRepo.saveAndFlush(p);
@@ -344,13 +349,14 @@ public class VendaService {
       throw new NegocioException(
           "O produto já saiu para entrega/retirada: não é possível cancelar. Registre uma devolução em Pós-venda.");
     }
-    if (p.getStatusPagamento() == StatusPagamento.PAGO) {
+    if (recebimentoService.totalRecebido(p.getId()).signum() > 0) {
       throw new NegocioException(
-          "Venda com pagamento recebido: a restituição depende de regra ainda não definida (D07/D09). "
-              + "Cancelamento bloqueado até a definição.");
+          "Venda com recebimentos registrados: estorne os recebimentos lançados por engano ou trate a restituição conforme "
+              + "a política D07/D09 (ainda não definida) antes de cancelar. Cancelamento bloqueado.");
     }
 
     estoque.liberar(p, "Cancelamento da venda: " + motivo.trim());
+    comissoes.aoCancelar(p);
     encomendas.cancelarDoPedido(p);
     expedicao.cancelarDoPedido(p, ator);
     invalidar(descontoRepo.findByPedidoIdAndStatusIn(p.getId(),
@@ -623,6 +629,7 @@ public class VendaService {
         : new EnderecoEntrega(p.getEntregaCep(), p.getEntregaLogradouro(), p.getEntregaNumero(),
             p.getEntregaComplemento(), p.getEntregaBairro(), p.getEntregaCidade(), p.getEntregaUf());
 
+    var pagamento = recebimentoService.painel(p, ator);
     return new VendaDetalheResponse(p.getId(), p.getVersion(), p.getStatusComercial(), p.getStatusPagamento(),
         p.getStatusEntrega(), p.getStatusMontagem(), p.isRevisaoLegado(), p.getCanal(),
         p.getCliente() == null ? null
@@ -631,11 +638,11 @@ public class VendaService {
         p.getTipoEntrega(), endereco, p.getFormaPagamento(), p.getParcelas(), p.getAjusteCondicaoPercentual(),
         p.getSubtotal(), p.getDesconto(), p.getFrete(), p.getTotal(), p.getObservacao(), p.getCriadoEm(),
         p.getConfirmadoEm(), p.getCanceladoEm(), p.getMotivoCancelamento(), itens, reservasDto, descontos, historico,
-        acoes(p, ator), expedicao.entregaDoPedido(p.getId()), expedicao.montagemDoPedido(p.getId()),
-        encomendas.doPedido(p.getId()), posVenda.doPedido(p.getId()), estoque.movimentacoesDoPedido(p.getId()));
+        acoes(p, ator, pagamento), expedicao.entregaDoPedido(p.getId()), expedicao.montagemDoPedido(p.getId()),
+        encomendas.doPedido(p.getId()), posVenda.doPedido(p.getId()), estoque.movimentacoesDoPedido(p.getId()), pagamento);
   }
 
-  private Acoes acoes(Pedido p, User ator) {
+  private Acoes acoes(Pedido p, User ator, br.com.lojaspopular.web.financeiro.FinanceiroDtos.PagamentoPedido pagamento) {
     Map<String, String> bloqueios = new LinkedHashMap<>();
     StatusComercial s = p.getStatusComercial();
 
@@ -658,9 +665,9 @@ public class VendaService {
       } else if (p.getSaidaRealizadaEm() != null) {
         cancelar = false;
         bloqueios.put("cancelar", "Produto já expedido: registre uma devolução em Pós-venda.");
-      } else if (p.getStatusPagamento() == StatusPagamento.PAGO) {
+      } else if (p.getStatusPagamento() == StatusPagamento.PAGO || p.getStatusPagamento() == StatusPagamento.PARCIAL) {
         cancelar = false;
-        bloqueios.put("cancelar", "Venda paga: restituição depende de regra ainda não definida.");
+        bloqueios.put("cancelar", "Venda com recebimentos: estorne-os ou aguarde a política de restituição (D07/D09).");
       }
     }
 
@@ -708,9 +715,12 @@ public class VendaService {
     boolean dispensarMontagem = gestor && confirmada && (montagem == null || stMontagem == StatusMontagemRegistro.AGENDADA);
     boolean abrirOcorrencia = gestor && confirmada && p.getStatusEntrega() == StatusEntrega.ENTREGUE;
 
+    // ---- Etapa 3: recebimentos (pagamento do cliente)
+    pagamento.bloqueios().forEach(bloqueios::putIfAbsent);
+
     return new Acoes(editar, confirmar, cancelar, aprovar, bloqueios, agendarEntrega, reagendarEntrega,
         registrarSaida, frustrada, concluirEntrega, agendarMontagem, concluirMontagem, dispensarMontagem,
-        abrirOcorrencia);
+        abrirOcorrencia, pagamento.podeRegistrar(), pagamento.podeEstornar());
   }
 
   private static String nome(User u) {

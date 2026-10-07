@@ -97,7 +97,8 @@ public final class VendaDtos {
       boolean podeAprovarDesconto, Map<String, String> bloqueios,
       boolean podeAgendarEntrega, boolean podeReagendarEntrega, boolean podeRegistrarSaida,
       boolean podeRegistrarTentativaFrustrada, boolean podeConcluirEntrega, boolean podeAgendarMontagem,
-      boolean podeConcluirMontagem, boolean podeDispensarMontagem, boolean podeAbrirOcorrencia) {
+      boolean podeConcluirMontagem, boolean podeDispensarMontagem, boolean podeAbrirOcorrencia,
+      boolean podeRegistrarRecebimento, boolean podeEstornarRecebimento) {
   }
 
   public record VendaResumoResponse(Long id, StatusComercial statusComercial, StatusPagamento statusPagamento,
@@ -117,7 +118,8 @@ public final class VendaDtos {
       List<ItemResponse> itens, List<ReservaResponse> reservas, List<DescontoResponse> descontos,
       List<HistoricoResponse> historico, Acoes acoes,
       EntregaResponse entrega, MontagemResponse montagem, List<EncomendaResponse> encomendas,
-      List<OcorrenciaResponse> ocorrencias, List<MovimentacaoView> movimentacoes) {
+      List<OcorrenciaResponse> ocorrencias, List<MovimentacaoView> movimentacoes,
+      br.com.lojaspopular.web.financeiro.FinanceiroDtos.PagamentoPedido pagamento) {
   }
 
   public record Pagina<T>(List<T> conteudo, int pagina, int tamanho, long total, int totalPaginas) {

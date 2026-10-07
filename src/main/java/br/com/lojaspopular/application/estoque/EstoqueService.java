@@ -194,6 +194,41 @@ public class EstoqueService {
     return criadas;
   }
 
+  /**
+   * Reserva progressiva de um item de encomenda: eleva a reserva ativa do item até {@code quantidadeDesejada} (no máximo a
+   * quantidade vendida), à medida que a mercadoria chega do fornecedor. Assim as unidades recebidas ficam guardadas para o
+   * cliente e não são vendidas a outro, mesmo antes de o lote completo chegar. A SAÍDA continua exigindo a reserva integral.
+   */
+  @Transactional
+  public ReservaEstoque reservarAteQuantidade(Pedido pedido, ItemPedido item, int quantidadeDesejada) {
+    int alvo = Math.min(quantidadeDesejada, item.getQuantidade());
+    Unidade u = unidade(item);
+    Travada t = travar(u, item.getDescricaoHistorica());
+    var existente = reservaRepo.findByPedidoIdAndStatus(pedido.getId(), StatusReserva.ATIVA).stream()
+        .filter(r -> r.getItem().getId().equals(item.getId())).findFirst();
+    int atual = existente.map(ReservaEstoque::getQuantidade).orElse(0);
+    int delta = alvo - atual;
+    if (delta <= 0) {
+      return existente.orElse(null);
+    }
+    long disponivel = t.fisico() - reservado(u);
+    if (delta > disponivel) {
+      throw new NegocioException("Estoque disponível insuficiente para reservar mais " + delta + " un. de \""
+          + item.getDescricaoHistorica() + "\": disponível " + Math.max(disponivel, 0) + ".");
+    }
+    ReservaEstoque reserva;
+    if (existente.isPresent()) {
+      reserva = existente.get();
+      reserva.setQuantidade(alvo);
+    } else {
+      reserva = reservaRepo.save(ReservaEstoque.builder().pedido(pedido).item(item).produto(item.getProduto())
+          .variacao(item.getVariacao()).quantidade(alvo).status(StatusReserva.ATIVA).build());
+    }
+    auditoria.registrar(AuditoriaTipo.RESERVA_CRIADA, "Reserva de " + alvo + "/" + item.getQuantidade() + " un. de \""
+        + item.getDescricaoHistorica() + "\" no pedido #" + pedido.getId(), "PEDIDO", pedido.getId());
+    return reserva;
+  }
+
   /** Reserva um único item (usado depois do recebimento de uma encomenda). */
   @Transactional
   public ReservaEstoque reservarItem(Pedido pedido, ItemPedido item) {
@@ -247,7 +282,7 @@ public class EstoqueService {
           && r.getQuantidade().equals(item.getQuantidade()));
       if (!coberto) {
         faltantes.add(item.getDescricaoHistorica()
-            + (item.getModalidade() == ModalidadeItem.ENCOMENDA ? " (encomenda ainda não recebida)" : ""));
+            + (item.getModalidade() == ModalidadeItem.ENCOMENDA ? " (encomenda ainda não recebida por completo)" : ""));
       }
     }
     if (!faltantes.isEmpty()) {

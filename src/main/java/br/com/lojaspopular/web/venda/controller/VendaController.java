@@ -49,7 +49,8 @@ public class VendaController {
   @GetMapping("/configuracao")
   public ConfiguracaoVenda configuracao() {
     var cfg = config.obter();
-    return new ConfiguracaoVenda(config.pendencias(),
+    var pendencias = config.pendencias().stream().filter(p -> !"FINANCEIRO".equals(p.area())).toList();
+    return new ConfiguracaoVenda(pendencias,
         config.listarCondicoes(true).stream()
             .map(c -> new CondicaoVenda(c.getForma(), c.getParcelas(), c.getAjustePercentual())).toList(),
         cfg.getLimiteDescontoPercentual(), cfg.getArredondamento());

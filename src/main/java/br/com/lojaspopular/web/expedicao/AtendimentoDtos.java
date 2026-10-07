@@ -98,10 +98,19 @@ public final class AtendimentoDtos {
 
   // ---------------------------------------------------------------- responses
 
+  /** Um recebimento (inclusive parcial) de mercadoria do fornecedor. */
+  public record RecebimentoEncomenda(Long id, Integer quantidade, Instant recebidoEm, String usuario, String observacao) {
+  }
+
+  /**
+   * quantidadeRecebida é o ACUMULADO já recebido do fornecedor; quantidadeReservada é o que já está reservado ao cliente
+   * (a saída ao cliente só acontece com o pedido completo: o recebimento parcial do fornecedor não gera entrega parcial).
+   */
   public record EncomendaResponse(Long id, Long pedidoId, String cliente, Long itemId, String descricao,
       Integer quantidade, StatusEncomenda status, String fornecedor, String referenciaFornecedor,
       LocalDate previsaoChegada, boolean atrasada, String observacao, Integer quantidadeRecebida, Instant recebidaEm,
-      StatusReserva reserva, String prazoPadrao) {
+      StatusReserva reserva, String prazoPadrao, Integer quantidadeReservada, Integer quantidadeFaltante,
+      List<RecebimentoEncomenda> recebimentos) {
   }
 
   public record EntregaEventoResponse(Long id, TipoEventoEntrega tipo, LocalDate dataPrevista, PeriodoAgenda periodo,
@@ -127,7 +136,9 @@ public final class AtendimentoDtos {
       Integer trocaQuantidade, BigDecimal diferencaCalculada, CondicaoFisica condicaoFisica, String avaliacao,
       Instant devolucaoRecebidaEm, boolean estoqueReposto, String solucao, Instant resolvidaEm,
       String motivoCancelamento, String abertaPor, Instant criadaEm, List<EvidenciaResponse> evidencias,
-      Map<String, String> bloqueios) {
+      Map<String, String> bloqueios, List<br.com.lojaspopular.web.financeiro.FinanceiroDtos.RestituicaoView> restituicoes,
+      br.com.lojaspopular.web.financeiro.FinanceiroDtos.ContaView contaDiferenca, BigDecimal valorRestituivel,
+      boolean podeSolicitarRestituicao, boolean podeCobrarDiferenca) {
   }
 
   public record AgendaItem(String tipo, Long pedidoId, String cliente, LocalDate data, PeriodoAgenda periodo,

@@ -4,6 +4,7 @@ package br.com.lojaspopular.domain.encomenda.enums;
 public enum StatusEncomenda {
   AGUARDANDO_PEDIDO,
   PEDIDO_REALIZADO,
+  PARCIALMENTE_RECEBIDA,
   RECEBIDA,
   CANCELADA
 }

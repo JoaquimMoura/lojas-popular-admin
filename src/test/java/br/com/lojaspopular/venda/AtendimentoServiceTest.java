@@ -383,28 +383,71 @@ class AtendimentoServiceTest {
     assertThat(atualizada.status()).isEqualTo(StatusEncomenda.PEDIDO_REALIZADO);
     assertThat(atualizada.previsaoChegada()).isEqualTo(LocalDate.now().plusDays(10));
 
-    // sem entrega parcial: recebimento menor que o vendido é recusado
-    assertThatThrownBy(() -> encomendas.receber(encId, 1, chave()))
-        .isInstanceOf(NegocioException.class).hasMessageContaining("cobrir a quantidade vendida");
     assertThatThrownBy(() -> encomendas.receber(encId, 2, " ")).isInstanceOf(NegocioException.class);
+    assertThatThrownBy(() -> encomendas.receber(encId, 0, chave())).isInstanceOf(NegocioException.class);
 
-    String k = chave();
-    var rec = encomendas.receber(encId, 2, k);
+    // Recebimento PARCIAL do FORNECEDOR é aceito: entra no estoque e já fica reservado ao cliente...
+    String k1 = chave();
+    var parcial = encomendas.receber(encId, 1, k1);
+    assertThat(parcial.status()).isEqualTo(StatusEncomenda.PARCIALMENTE_RECEBIDA);
+    assertThat(parcial.quantidadeRecebida()).isEqualTo(1);
+    assertThat(parcial.quantidadeFaltante()).isEqualTo(1);
+    assertThat(parcial.quantidadeReservada()).isEqualTo(1);
+    var s1 = saldoDe(p);
+    assertThat(s1.fisico()).isEqualTo(1);
+    assertThat(s1.reservado()).isEqualTo(1);
+    assertThat(s1.disponivel()).isZero();   // a unidade chegada não pode ser vendida a outro cliente
+    // repetição do mesmo recebimento: sem nova entrada
+    encomendas.receber(encId, 1, k1);
+    assertThat(saldoDe(p).fisico()).isEqualTo(1);
+
+    // ... mas a ENTREGA ao CLIENTE continua indivisível: sem o restante, a saída é recusada
+    expedicao.agendarEntrega(v.id(), LocalDate.now().plusDays(1), PeriodoAgenda.MANHA, null, null);
+    assertThatThrownBy(() -> expedicao.registrarSaida(v.id(), chave()))
+        .isInstanceOf(NegocioException.class).hasMessageContaining("não há entrega parcial");
+    assertThat(saldoDe(p).fisico()).isEqualTo(1);
+
+    // o restante chega: a encomenda completa e a venda pode sair inteira
+    var rec = encomendas.receber(encId, 1, chave());
     assertThat(rec.status()).isEqualTo(StatusEncomenda.RECEBIDA);
+    assertThat(rec.quantidadeRecebida()).isEqualTo(2);
     assertThat(rec.reserva()).isEqualTo(StatusReserva.ATIVA);
+    assertThat(rec.recebimentos()).hasSize(2);
     var s = saldoDe(p);
     assertThat(s.fisico()).isEqualTo(2);
     assertThat(s.reservado()).isEqualTo(2);
     assertThat(s.disponivel()).isZero();
     var d = vendas.obter(v.id());
-    assertThat(d.movimentacoes()).extracting(m -> m.tipo()).containsExactly(TipoMovimentacao.ENTRADA_ENCOMENDA);
+    assertThat(d.movimentacoes()).extracting(m -> m.tipo())
+        .containsExactly(TipoMovimentacao.ENTRADA_ENCOMENDA, TipoMovimentacao.ENTRADA_ENCOMENDA);
+    expedicao.registrarSaida(v.id(), chave());
+    assertThat(vendas.obter(v.id()).statusEntrega()).isEqualTo(StatusEntrega.SAIU);
+    assertThat(saldoDe(p).fisico()).isZero();
 
-    // repetição com a mesma chave: sem nova entrada
-    encomendas.receber(encId, 2, k);
-    assertThat(saldoDe(p).fisico()).isEqualTo(2);
-    assertThatThrownBy(() -> encomendas.receber(encId, 2, chave())).isInstanceOf(NegocioException.class);
+    // encomenda já completa não recebe mais; chave reutilizada em outra encomenda é recusada
+    assertThatThrownBy(() -> encomendas.receber(encId, 1, chave())).isInstanceOf(NegocioException.class)
+        .hasMessageContaining("por completo");
     assertThatThrownBy(() -> encomendas.atualizar(encId, new AtualizarEncomendaRequest("Y", null, null, null)))
         .isInstanceOf(NegocioException.class);
+  }
+
+  @Test
+  void recebimentoAlemDoVendidoFicaComoEstoqueLivre() {
+    var p = produtoEncomenda();
+    como(vendedor);
+    var c = cliente();
+    var v = vendas.registrar(new VendaRequest(c.getId(), null, CanalVenda.LOJA, TipoEntrega.RETIRADA, null,
+        FormaPagamento.PIX, 1, null, null, null, null,
+        List.of(new ItemRequest(p.getId(), p.getVariacoes().get(0).getId(), 2, ModalidadeItem.ENCOMENDA))));
+    var conf = vendas.confirmar(v.id(), chave());
+    como(gerente);
+    var rec = encomendas.receber(conf.encomendas().get(0).id(), 3, chave());
+    assertThat(rec.status()).isEqualTo(StatusEncomenda.RECEBIDA);
+    assertThat(rec.quantidadeReservada()).isEqualTo(2);   // só o necessário fica reservado ao cliente
+    var s = saldoDe(p);
+    assertThat(s.fisico()).isEqualTo(3);
+    assertThat(s.reservado()).isEqualTo(2);
+    assertThat(s.disponivel()).isEqualTo(1);
   }
 
   @Test

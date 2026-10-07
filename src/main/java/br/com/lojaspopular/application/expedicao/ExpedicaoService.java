@@ -57,6 +57,7 @@ public class ExpedicaoService {
   private final ArquivoService arquivos;
   private final AuditoriaService auditoria;
   private final UsuarioAtual usuarioAtual;
+  private final br.com.lojaspopular.application.financeiro.ComissaoService comissoes;
 
   // =====================================================================
   // Entrega / retirada
@@ -196,6 +197,7 @@ public class ExpedicaoService {
     e.getEventos().add(evento(e, TipoEventoEntrega.ENTREGUE, e.getDataPrevista(), e.getPeriodo(), e.getEquipe(),
         limpar(observacao), caminho, ator));
     p.setStatusEntrega(StatusEntrega.ENTREGUE);
+    comissoes.reavaliar(p);
     // Status legado acompanha a entrega concluída (sem presumir quitação: o pagamento tem status próprio).
     if (p.getStatus() == PedidoStatus.CRIADO) {
       p.setStatus(PedidoStatus.ENTREGUE);

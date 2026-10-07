@@ -54,8 +54,12 @@ public class SecurityConfig {
             .requestMatchers("/api/v1/auditoria/**").hasRole("ADMIN")
             .requestMatchers(HttpMethod.GET, "/api/v1/usuarios/vendedores").hasAnyRole("ADMIN", "GERENTE", "VENDEDOR")
             .requestMatchers("/api/v1/usuarios/**").hasRole("ADMIN")
-            .requestMatchers("/api/v1/config/comercial/**", "/api/v1/encomendas/**", "/api/v1/ocorrencias/**")
+            .requestMatchers(HttpMethod.GET, "/api/v1/financeiro/comissoes/minhas", "/api/v1/financeiro/metas/minha")
+                .hasAnyRole("ADMIN", "GERENTE", "VENDEDOR")
+            .requestMatchers("/api/v1/config/comercial/**", "/api/v1/encomendas/**", "/api/v1/ocorrencias/**",
+                "/api/v1/financeiro/**", "/api/v1/recebimentos/**", "/api/v1/restituicoes/**")
                 .hasAnyRole("ADMIN", "GERENTE")
+            // recebimentos/restituições de vendas: o @PreAuthorize do controller restringe a gerente e proprietário
             .requestMatchers("/api/v1/clientes/**", "/api/v1/vendas/**", "/api/v1/estoque/**", "/api/v1/agenda/**",
                 "/api/v1/arquivos/**")
                 .hasAnyRole("ADMIN", "GERENTE", "VENDEDOR")

@@ -19,6 +19,8 @@ import br.com.lojaspopular.domain.comercial.enums.Arredondamento;
 import br.com.lojaspopular.domain.comercial.model.CondicaoPagamento;
 import br.com.lojaspopular.domain.order.enums.FormaPagamento;
 import br.com.lojaspopular.domain.user.Role;
+import br.com.lojaspopular.web.financeiro.FinanceiroDtos.ConfigFinanceiraRequest;
+import br.com.lojaspopular.web.financeiro.FinanceiroDtos.ConfigFinanceiraView;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +54,7 @@ public class ConfiguracaoComercialController {
 
   public record ConfiguracaoResponse(BigDecimal limiteDescontoPercentual, Arredondamento arredondamento,
       Set<Role> perfisCancelamento, Boolean exigePagamentoExpedir, List<Pendencia> pendencias,
-      List<CondicaoResponse> condicoes) {
+      List<CondicaoResponse> condicoes, ConfigFinanceiraView financeiro) {
   }
 
   private final ConfiguracaoComercialService service;
@@ -66,6 +68,13 @@ public class ConfiguracaoComercialController {
   public ConfiguracaoResponse atualizar(@RequestBody ConfiguracaoRequest req) {
     service.atualizar(req.limiteDescontoPercentual(), req.arredondamento(), req.perfisCancelamento(),
         req.exigePagamentoExpedir());
+    return resposta();
+  }
+
+  /** Decisões financeiras (comissão, competência, perfis, política de devolução, fechamento): só o proprietário. */
+  @PutMapping("/financeiro")
+  public ConfiguracaoResponse atualizarFinanceiro(@RequestBody ConfigFinanceiraRequest req) {
+    service.atualizarFinanceiro(req);
     return resposta();
   }
 
@@ -84,7 +93,11 @@ public class ConfiguracaoComercialController {
     var cfg = service.obter();
     return new ConfiguracaoResponse(cfg.getLimiteDescontoPercentual(), cfg.getArredondamento(),
         service.perfisCancelamento(), cfg.getExigePagamentoExpedir(), service.pendencias(),
-        service.listarCondicoes(false).stream().map(this::toResponse).toList());
+        service.listarCondicoes(false).stream().map(this::toResponse).toList(),
+        new ConfigFinanceiraView(cfg.getComissaoPercentual(), cfg.getComissaoAquisicao(), cfg.getCompetenciaReceita(),
+            service.perfis(cfg.getPerfisReabertura()), service.perfis(cfg.getPerfisRestituicao()),
+            cfg.getPermiteRestituicao(), cfg.getPermiteCobrancaDiferenca(), cfg.getMetaDescontaDevolucoes(),
+            cfg.getFechamentoExigeSemPendencias()));
   }
 
   private CondicaoResponse toResponse(CondicaoPagamento c) {
