@@ -38,3 +38,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Validacao local (scripts/validacao): saidas geradas e segredos locais ###
+validacao-out/
+scripts/validacao/.ambiente.env
+scripts/validacao/__pycache__/

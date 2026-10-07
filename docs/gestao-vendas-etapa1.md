@@ -78,7 +78,7 @@ Ambiente do ensaio: PostgreSQL **15.19** (mesma série do container de produçã
 | `npm run build` | OK |
 | `npm run lint` | 6 erros, todos anteriores à etapa (ver abaixo) |
 
-Os roteiros de navegador/API usados (Playwright e chamadas HTTP) não fazem parte do repositório: dependem do ambiente local descrito acima. O que ficou como regressão automatizada no repositório são os 30 testes Java e o script de ensaio da migração.
+Os roteiros de navegador e de API (Playwright e chamadas HTTP) foram incorporados ao repositório na Etapa 2, em `scripts/validacao/` (ver o README: ambiente PostgreSQL 15 descartável, configuração por variáveis `LP_*`, sem credenciais). Além deles, a regressão automatizada inclui os testes Java e o script de ensaio da migração.
 
 O que foi exercitado:
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Ensaio da migração V3 (gestão de vendas) sobre uma CÓPIA do banco de produção.
+# Ensaio das migrações da gestão de vendas (V3 e V4, ou as que estiverem pendentes) sobre uma CÓPIA do
+# banco de produção.
 #
 # NÃO se conecta à produção: recebe um dump já feito e o restaura num PostgreSQL 15 descartável
 # (mesma versão do container de produção: postgres:15), aplica as migrations pendentes com o
@@ -18,7 +19,8 @@ PORTA="${2:-55434}"
 MANTER="${3:-}"
 NOME="lp-ensaio-v3"
 DB="lojas_ensaio"
-SENHA="ensaio"
+# senha descartável (o container só existe durante o ensaio e não publica a porta além do localhost)
+SENHA="$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 20)"
 RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
 MIGRACOES="$RAIZ/src/main/resources/db/migration"
 
@@ -31,7 +33,7 @@ psql_() { docker exec -i "$NOME" psql -U postgres -d "$DB" -v ON_ERROR_STOP=1 -t
 
 echo "==> Subindo postgres:15 descartável na porta $PORTA"
 docker rm -f "$NOME" >/dev/null 2>&1 || true
-docker run -d --name "$NOME" -e POSTGRES_PASSWORD="$SENHA" -p "$PORTA:5432" postgres:15 >/dev/null
+docker run -d --name "$NOME" -e POSTGRES_PASSWORD="$SENHA" -p "127.0.0.1:$PORTA:5432" postgres:15 >/dev/null
 for _ in $(seq 1 40); do docker exec "$NOME" pg_isready -U postgres >/dev/null 2>&1 && break; sleep 2; done
 sleep 3
 docker exec "$NOME" psql -U postgres -c "create database $DB" >/dev/null
@@ -52,6 +54,8 @@ ANTES_CANCELADO=$(psql_ -c "select count(*) from pedidos where status='CANCELADO
 ANTES_CRIADO=$(psql_ -c "select count(*) from pedidos where status='CRIADO'")
 ANTES_USUARIOS=$(psql_ -c "select count(*) from users")
 ANTES_PRODUTOS=$(psql_ -c "select count(*) from produtos")
+ANTES_ESTOQUE_VAR=$(psql_ -c "select coalesce(sum(estoque),0) from produto_variacoes")
+ANTES_ESTOQUE_PROD=$(psql_ -c "select coalesce(sum(estoque),0) from produtos")
 echo "    pedidos=$ANTES_PEDIDOS itens=$ANTES_ITENS total=$ANTES_TOTAL frete=$ANTES_FRETE usuarios=$ANTES_USUARIOS produtos=$ANTES_PRODUTOS"
 
 echo "==> Aplicando migrations com o Flyway (mesma configuração do app: baselineOnMigrate)"
@@ -81,6 +85,19 @@ confere "todo pedido antigo ficou LEGADO ou CANCELADA" "0" "$(psql_ -c "select c
 confere "produtos antigos em PRONTA_ENTREGA" "$ANTES_PRODUTOS" "$(psql_ -c "select count(*) from produtos where modalidade='PRONTA_ENTREGA'")"
 confere "histórico do Flyway sem falhas" "0" "$(psql_ -c "select count(*) from flyway_schema_history where success = false")"
 
+# --- Etapa 2 (V4): só confere o que existir depois da migração; em bancos que parem na V3 é ignorado
+TEM_V4=$(psql_ -c "select count(*) from information_schema.tables where table_schema='public' and table_name='movimentacoes_estoque'")
+if [ "$TEM_V4" = "1" ]; then
+  echo "    -- V4 (atendimento e pós-venda)"
+  for t in movimentacoes_estoque encomendas entregas entrega_eventos montagens ocorrencias_pos_venda ocorrencia_evidencias; do
+    confere "tabela $t criada e vazia (nada é gerado para pedidos antigos)" "0" "$(psql_ -c "select count(*) from $t")"
+  done
+  confere "nenhuma saída/baixa atribuída a pedido antigo" "0" "$(psql_ -c 'select count(*) from pedidos where saida_realizada_em is not null or chave_saida is not null')"
+  confere "D05 (pagamento para expedir) nasce pendente (nulo)" "0" "$(psql_ -c 'select count(*) from configuracao_comercial where exige_pagamento_expedir is not null')"
+  confere "estoque físico das variações inalterado pela V4" "$ANTES_ESTOQUE_VAR" "$(psql_ -c 'select coalesce(sum(estoque),0) from produto_variacoes')"
+  confere "estoque físico dos produtos inalterado pela V4" "$ANTES_ESTOQUE_PROD" "$(psql_ -c 'select coalesce(sum(estoque),0) from produtos')"
+fi
+
 echo "==> Pontos de atenção (não são falhas)"
 SEM_SALDO=$(psql_ -c "select count(*) from produto_variacoes v where v.estoque is null")
 echo "    variações sem saldo (não poderão ser vendidas até informar o estoque): $SEM_SALDO"
@@ -88,4 +105,4 @@ psql_ -c "select '      ' || p.id || ' | ' || p.nome || ' | ' || coalesce(v.cor,
 echo "    usuários por perfil:"; psql_ -c "select '      ' || role || ': ' || count(*) from user_roles group by role order by role"
 echo "    (o perfil GERENTE ainda não existe: crie em Usuários após a migração)"
 
-if [ "$FALHAS" -eq 0 ]; then echo "==> ENSAIO OK: V3 aplicada sem perda de dados."; else echo "==> ENSAIO COM $FALHAS FALHA(S)."; exit 1; fi
+if [ "$FALHAS" -eq 0 ]; then echo "==> ENSAIO OK: migrações aplicadas sem perda de dados."; else echo "==> ENSAIO COM $FALHAS FALHA(S)."; exit 1; fi
