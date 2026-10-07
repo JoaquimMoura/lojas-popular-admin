@@ -64,6 +64,8 @@ def principal():
     metas(c)
     secao("11. Fechamento mensal e bloqueio de período")
     fechamento(c)
+    secao("12. Custos e relatórios gerenciais")
+    custos_relatorios(c)
 
 
 def finalizar():
@@ -578,6 +580,51 @@ def fechamento(c):
     check("nova aprovação cria a versão seguinte e mantém a anterior",
           s == 200 and g(ap2, "versao") == g(ap, "versao") + 1 and len(g(ap2, "versoes", default=[])) >= 2, (s, ap2))
     call("POST", "/financeiro/fechamento/reabrir", at, {"mes": mes, "justificativa": "Fim do roteiro de validação"})
+
+
+def custos_relatorios(c):
+    gt, at, vt = c["ger"]["token"], c["adm"], c["vend"]["token"]
+    pid = c["produto"]["id"]
+    s, b = call("POST", "/financeiro/custos", gt, {"produtoId": pid, "custo": 600})
+    check("gerente não cadastra custo (403)", s == 403, (s, b))
+    s, b = call("POST", "/financeiro/custos", at, {"produtoId": pid, "custo": -1})
+    check("custo negativo é recusado (400)", s == 400, (s, b))
+    s, b = call("GET", "/financeiro/custos", vt)
+    check("vendedor não consulta custos (403)", s == 403, (s, b))
+    v0 = venda(c)   # sem custo cadastrado ainda para este produto
+    s, sem = call("GET", "/financeiro/custos/itens-sem-custo", gt)
+    check("venda sem custo cadastrado aparece em 'itens sem custo' (nunca zero)", any(i["pedidoId"] == v0["id"] for i in sem), sem)
+    s, b = call("POST", "/financeiro/custos", at, {"produtoId": pid, "custo": 600, "motivo": "Nota de compra (teste)"})
+    check("proprietário cadastra o custo do produto", s == 200 and abs(b["custo"] - 600) < 0.005, (s, b))
+    v1 = venda(c)
+    call("POST", "/financeiro/custos", at, {"produtoId": pid, "custo": 700, "motivo": "Reajuste (teste)"})
+    v2 = venda(c)
+    s, h = call("GET", "/financeiro/custos/historico/%s" % pid, gt)
+    check("histórico de custos preservado (2 registros)", s == 200 and len(h) >= 2, (s, h))
+    s, rel = call("GET", "/financeiro/relatorios/vendas?agrupar=VENDEDOR", gt)
+    linha = next((x for x in g(rel, "linhas", default=[]) if "vend" in x["chave"].lower()), None)
+    check("relatório de vendas: aviso 'não são dinheiro recebido' e margem incompleta não é apresentada",
+          s == 200 and "dinheiro recebido" in g(rel, "aviso") and linha and linha["itensSemCusto"] > 0 and linha["margemBrutaItens"] is None, rel)
+    item0 = next(i for i in sem if i["pedidoId"] == v0["id"])
+    s, b = call("POST", "/financeiro/custos/itens/%s" % item0["itemId"], at, {"custo": 650, "motivo": ""})
+    check("informar custo do item exige motivo (400)", s == 400, (s, b))
+    s, b = call("POST", "/financeiro/custos/itens/%s" % item0["itemId"], at, {"custo": 650, "motivo": "Conforme nota de compra (teste)"})
+    check("proprietário informa o custo do item vendido sem custo", s == 200, (s, b))
+    s, b = call("POST", "/financeiro/custos/itens/%s" % item0["itemId"], at, {"custo": 1, "motivo": "de novo"})
+    check("custo histórico do item é imutável (400)", s == 400 and "não pode ser alterado" in str(g(b, "message")), (s, b))
+    s, rel = call("GET", "/financeiro/relatorios/vendas?agrupar=CANAL", gt)
+    check("relatório por canal funciona", s == 200 and g(rel, "total", "vendas", default=0) > 0, (s, rel))
+    s, rec = call("GET", "/financeiro/relatorios/recebimentos", gt)
+    check("relatório de recebimentos separa pagamento do cliente, entrada efetiva (CAIXA×BANCO) e cartão",
+          s == 200 and {"CAIXA", "BANCO"} <= set(g(rec, "entradaEfetivaPorConta", default={})) and "cartaoPrevistoBruto" in rec, (s, rec))
+    for nome, rota in (("contas pendentes", "contas-pendentes"), ("estoque", "estoque"), ("entregas", "entregas"),
+                       ("comissões", "comissoes"), ("metas", "metas?mes=" + datetime.date.today().strftime("%Y-%m"))):
+        s, b = call("GET", "/financeiro/relatorios/" + rota, gt)
+        check("relatório de %s responde 200" % nome, s == 200, (s, b))
+    s, b = call("GET", "/financeiro/relatorios/vendas", vt)
+    check("vendedor não acessa relatórios gerenciais (403)", s == 403, (s, b))
+    s, b = call("GET", "/financeiro/relatorios/vendas?de=2026-02-01&ate=2026-01-01", gt)
+    check("período invertido é recusado (400)", s == 400, (s, b))
 
 
 if __name__ == "__main__":

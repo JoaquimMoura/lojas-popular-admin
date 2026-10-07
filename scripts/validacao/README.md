@@ -17,12 +17,13 @@ e nunca são impressas. `validacao-out/` e `scripts/validacao/.ambiente.env` est
 
 | Arquivo | Para quê |
 |---|---|
-| `ambiente-pg.sh` | `up`/`down`: PostgreSQL 15 descartável, migrações V1..V5, proprietário, catálogo de exemplo |
+| `ambiente-pg.sh` | `up`/`down`: PostgreSQL 15 descartável, migrações V1..V6, proprietário, catálogo de exemplo |
 | `iniciar-app.sh` / `parar-app.sh` | backend (JAR), build do frontend e proxy que emula o Traefik; PIDs em `validacao-out/pids` |
 | `servidor_proxy.js` | proxy em Node puro: `/api` e `/uploads` -> backend; o resto -> build do frontend (fallback SPA) |
 | `lib.py` | módulo comum (HTTP/multipart, verificações, usuários de teste, config comercial, dados de teste) |
 | `api_etapa1.py` | roteiro de API da Etapa 1 (venda com reserva) |
 | `api_etapa2.py` | roteiro de API da Etapa 2 (saída, entrega, montagem, encomendas, inventário, pós-venda, agenda) |
+| `suite-pg.sh` | roda a suíte JUnit inteira contra um PostgreSQL 15 descartável (V1→V6, `ddl-auto=validate`), separado dos roteiros |
 | `ui_etapa3.py` | navegador (computador e celular) do financeiro: pagamento no pedido, caixa, abas, fechamento, vendedor |
 | `api_etapa3.py` | roteiro de API da Etapa 3 (recebimentos, caixa, contas, cartão, comissões, metas, restituição, fechamento) |
 | `ui_fluxo.py` | roteiro de navegador (Playwright): fluxo completo da Etapa 1 e 2 em computador e celular, mais a vitrine pública |
@@ -66,7 +67,7 @@ export LP_ADMIN_EMAIL='dono@example.invalid'
 export LP_ADMIN_PASSWORD='uma-senha-de-teste-aqui'      # não grave em arquivos versionados
 export LP_JAVA_HOME='C:\Program Files\Java\jdk-21'      # se o java do PATH não for 21+
 
-scripts/validacao/ambiente-pg.sh up         # banco descartável, V1..V5, proprietário e catálogo de exemplo
+scripts/validacao/ambiente-pg.sh up         # banco descartável, V1..V6, proprietário e catálogo de exemplo
 scripts/validacao/iniciar-app.sh            # compila e sobe backend + frontend + proxy (http://localhost:4180)
 
 python3 scripts/validacao/api_etapa1.py     # Etapa 1

@@ -7,15 +7,15 @@ As Etapas 1 e 2 foram preservadas. O **ensaio das migrações V3, V4 e V5 em có
 
 | Área | Entrega |
 |---|---|
-| Recebimentos (UC-14) | Dinheiro, Pix e cartão, **uma forma por venda** (a da própria venda; o formulário não permite trocar). Valor até o saldo, parcial permitido (`statusPagamento = PARCIAL`), `Idempotency-Key` obrigatória, estorno com motivo e rastro. |
+| Recebimentos | Dinheiro, Pix e cartão, **uma forma por venda** (a da própria venda; o formulário não permite trocar). Valor até o saldo, parcial permitido (`statusPagamento = PARCIAL`), `Idempotency-Key` obrigatória, estorno com motivo e rastro. |
 | Três conceitos separados | **Pagamento do cliente** (`recebimentos`), **recebível da operadora** (`recebiveis_cartao`: bruto, taxa, líquido, previsão) e **entrada efetiva** (`lancamentos_financeiros`: dinheiro no CAIXA, Pix e liquidações no BANCO). O cartão não gera entrada nenhuma até a liquidação, então a receita não é contada duas vezes. |
-| Caixa (UC-15) | Abertura com saldo inicial (uma sessão aberta por vez), suprimento/retirada com motivo, fechamento diário com valor contado e **motivo obrigatório quando há diferença**. Só dinheiro e movimentos físicos entram no caixa; Pix, liquidações e baixas "pelo banco" nunca. |
-| Contas (UC-16) | Contas a pagar e a receber com competência e vencimento, baixa por CAIXA ou BANCO (idempotente), estorno da baixa, cancelamento e histórico de eventos. |
-| Cartão (UC-17) | Taxas por operadora/parcelas (D11), parcelas com arredondamento definido (a última absorve a diferença), liquidação (inclusive divergente, registrando a diferença sem inventar valor) e estorno da liquidação. |
-| Comissões (UC-18) | Percentual **comum** sobre o **total cobrado**, previsão na confirmação, aquisição conforme D02, regra **histórica por venda** (mudar o percentual não altera vendas antigas), reversão por cancelamento ou restituição, compensação em pagamentos futuros e pagamento por conta a pagar. |
-| Metas (UC-19) | Meta mensal individual, vendido no mês (cancelamentos não contam), atingimento com política de devoluções conforme D09. |
-| Fechamento mensal (UC-20) | Prévia, pendências, caixa e banco separados, resultado **parcial/provisório**, aprovação do proprietário, versões, bloqueio de lançamentos no período e reabertura com justificativa. |
-| Pós-venda (UC-21/22) | Restituição (solicitar → autorizar → efetivar) e cobrança da diferença de troca, só conforme D09/D07; **devolução física e devolução financeira são controles separados**. |
+| Caixa | Abertura com saldo inicial (uma sessão aberta por vez), suprimento/retirada com motivo, fechamento diário com valor contado e **motivo obrigatório quando há diferença**. Só dinheiro e movimentos físicos entram no caixa; Pix, liquidações e baixas "pelo banco" nunca. |
+| Contas | Contas a pagar e a receber com competência e vencimento, baixa por CAIXA ou BANCO (idempotente), estorno da baixa, cancelamento e histórico de eventos. |
+| Cartão | Taxas por operadora/parcelas (D11), parcelas com arredondamento definido (a última absorve a diferença), liquidação (inclusive divergente, registrando a diferença sem inventar valor) e estorno da liquidação. |
+| Comissões | Percentual **comum** sobre o **total cobrado**, previsão na confirmação, aquisição conforme D02, regra **histórica por venda** (mudar o percentual não altera vendas antigas), reversão por cancelamento ou restituição, compensação em pagamentos futuros e pagamento por conta a pagar. |
+| Metas | Meta mensal individual, vendido no mês (cancelamentos não contam), atingimento com política de devoluções conforme D09. |
+| Fechamento mensal | Prévia, pendências, caixa e banco separados, resultado **parcial/provisório**, aprovação do proprietário, versões, bloqueio de lançamentos no período e reabertura com justificativa. |
+| Pós-venda | Restituição (solicitar → autorizar → efetivar) e cobrança da diferença de troca, só conforme D09/D07; **devolução física e devolução financeira são controles separados**. |
 | Encomendas (revisão) | **Recebimento parcial do fornecedor passa a ser aceito**; a entrega parcial ao cliente continua proibida. |
 
 ## Regras fixas
@@ -110,15 +110,15 @@ Todas as rotas financeiras são de **ADMIN e GERENTE**, exceto: `GET /financeiro
 ## Limitações conhecidas
 
 - **Cartão**: exige pagamento pelo valor total em um único recebimento. Restituição de cartão **reduz recebíveis previstos de trás para frente**; se o recebível já foi liquidado, a restituição sai pelo banco.
-- **Quem é "usuário financeiro"** não foi definido: adotados ADMIN e GERENTE (o vendedor só vê a própria comissão e meta). Confirmar com a loja.
+- **Quem é "usuário financeiro"** é a proposta D12 (pendente de aprovação): ADMIN e GERENTE (o vendedor só vê a própria comissão e meta). Confirmar com a loja.
 - **Crédito/haver** de diferença de troca e **reposição física automática** da troca não existem (a diferença a cobrar vira conta a receber; a reposição é nova venda/saída manual).
-- **Relatórios gerenciais** (UC-23) e conciliação bancária não fazem parte desta etapa.
+- Relatórios gerenciais foram adicionados depois (ver revisão final); conciliação bancária não existe.
 - Pagamentos pelo **Mercado Pago** (checkout legado) seguem o `PaymentService` com regras mais estritas (valor divergente é recusado, evento repetido não duplica, rejeição não cancela o pedido, pendente nunca rebaixa pago) — cobertas por teste de integração, sem simulação ponta a ponta. Vendas da gestão recebem pelo Financeiro.
-- Nenhum custo de produto é cadastrado; por isso o lucro nunca é definitivo nesta etapa.
+- Custos: cadastro e custo histórico do item entraram na V6 (ver [revisão final](gestao-vendas-revisao-final.md)); o lucro só é definitivo sem faltantes (D06, D01/D02, itens sem custo).
 
 ## Pendências da Etapa 3
 
-- **Ensaio das migrações V3, V4 e V5 em cópia do banco de produção — PENDENTE** (sem dump/acesso; não houve conexão à produção). Rodar `scripts/ensaio-migracao-v3.sh` com o dump real e só depois fazer deploy.
+- **Ensaio das migrações V3, V4, V5 e V6 em cópia do banco de produção — PENDENTE** (sem dump/acesso; não houve conexão à produção). Rodar `scripts/ensaio-migracao-v3.sh` com o dump real e só depois fazer deploy.
 - **Decisões abertas**: D01, D02, D06, D07, D09, D10, D11 (além das anteriores). Enquanto nulas, o sistema bloqueia apenas o que depende de cada uma.
 - Confirmar com a loja: perfis financeiros (ADMIN/GERENTE), prazo/forma de pagamento das comissões, política de metas e devoluções, taxas reais das operadoras e critério de competência.
 - Teste em dispositivo físico e outros navegadores não foi feito.

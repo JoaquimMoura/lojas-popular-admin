@@ -18,7 +18,7 @@ FIN_TESTE = {"comissaoPercentual": 5, "comissaoAquisicao": "QUITACAO", "competen
              "perfisReabertura": ["ADMIN"], "perfisRestituicao": ["ADMIN", "GERENTE"], "permiteRestituicao": True,
              "permiteCobrancaDiferenca": True, "metaDescontaDevolucoes": True, "fechamentoExigeSemPendencias": False}
 FIN_VAZIO = {k: None for k in FIN_TESTE}
-ABAS = ["caixa", "contas", "cartao", "comissoes", "metas", "fechamento", "restituicoes"]
+ABAS = ["caixa", "contas", "cartao", "comissoes", "metas", "fechamento", "restituicoes", "relatorios", "custos"]
 
 
 def principal():

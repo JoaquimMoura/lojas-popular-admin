@@ -2,7 +2,7 @@
 # Banco PostgreSQL DESCARTÁVEL para a validação local da gestão de vendas.
 #
 # NUNCA aponte para produção: este script cria (e remove) o container "lp-val-pg" com postgres:15,
-# aplica V1 (psql) e V2..V5 (Flyway), cria o PRIMEIRO usuário proprietário e um catálogo de exemplo.
+# aplica V1 (psql) e V2..V6 (Flyway), cria o PRIMEIRO usuário proprietário e um catálogo de exemplo.
 #
 # Uso:
 #   export LP_ADMIN_EMAIL='proprietario@example.invalid'   # obrigatórias no "up"
@@ -89,7 +89,7 @@ comando_up() {
   echo "==> Aplicando V1 (baseline) com psql"
   psql_ -o /dev/null < "$MIGRACOES/V1__baseline.sql"
 
-  echo "==> Aplicando V2..V5 com o Flyway (baselineOnMigrate, baselineVersion=1)"
+  echo "==> Aplicando V2..V6 com o Flyway (baselineOnMigrate, baselineVersion=1)"
   # MSYS_NO_PATHCONV evita que o Git Bash reescreva os caminhos; a senha vai por variável de ambiente.
   FLYWAY_PASSWORD="$pg_senha" MSYS_NO_PATHCONV=1 docker run --rm --add-host=host.docker.internal:host-gateway \
     -e FLYWAY_PASSWORD -v "$(nativo_win "$MIGRACOES"):/flyway/sql:ro" flyway/flyway:11 \
@@ -98,7 +98,7 @@ comando_up() {
   local aplicadas
   aplicadas="$(docker exec "$NOME" psql -U "$USUARIO" -d "$DB" -tA -c "select string_agg(version, ',' order by installed_rank) from flyway_schema_history where success")"
   echo "    versões aplicadas no histórico: $aplicadas"
-  case "$aplicadas" in *5) ;; *) echo "Migrações incompletas (esperado até a V5)."; exit 1 ;; esac
+  case "$aplicadas" in *6) ;; *) echo "Migrações incompletas (esperado até a V6)."; exit 1 ;; esac
 
   echo "==> Criando o proprietário, um usuário CLIENTE de teste e o catálogo de exemplo"
   # E-mails e senhas entram no SQL por variável do psql lida do ambiente do container (não aparecem em 'ps').

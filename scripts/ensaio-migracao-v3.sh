@@ -112,6 +112,15 @@ if [ "$TEM_V5" = "1" ]; then
   confere "PARCIALMENTE_RECEBIDA aceito em encomendas.status" "1" "$(psql_ -c "select count(*) from pg_constraint where conrelid = 'encomendas'::regclass and contype = 'c' and pg_get_constraintdef(oid) like '%PARCIALMENTE_RECEBIDA%'")"
 fi
 
+# --- Etapa 3, complemento (V6): custos. Nenhum custo e preenchido (nem zero) para vendas antigas
+TEM_V6=$(psql_ -c "select count(*) from information_schema.tables where table_schema='public' and table_name='custos_produto'")
+if [ "$TEM_V6" = "1" ]; then
+  echo "    -- V6 (custos)"
+  confere "custos_produto criada e vazia" "0" "$(psql_ -c 'select count(*) from custos_produto')"
+  confere "nenhum item antigo ganhou origem de custo" "0" "$(psql_ -c 'select count(*) from itens_pedido where custo_origem is not null')"
+  confere "custo_unitario dos itens antigos permanece como estava (nenhum zero inventado)" "0" "$(psql_ -c "select count(*) from itens_pedido i join pedidos p on p.id = i.pedido_id where i.custo_unitario = 0 and p.status_comercial = 'LEGADO'")"
+fi
+
 echo "==> Pontos de atenção (não são falhas)"
 SEM_SALDO=$(psql_ -c "select count(*) from produto_variacoes v where v.estoque is null")
 echo "    variações sem saldo (não poderão ser vendidas até informar o estoque): $SEM_SALDO"
