@@ -378,7 +378,9 @@ def principal():
                 pg_g.get_by_role("link", name=re.compile("Ocorrência #")).first.click()
                 pg_g.wait_for_url(re.compile(r"/gestao/pos-venda/\d+"))
                 pg_g.locator(".alert-warning", has_text="D09").first.wait_for()
-                check("%s devolução exibe o bloqueio financeiro D09" % n, pg_g.locator(".alert-warning", has_text="D09").count() > 0)
+                pg_g.wait_for_timeout(500)
+                check("%s devolução exibe o bloqueio financeiro D09" % n, pg_g.locator(".alert-warning", has_text="D09").count() > 0,
+                      texto(pg_g)[:400])
                 antes = estoque_branco(adm, gr)[0]
                 pg_g.get_by_role("button", name="Receber devolução").click()
                 mcampo(pg_g, "Condição").select_option(label="Apta para revenda")

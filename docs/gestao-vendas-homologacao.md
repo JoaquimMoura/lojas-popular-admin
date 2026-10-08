@@ -79,10 +79,11 @@ Contatos, janela e responsável pela decisão de rollback devem ser preenchidos 
 
 | Tipo | Ambiente | Resultado |
 |---|---|---|
-| Suíte JUnit | H2 | 107 testes passam |
-| Suíte JUnit | PostgreSQL 15 (V1→V6, `validate`) | 107 testes passam |
-| Roteiros de API | PostgreSQL 15 | `api_etapa1` 118/118 · `api_etapa2` 154/154 · `api_etapa3` 157/157 |
-| Roteiros de navegador | PostgreSQL 15, 1366 px e 390 px | `ui_etapa3` 50/50 · `ui_fluxo` 68/68 |
-| Frontend | build e lint | build OK; lint com os mesmos 6 erros antigos, nenhum novo |
+| Suíte JUnit completa | H2 e PostgreSQL 15 (V1→V6, `validate`) | 107 testes passaram na rodada anterior; hoje há **111** (4 novos: pós-venda x D12 por API direta, vendas legadas, taxas previstas x liquidadas, critérios do resultado) |
+| Testes afetados nesta rodada | H2 | `PermissaoFinanceiraTest`, `CustoRelatorioTest`, `FinanceiroServiceTest` (53) e `VendaServiceTest`, `PagamentoPropriedadeTest` (24): todos passam |
+| Testes afetados nesta rodada | PostgreSQL 15 | `PermissaoFinanceiraTest`, `CustoRelatorioTest`, `FinanceiroServiceTest`, `AtendimentoServiceTest`, `SegurancaApiTest` (86): todos passam |
+| Roteiros de API | PostgreSQL 15 | `api_etapa3` 159/159 (etapas 1 e 2 não foram tocadas: 118/118 e 154/154 da rodada anterior) |
+| Roteiros de navegador | PostgreSQL 15 | `ui_etapa3` 50/50 · `ui_fluxo` 68/68 (uma execução em banco novo falhou uma vez em "devolução exibe o bloqueio D09" por tempo de renderização; não se repetiu em duas execuções seguintes. O roteiro agora espera 500 ms e imprime a tela em caso de falha) |
+| Frontend | build e lint | build OK; lint com os mesmos 6 erros antigos |
 
-Contagem: 100 (rodada anterior) + 7 de `PermissaoFinanceiraTest` = 107. Os roteiros `ui_fluxo` e `ui_etapa3` concedem a D12 ao gerente como **valor de teste** e restauram o estado original ao final.
+A suíte completa **não** foi repetida nesta rodada: as mudanças ficaram em pós-venda, relatórios, fechamento e no painel de pagamento, cobertos pelas classes acima. Os roteiros `ui_fluxo` e `ui_etapa3` concedem a D12 ao gerente como valor de teste e restauram o original.

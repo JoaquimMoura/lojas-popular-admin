@@ -612,6 +612,12 @@ def custos_relatorios(c):
     linha = next((x for x in g(rel, "linhas", default=[]) if "vend" in x["chave"].lower()), None)
     check("relatório de vendas: aviso 'não são dinheiro recebido' e margem incompleta não é apresentada",
           s == 200 and "dinheiro recebido" in g(rel, "aviso") and linha and linha["itensSemCusto"] > 0 and linha["margemBrutaItens"] is None, rel)
+    check("relatório de vendas traz o bloco de cobertura (legadas incluídas/excluídas)",
+          "cobertura" in rel and "observacao" in rel["cobertura"] and "legadasIncluidas" in rel["cobertura"], rel.get("cobertura"))
+    s, fec = call("GET", "/financeiro/fechamento/previa?mes=" + datetime.date.today().strftime("%Y-%m"), gt)
+    res = g(fec, "resultado", default={})
+    check("fechamento: taxas de cartão previstas x liquidadas e critérios de reconhecimento explicados",
+          s == 200 and "taxasCartaoLiquidadas" in res and "taxasCartaoEmAberto" in res and len(res.get("criterios", [])) == 3 and res.get("definitivo") is False, res)
     item0 = next(i for i in sem if i["pedidoId"] == v0["id"])
     s, b = call("POST", "/financeiro/custos/itens/%s" % item0["itemId"], at, {"custo": 650, "motivo": ""})
     check("informar custo do item exige motivo (400)", s == 400, (s, b))
