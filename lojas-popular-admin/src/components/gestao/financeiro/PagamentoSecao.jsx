@@ -8,6 +8,7 @@ import StatusBadge from "../StatusBadge";
 import { Secao, Linha } from "../Secao";
 import { useChave } from "../useChave";
 import MotivoModal from "./MotivoModal";
+import { useFinanceiroPermissoes } from "./useFinanceiroPermissoes";
 import { AvisosLista, CampoValor, TabelaCards } from "./Comuns";
 import { FORMAS, ORIGENS_LANCAMENTO, LIVROS, fmtDate, fmtDateTime, fmtMoney, fmtPercent, hojeIso } from "../../../utils/format";
 
@@ -202,13 +203,14 @@ function EstornarModal({ rec, onClose, onVenda }) {
 
 /** Seção "Pagamento" do detalhe da venda (recebimentos, recebíveis, restituições e lançamentos). */
 export default function PagamentoSecao({ venda, onVenda }) {
+  const { perm } = useFinanceiroPermissoes();
   const [modal, setModal] = useState(null); // 'registrar' | { estornar: rec }
   const pag = venda.pagamento;
   const acoes = venda.acoes ?? {};
   if (!pag) return null;
   const recs = pag.recebimentos ?? [];
-  const podeRegistrar = acoes.podeRegistrarRecebimento ?? pag.podeRegistrar;
-  const podeEstornar = acoes.podeEstornarRecebimento ?? pag.podeEstornar;
+  const podeRegistrar = (acoes.podeRegistrarRecebimento ?? pag.podeRegistrar) && perm.RECEBER;
+  const podeEstornar = (acoes.podeEstornarRecebimento ?? pag.podeEstornar) && perm.ESTORNAR;
   const bloqueios = pag.bloqueios ?? {};
 
   return (

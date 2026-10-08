@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useFinanceiroPermissoes } from "../../../components/gestao/financeiro/useFinanceiroPermissoes";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { financeiroApi } from "../../../services/financeiroApi";
@@ -137,6 +138,7 @@ function HistoricoModal({ id, onClose }) {
 }
 
 export default function ContasPage() {
+  const { perm } = useFinanceiroPermissoes();
   const [tipo, setTipo] = useState("");
   const [situacao, setSituacao] = useState("");
   const [de, setDe] = useState("");
@@ -183,7 +185,7 @@ export default function ContasPage() {
           <input type="date" className="form-control" value={ate} onChange={(e) => setAte(e.target.value)} />
         </div>
         <div className="col-12 col-md-4 d-grid d-md-flex justify-content-md-end">
-          <button className="btn btn-primary" onClick={() => abrir("form", null)}>Nova conta</button>
+          {perm.PAGAR && <button className="btn btn-primary" onClick={() => abrir("form", null)}>Nova conta</button>}
         </div>
       </div>
 
@@ -218,10 +220,10 @@ export default function ContasPage() {
             ) },
             { titulo: "Ações", render: (c) => (
               <div className="d-flex flex-wrap gap-1 justify-content-end">
-                {c.situacao === "ABERTA" && <button className="btn btn-sm btn-success" onClick={() => abrir("baixar", c)}>{c.tipo === "PAGAR" ? "Pagar" : "Receber"}</button>}
-                {c.situacao === "ABERTA" && <button className="btn btn-sm btn-outline-primary" onClick={() => abrir("form", c)}>Editar</button>}
-                {c.situacao === "PAGA" && <button className="btn btn-sm btn-outline-warning" onClick={() => abrir("estornar", c)}>Estornar baixa</button>}
-                {c.situacao === "ABERTA" && <button className="btn btn-sm btn-outline-danger" onClick={() => abrir("cancelar", c)}>Cancelar</button>}
+                {c.situacao === "ABERTA" && (c.tipo === "PAGAR" ? perm.PAGAR : perm.RECEBER) && <button className="btn btn-sm btn-success" onClick={() => abrir("baixar", c)}>{c.tipo === "PAGAR" ? "Pagar" : "Receber"}</button>}
+                {c.situacao === "ABERTA" && perm.PAGAR && <button className="btn btn-sm btn-outline-primary" onClick={() => abrir("form", c)}>Editar</button>}
+                {c.situacao === "PAGA" && perm.ESTORNAR && <button className="btn btn-sm btn-outline-warning" onClick={() => abrir("estornar", c)}>Estornar baixa</button>}
+                {c.situacao === "ABERTA" && perm.PAGAR && <button className="btn btn-sm btn-outline-danger" onClick={() => abrir("cancelar", c)}>Cancelar</button>}
                 <button className="btn btn-sm btn-outline-secondary" onClick={() => abrir("historico", c)}>Histórico</button>
               </div>
             ) },

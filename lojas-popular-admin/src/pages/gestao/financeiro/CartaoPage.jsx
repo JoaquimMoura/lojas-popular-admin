@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useFinanceiroPermissoes } from "../../../components/gestao/financeiro/useFinanceiroPermissoes";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { financeiroApi } from "../../../services/financeiroApi";
@@ -53,6 +54,7 @@ function LiquidarModal({ r, onClose, onFeito }) {
 }
 
 function Recebiveis() {
+  const { perm } = useFinanceiroPermissoes();
   const [status, setStatus] = useState("");
   const [operadora, setOperadora] = useState("");
   const [de, setDe] = useState("");
@@ -132,8 +134,8 @@ function Recebiveis() {
             ) },
             { titulo: "Ações", render: (r) => (
               <div className="d-flex gap-1 justify-content-end">
-                {r.status === "PREVISTO" && <button className="btn btn-sm btn-success" onClick={() => setModal({ acao: "liquidar", r })}>Liquidar</button>}
-                {r.status === "LIQUIDADO" && <button className="btn btn-sm btn-outline-warning" onClick={() => setModal({ acao: "estornar", r })}>Estornar liquidação</button>}
+                {r.status === "PREVISTO" && perm.RECEBER && <button className="btn btn-sm btn-success" onClick={() => setModal({ acao: "liquidar", r })}>Liquidar</button>}
+                {r.status === "LIQUIDADO" && perm.ESTORNAR && <button className="btn btn-sm btn-outline-warning" onClick={() => setModal({ acao: "estornar", r })}>Estornar liquidação</button>}
               </div>
             ) },
           ]}

@@ -8,6 +8,7 @@ import StatusBadge from "../StatusBadge";
 import { Secao, Linha } from "../Secao";
 import { useChave } from "../useChave";
 import MotivoModal from "./MotivoModal";
+import { useFinanceiroPermissoes } from "./useFinanceiroPermissoes";
 import { AvisosLista, CampoValor } from "./Comuns";
 import { FORMAS, fmtDate, fmtDateTime, fmtMoney, hojeIso } from "../../../utils/format";
 
@@ -68,6 +69,7 @@ export function EfetivarModal({ r, onClose, onFeito }) {
 
 /** Ações (autorizar, efetivar, cancelar) de uma restituição; chama `onFeito` após cada operação. */
 export function AcoesRestituicao({ r, onFeito }) {
+  const { perm } = useFinanceiroPermissoes();
   const [modal, setModal] = useState(null);
   const [busy, setBusy] = useState(false);
   const [erro, setErro] = useState(null);
@@ -92,7 +94,7 @@ export function AcoesRestituicao({ r, onFeito }) {
     onFeito();
   };
   const aberta = r.status === "SOLICITADA" || r.status === "AUTORIZADA";
-  if (!aberta) return null;
+  if (!aberta || !perm.RESTITUIR) return null;
   return (
     <div className="mt-2">
       <ErroAlert erro={erro} onClose={() => setErro(null)} />
@@ -161,6 +163,7 @@ function CobrarDiferencaModal({ o, onClose, onFeito }) {
 
 /** Bloco "Restituição" (devolução financeira) da ocorrência, separado da devolução física. */
 export default function RestituicaoBloco({ o, onFeito }) {
+  const { perm } = useFinanceiroPermissoes();
   const [modal, setModal] = useState(null);
   const restituicoes = o.restituicoes ?? [];
   if (o.tipo === "ASSISTENCIA" && restituicoes.length === 0) return null;
@@ -198,7 +201,7 @@ export default function RestituicaoBloco({ o, onFeito }) {
           </div>
         )}
 
-        {o.podeSolicitarRestituicao && (
+        {o.podeSolicitarRestituicao && perm.RESTITUIR && (
           <div className="d-grid d-sm-flex">
             <button type="button" className="btn btn-outline-primary" onClick={() => setModal("solicitar")}>Solicitar restituição</button>
           </div>
@@ -217,7 +220,7 @@ export default function RestituicaoBloco({ o, onFeito }) {
           ) : (
             <div className="text-muted mt-1">Nenhuma cobrança de diferença criada.</div>
           )}
-          {o.podeCobrarDiferenca && !o.contaDiferenca && (
+          {o.podeCobrarDiferenca && perm.RESTITUIR && !o.contaDiferenca && (
             <div className="d-grid d-sm-flex mt-2">
               <button type="button" className="btn btn-outline-primary" onClick={() => setModal("cobrar")}>Cobrar diferença</button>
             </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useFinanceiroPermissoes } from "../../../components/gestao/financeiro/useFinanceiroPermissoes";
 import { toast } from "react-toastify";
 import { financeiroApi } from "../../../services/financeiroApi";
 import ErroAlert from "../../../components/gestao/ErroAlert";
@@ -159,6 +160,7 @@ function SessaoDetalhe({ id, onClose }) {
 export default function CaixaPage() {
   const atual = useCarga(() => financeiroApi.caixaAtual(), []);
   const hist = useCarga(() => financeiroApi.sessoesCaixa(30), []);
+  const { perm } = useFinanceiroPermissoes();
   const [modal, setModal] = useState(null); // SUPRIMENTO | RETIRADA | fechar
   const [ver, setVer] = useState(null);
 
@@ -178,7 +180,8 @@ export default function CaixaPage() {
       <ErroAlert erro={atual.erro} />
       {atual.loading && !c && <Carregando />}
 
-      {c && !c.aberta && <AbrirForm onFeito={feito} />}
+      {c && !c.aberta && perm.RECEBER && <AbrirForm onFeito={feito} />}
+      {c && !c.aberta && !perm.RECEBER && <div className="alert alert-secondary small">Seu perfil não pode abrir o caixa (permissão de receber não concedida).</div>}
 
       {c?.aberta && s && (
         <Secao titulo={`Caixa aberto — sessão #${s.id}`}>
@@ -192,9 +195,9 @@ export default function CaixaPage() {
             { rotulo: "Saldo esperado", valor: s.saldoEsperado, classe: "text-primary" },
           ]} />
           <div className="d-grid d-sm-flex gap-2 mb-3">
-            <button className="btn btn-outline-primary" onClick={() => setModal("SUPRIMENTO")}>Suprimento</button>
-            <button className="btn btn-outline-primary" onClick={() => setModal("RETIRADA")}>Retirada</button>
-            <button className="btn btn-danger" onClick={() => setModal("fechar")}>Fechar caixa</button>
+            {perm.RECEBER && <button className="btn btn-outline-primary" onClick={() => setModal("SUPRIMENTO")}>Suprimento</button>}
+            {perm.PAGAR && <button className="btn btn-outline-primary" onClick={() => setModal("RETIRADA")}>Retirada</button>}
+            {perm.RECEBER && <button className="btn btn-danger" onClick={() => setModal("fechar")}>Fechar caixa</button>}
           </div>
           <h6>Movimentos da sessão</h6>
           <MovimentosTabela movimentos={s.movimentos} />

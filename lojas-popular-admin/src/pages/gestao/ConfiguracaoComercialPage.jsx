@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import PendenciasAlert from "../../components/gestao/PendenciasAlert";
 import ErroAlert from "../../components/gestao/ErroAlert";
 import DecisoesFinanceiras from "../../components/gestao/financeiro/DecisoesFinanceiras";
+import PermissoesFinanceiras from "../../components/gestao/financeiro/PermissoesFinanceiras";
 import { ARREDONDAMENTOS, FORMAS, PERFIS, fmtPercent } from "../../utils/format";
 
 const PERFIS_CANCELAMENTO = ["ADMIN", "GERENTE", "VENDEDOR"];
@@ -190,6 +191,7 @@ export default function ConfiguracaoComercialPage() {
       </form>
 
       <DecisoesFinanceiras key={JSON.stringify(cfg?.financeiro ?? {})} cfg={cfg} ehAdmin={!!ehAdmin} onSalvo={aplicar} />
+      <PermissoesFinanceiras ehAdmin={!!ehAdmin} />
 
       <div className="card mb-4">
         <div className="card-header">Condições de pagamento</div>
