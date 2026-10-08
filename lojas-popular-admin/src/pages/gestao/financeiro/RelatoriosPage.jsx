@@ -80,9 +80,8 @@ function chaveVenda(agrupar, k) {
   return k;
 }
 
-const LEGADO_VENDEDOR = "(vendedor desconhecido — venda legada)";
-const LEGADO_CANAL = "LEGADO_ONLINE (canal desconhecido)";
-const ehLegado = (k) => k === LEGADO_VENDEDOR || k === LEGADO_CANAL || /legad/i.test(String(k ?? ""));
+// o servidor informa quantas vendas do grupo são legadas (campo vendasLegadas): sem heurística de texto
+const ehLegado = (l) => Number(l?.vendasLegadas ?? 0) > 0;
 
 function CoberturaVendas({ cob }) {
   if (!cob) return null;
@@ -163,7 +162,7 @@ function VendasSecao() {
           <TabelaCards
             linhas={linhas}
             chave={(l) => l.chave}
-            destaque={(l) => (ehLegado(l.chave) ? "border-warning bg-warning-subtle" : "")}
+            destaque={(l) => (ehLegado(l) ? "border-warning bg-warning-subtle" : "")}
             vazio="Nenhuma venda confirmada no período."
             colunas={[
               {
@@ -171,7 +170,11 @@ function VendasSecao() {
                 render: (l) => (
                   <>
                     {chaveVenda(agrupar, l.chave)}
-                    {ehLegado(l.chave) && <span className="badge text-bg-warning ms-1">Legado</span>}
+                    {ehLegado(l) && (
+                      <span className="badge text-bg-warning ms-1">
+                        {l.vendasLegadas === l.vendas ? "Legado" : `${l.vendasLegadas} legada(s)`}
+                      </span>
+                    )}
                   </>
                 ),
               },

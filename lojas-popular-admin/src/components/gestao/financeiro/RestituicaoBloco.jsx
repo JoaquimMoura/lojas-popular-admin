@@ -13,13 +13,15 @@ import { AvisosLista, CampoValor } from "./Comuns";
 import { FORMAS, fmtDate, fmtDateTime, fmtMoney, fmtMoneyRestrito, hojeIso } from "../../../utils/format";
 
 export function SolicitarModal({ o, onClose, onFeito }) {
+  // valorRestituivel nulo = valor restrito (D12: sem permissão de consultar). O servidor confere o limite.
+  const restrito = o.valorRestituivel == null;
   const max = Number(o.valorRestituivel ?? 0);
-  const [valor, setValor] = useState(max > 0 ? max.toFixed(2) : "");
+  const [valor, setValor] = useState(!restrito && max > 0 ? max.toFixed(2) : "");
   const [motivo, setMotivo] = useState("");
   const n = Number(valor);
   return (
     <FormModal titulo="Solicitar restituição ao cliente" submitLabel="Solicitar" size="md"
-      submitDisabled={!(n > 0) || n > max + 0.004 || motivo.trim() === ""} onClose={onClose}
+      submitDisabled={!(n > 0) || (!restrito && n > max + 0.004) || motivo.trim() === ""} onClose={onClose}
       onSubmit={async () => {
         await financeiroApi.solicitarRestituicao(o.id, { valor: n, motivo: motivo.trim() });
         toast.success("Restituição solicitada. Falta a autorização de outra pessoa.");
@@ -31,8 +33,8 @@ export function SolicitarModal({ o, onClose, onFeito }) {
       </div>
       <div className="row g-3">
         <div className="col-12">
-          <CampoValor label="Valor a restituir" obrigatorio value={valor} onChange={setValor} max={max > 0 ? max : undefined}
-            autoFocus ajuda={`Máximo restituível: ${fmtMoney(max)}.`} />
+          <CampoValor label="Valor a restituir" obrigatorio value={valor} onChange={setValor} max={!restrito && max > 0 ? max : undefined}
+            autoFocus ajuda={restrito ? "O limite restituível é restrito ao seu perfil: o sistema confere e recusa valores acima do item devolvido." : `Máximo restituível: ${fmtMoney(max)}.`} />
         </div>
         <div className="col-12">
           <label className="form-label">Motivo <span className="text-danger">*</span></label>
@@ -56,7 +58,7 @@ export function EfetivarModal({ r, onClose, onFeito }) {
         onFeito();
       }}>
       <div className="alert alert-warning">
-        Efetivar registra a saída de <strong>{fmtMoney(r.valor)}</strong> ({FORMAS[r.forma] ?? r.forma}) e não pode ser
+        Efetivar registra a saída de <strong>{fmtMoneyRestrito(r.valor)}</strong> ({r.forma == null ? "forma restrita" : FORMAS[r.forma] ?? r.forma}) e não pode ser
         desfeita por esta tela. {r.forma === "DINHEIRO" ? "Dinheiro exige o caixa aberto. " : ""}
         Autorizada por {r.autorizadaPor ?? "—"}.
       </div>
