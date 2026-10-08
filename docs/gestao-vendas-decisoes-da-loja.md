@@ -15,6 +15,7 @@ Registro das respostas dadas pelo responsável em 08/10/2026. **Nada disto foi a
 | 5 Quem cancela venda (D07) | **Gerente e proprietário** | Configuração comercial › perfis de cancelamento |
 | 6 Prazo de encomenda (D08) | **5 dias** | **Por produto** (campo "prazo de encomenda" no cadastro de cada produto sob encomenda). Não existe prazo global: o sistema só mostra "A definir" onde o produto não tem prazo. |
 | 8 Permissões do gerente (D12) | **Consultar, receber, pagar, estornar e restituir: proprietário e gerente** | Configuração comercial › Permissões financeiras (as cinco = proprietário e gerente) |
+| 9 Percentual de comissão (D01) | **3%** sobre o total cobrado, igual para todos | Regras financeiras › percentual de comissão = 3 |
 | 10 Comissão devida quando (D02) | **Ao confirmar a venda** | Regras financeiras › aquisição da comissão = confirmação |
 | 11 Pagamento das comissões | **Dia 5 de cada mês** | Não é configuração: o sistema pede o vencimento a cada pagamento; usar sempre dia 5 |
 | 12 Meta desconta devoluções (D09) | **Sim** | Regras financeiras › meta desconta devoluções = sim |
@@ -33,7 +34,6 @@ Registro das respostas dadas pelo responsável em 08/10/2026. **Nada disto foi a
 | Pergunta | O que bloqueia |
 |---|---|
 | 7 Taxas e prazos de cada operadora (D11): nome, taxa % por parcelas (1x a 6x), dias até a 1ª parcela e dias entre parcelas | Recebimento no cartão (a venda pode ser registrada, mas não recebida). |
-| 9 Percentual de comissão (D01): respondeu "igual para todos", falta o número | Nenhuma comissão é calculada; o pagamento de comissões fica indisponível. A resposta 10 (devida ao confirmar) só passa a valer quando houver percentual. |
 | 20 e 19 Datas | Previstas para a **próxima semana (12 a 16/10/2026)**: contagem do estoque (libera a venda) e cadastro dos custos (margem e resultado definitivo; D01 também precisa estar definido). |
 
 ## Pontos que merecem atenção
