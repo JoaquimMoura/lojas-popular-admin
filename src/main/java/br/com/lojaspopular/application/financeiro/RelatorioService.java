@@ -48,8 +48,12 @@ public class RelatorioService {
       BigDecimal custoConhecido, long itensSemCusto, boolean margemCompleta, BigDecimal margemBrutaItens) {
   }
 
+  public record Cobertura(long vendasGestao, long legadasIncluidas, BigDecimal totalLegadoIncluido, long legadasNaoPagasExcluidas,
+      BigDecimal totalLegadoNaoPagoExcluido, long legadasCanceladasExcluidas, String observacao) {
+  }
+
   public record RelatorioVendas(LocalDate de, LocalDate ate, String agrupadoPor, String aviso, List<LinhaVenda> linhas,
-      LinhaVenda total) {
+      LinhaVenda total, Cobertura cobertura) {
   }
 
   public record LinhaRecebimento(String chave, long recebimentos, BigDecimal registrado, BigDecimal estornado, BigDecimal liquido) {
@@ -58,7 +62,7 @@ public class RelatorioService {
   public record RelatorioRecebimentos(LocalDate de, LocalDate ate, String aviso, List<LinhaRecebimento> pagamentosDoCliente,
       Map<String, BigDecimal> entradaEfetivaPorConta, Map<String, BigDecimal> saidaEfetivaPorConta,
       BigDecimal cartaoPrevistoBruto, BigDecimal cartaoPrevistoTaxa, BigDecimal cartaoPrevistoLiquido, long cartaoPrevistoParcelas,
-      BigDecimal cartaoLiquidadoValor, long cartaoLiquidadoParcelas) {
+      BigDecimal cartaoLiquidadoValor, long cartaoLiquidadoParcelas, String cobertura) {
   }
 
   public record GrupoConta(String tipo, long contas, BigDecimal total, long vencidas, BigDecimal totalVencido, long vencemEm7Dias,
@@ -114,19 +118,41 @@ public class RelatorioService {
     if (!List.of("VENDEDOR", "CANAL", "DIA", "MES").contains(por)) {
       throw new NegocioException("Agrupamento inválido. Use VENDEDOR, CANAL, DIA ou MES.");
     }
-    List<Pedido> lista = pedidos.confirmadasNoPeriodo(relogio.inicioDoDia(p[0]), relogio.inicioDoDia(p[1].plusDays(1)));
+    var inicio = relogio.inicioDoDia(p[0]);
+    var fim = relogio.inicioDoDia(p[1].plusDays(1));
+    List<Pedido> lista = new ArrayList<>(pedidos.confirmadasNoPeriodo(inicio, fim));
+    long vendasGestao = lista.size();
+    // Vendas legadas (checkout online anterior): entram quando pagas/entregues, com vendedor e canal DESCONHECIDOS
+    // (nunca inventados) e data = criação do pedido. Não pagas e canceladas ficam de fora, mas são contadas na cobertura.
+    var legados = pedidos.legadosNoPeriodo(inicio, fim);
+    var legPagos = legados.stream().filter(x -> x.getStatus() == br.com.lojaspopular.domain.catalog.enums.PedidoStatus.PAGO
+        || x.getStatus() == br.com.lojaspopular.domain.catalog.enums.PedidoStatus.ENTREGUE).toList();
+    var legNaoPagos = legados.stream().filter(x -> x.getStatus() == br.com.lojaspopular.domain.catalog.enums.PedidoStatus.CRIADO).toList();
+    long legCancel = legados.stream().filter(x -> x.getStatus() == br.com.lojaspopular.domain.catalog.enums.PedidoStatus.CANCELADO).count();
+    lista.addAll(legPagos);
     Map<String, List<Pedido>> grupos = new TreeMap<>();
     for (Pedido ped : lista) {
+      boolean legado = ped.getStatusComercial() == br.com.lojaspopular.domain.order.enums.StatusComercial.LEGADO;
+      var dia = (legado ? ped.getCriadoEm() : ped.getConfirmadoEm()).atZone(relogio.zona()).toLocalDate();
       String k = switch (por) {
-        case "VENDEDOR" -> ped.getVendedor() == null ? "(sem vendedor)" : FinanceiroMapper.nome(ped.getVendedor());
-        case "CANAL" -> ped.getCanal() == null ? "(sem canal)" : ped.getCanal().name();
-        case "DIA" -> ped.getConfirmadoEm().atZone(relogio.zona()).toLocalDate().toString();
-        default -> ped.getConfirmadoEm().atZone(relogio.zona()).toLocalDate().toString().substring(0, 7);
+        case "VENDEDOR" -> ped.getVendedor() != null ? FinanceiroMapper.nome(ped.getVendedor())
+            : legado ? "(vendedor desconhecido — venda legada)" : "(sem vendedor)";
+        case "CANAL" -> ped.getCanal() != null ? ped.getCanal().name()
+            : legado ? "LEGADO_ONLINE (canal desconhecido)" : "(sem canal)";
+        case "DIA" -> dia.toString();
+        default -> dia.toString().substring(0, 7);
       };
       grupos.computeIfAbsent(k, x -> new ArrayList<>()).add(ped);
     }
     List<LinhaVenda> linhas = grupos.entrySet().stream().map(e -> linha(e.getKey(), e.getValue())).toList();
-    return new RelatorioVendas(p[0], p[1], por, AVISO_VENDAS, linhas, linha("TOTAL", lista));
+    BigDecimal totLeg = legPagos.stream().map(x -> x.getTotal() == null ? BigDecimal.ZERO : x.getTotal()).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal totNaoPago = legNaoPagos.stream().map(x -> x.getTotal() == null ? BigDecimal.ZERO : x.getTotal()).reduce(BigDecimal.ZERO, BigDecimal::add);
+    String obs = "Cobertura: " + vendasGestao + " venda(s) da gestão (data de confirmação) + " + legPagos.size()
+        + " venda(s) legada(s) do checkout online pagas/entregues (data de criação do pedido; vendedor e canal desconhecidos, sem custo). "
+        + "Fora do total: " + legNaoPagos.size() + " pedido(s) legado(s) não pago(s) (R$ " + totNaoPago + ") e " + legCancel
+        + " cancelado(s).";
+    return new RelatorioVendas(p[0], p[1], por, AVISO_VENDAS, linhas, linha("TOTAL", lista),
+        new Cobertura(vendasGestao, legPagos.size(), totLeg, legNaoPagos.size(), totNaoPago, legCancel, obs));
   }
 
   private LinhaVenda linha(String chave, List<Pedido> lista) {
@@ -204,9 +230,16 @@ public class RelatorioService {
         liqN++;
       }
     }
+    var legPagosPeriodo = pedidos.legadosNoPeriodo(relogio.inicioDoDia(p[0]), relogio.inicioDoDia(p[1].plusDays(1))).stream()
+        .filter(x -> x.getStatus() == br.com.lojaspopular.domain.catalog.enums.PedidoStatus.PAGO
+            || x.getStatus() == br.com.lojaspopular.domain.catalog.enums.PedidoStatus.ENTREGUE).toList();
+    BigDecimal totLeg = legPagosPeriodo.stream().map(x -> x.getTotal() == null ? BigDecimal.ZERO : x.getTotal()).reduce(BigDecimal.ZERO, BigDecimal::add);
+    String cob = "Cobertura: só pagamentos registrados no financeiro da gestão. " + legPagosPeriodo.size()
+        + " pedido(s) legado(s) do checkout online marcados como pagos no período (R$ " + totLeg
+        + ", pelo gateway) NÃO aparecem aqui: não há recebimento, caixa nem recebível registrado para eles.";
     return new RelatorioRecebimentos(p[0], p[1], "Pagamento do cliente ≠ recebível da operadora ≠ entrada efetiva. O cartão só entra "
         + "no banco na liquidação; o caixa físico recebe apenas dinheiro.", pag, entradas, saidas, bruto, taxa, liquido, prevN,
-        liquidado, liqN);
+        liquidado, liqN, cob);
   }
 
   // ------------------------------------------------------------------ contas pendentes

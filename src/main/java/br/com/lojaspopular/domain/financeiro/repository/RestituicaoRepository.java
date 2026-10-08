@@ -39,6 +39,9 @@ public interface RestituicaoRepository extends JpaRepository<Restituicao, Long> 
   BigDecimal somaPorOcorrencia(@Param("ocorrenciaId") Long ocorrenciaId,
       @Param("status") Collection<StatusRestituicao> status);
 
+  @Query("select r from Restituicao r where r.status = 'EFETIVADA' and r.dataEfetiva >= :de and r.dataEfetiva <= :ate")
+  java.util.List<Restituicao> efetivadasNoPeriodo(@Param("de") java.time.LocalDate de, @Param("ate") java.time.LocalDate ate);
+
   @Query("select coalesce(sum(r.valor), 0) from Restituicao r where r.status = 'EFETIVADA' and r.dataEfetiva >= :de and r.dataEfetiva <= :ate")
   BigDecimal somaEfetivadaNoPeriodo(@Param("de") java.time.LocalDate de, @Param("ate") java.time.LocalDate ate);
 

@@ -866,6 +866,44 @@ class FinanceiroServiceTest {
     assertThatThrownBy(() -> fechamento.aprovar(mes)).isInstanceOf(NegocioException.class).hasMessageContaining("pendência");
   }
 
+  @Test
+  void taxaDeCartaoEhDespesaPrevistaDaVendaESuaLiquidacaoFinanceiraApareceAparte() {
+    como(admin);
+    String mes = Relogio.texto(relogio.hoje());
+    var antes = fechamento.previa(mes).resultado();
+    var v = venda(FormaPagamento.CARTAO, 3, 1);
+    como(admin);
+    var semPagamento = fechamento.previa(mes).resultado();
+    assertThat(semPagamento.faltantes()).anyMatch(f -> f.contains("sem recebimento registrado"));
+    assertThat(semPagamento.taxasCartao()).isEqualByComparingTo(antes.taxasCartao());   // taxa ainda desconhecida: nada inventado
+
+    como(gerente);
+    var r = recebimentos.registrar(v, new RegistrarRecebimentoRequest(new BigDecimal("1100.00"), null, null, "OPTESTE", null), chave());
+    como(admin);
+    var prev = fechamento.previa(mes).resultado();
+    assertThat(prev.taxasCartao().subtract(antes.taxasCartao())).isEqualByComparingTo("44.01");           // prevista (3 x 14,67)
+    assertThat(prev.taxasCartaoLiquidadas()).isEqualByComparingTo(antes.taxasCartaoLiquidadas());       // nada liquidado ainda
+    assertThat(prev.criterios()).anyMatch(c -> c.contains("PREVISTA") && c.contains("liquidação financeira"));
+
+    como(gerente);
+    cartao.liquidar(r.recebiveis().get(0).id(), null, null, chave());
+    como(admin);
+    var liq = fechamento.previa(mes).resultado();
+    assertThat(liq.taxasCartao().subtract(antes.taxasCartao())).isEqualByComparingTo("44.01");           // o resultado não muda
+    assertThat(liq.taxasCartaoLiquidadas().subtract(antes.taxasCartaoLiquidadas())).isEqualByComparingTo("14.67");
+    assertThat(liq.taxasCartaoEmAberto().subtract(antes.taxasCartaoEmAberto())).isEqualByComparingTo("29.34");
+    assertThat(liq.resultadoParcial()).isEqualByComparingTo(prev.resultadoParcial());                    // liquidar não altera o resultado
+  }
+
+  @Test
+  void resultadoNaoEhDefinitivoEExplicaOsCriteriosUsados() {
+    como(admin);
+    var p = fechamento.previa(Relogio.texto(relogio.hoje())).resultado();
+    assertThat(p.definitivo()).isFalse();
+    assertThat(p.criterios()).hasSize(3);
+    assertThat(p.criterios().get(0)).startsWith("Receita:");
+  }
+
   // ================================================================== config financeira
 
   @Test

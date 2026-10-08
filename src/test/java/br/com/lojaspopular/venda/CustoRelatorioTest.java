@@ -65,6 +65,7 @@ class CustoRelatorioTest {
   @Autowired ProdutoRepository produtos;
   @Autowired CondicaoPagamentoRepository condicoes;
   @Autowired ItemPedidoRepository itens;
+  @Autowired br.com.lojaspopular.domain.order.repository.PedidoRepository pedidos;
 
   User admin;
   User gerente;
@@ -214,6 +215,33 @@ class CustoRelatorioTest {
     como(vendedor);
     assertThatThrownBy(() -> relatorios.vendas(null, null, null)).isInstanceOf(AccessDeniedException.class);
     assertThatThrownBy(() -> relatorios.estoque()).isInstanceOf(AccessDeniedException.class);
+  }
+
+  @Test
+  void vendasLegadasEntramNoRelatorioComOrigemDesconhecidaOuSaoContadasNaCobertura() {
+    como(gerente);
+    var antes = relatorios.vendas(relogio.hoje(), relogio.hoje(), "CANAL");
+    long linhaAntes = antes.linhas().stream().filter(l -> l.chave().startsWith("LEGADO_ONLINE")).mapToLong(l -> l.vendas()).sum();
+    legado(br.com.lojaspopular.domain.catalog.enums.PedidoStatus.PAGO, "300.00");
+    legado(br.com.lojaspopular.domain.catalog.enums.PedidoStatus.ENTREGUE, "200.00");
+    legado(br.com.lojaspopular.domain.catalog.enums.PedidoStatus.CRIADO, "50.00");
+    legado(br.com.lojaspopular.domain.catalog.enums.PedidoStatus.CANCELADO, "80.00");
+    var depois = relatorios.vendas(relogio.hoje(), relogio.hoje(), "CANAL");
+    assertThat(depois.linhas().stream().filter(l -> l.chave().startsWith("LEGADO_ONLINE")).mapToLong(l -> l.vendas()).sum() - linhaAntes)
+        .isEqualTo(2);
+    assertThat(depois.cobertura().legadasIncluidas() - antes.cobertura().legadasIncluidas()).isEqualTo(2);
+    assertThat(depois.cobertura().legadasNaoPagasExcluidas() - antes.cobertura().legadasNaoPagasExcluidas()).isEqualTo(1);
+    assertThat(depois.cobertura().legadasCanceladasExcluidas() - antes.cobertura().legadasCanceladasExcluidas()).isEqualTo(1);
+    assertThat(depois.total().totalVendido().subtract(antes.total().totalVendido())).isEqualByComparingTo("500.00");
+    assertThat(depois.cobertura().observacao()).contains("desconhecidos").contains("Fora do total");
+    var porVendedor = relatorios.vendas(relogio.hoje(), relogio.hoje(), "VENDEDOR");
+    assertThat(porVendedor.linhas()).anyMatch(l -> l.chave().contains("vendedor desconhecido"));
+    assertThat(relatorios.recebimentos(relogio.hoje(), relogio.hoje()).cobertura()).contains("NÃO aparecem aqui");
+  }
+
+  private void legado(br.com.lojaspopular.domain.catalog.enums.PedidoStatus status, String total) {
+    pedidos.saveAndFlush(br.com.lojaspopular.domain.order.model.Pedido.builder().usuario(vendedor).status(status)
+        .statusComercial(br.com.lojaspopular.domain.order.enums.StatusComercial.LEGADO).total(new BigDecimal(total)).build());
   }
 
   // ------------------------------------------------------------------ helpers

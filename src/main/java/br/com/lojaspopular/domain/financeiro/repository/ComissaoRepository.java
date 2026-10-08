@@ -45,6 +45,10 @@ public interface ComissaoRepository extends JpaRepository<Comissao, Long> {
   @Query("select c from Comissao c where c.pedido.confirmadoEm is not null and c.tipo = 'PREVISAO' and c.status in :status")
   List<Comissao> previsoesComStatus(@Param("status") Collection<StatusComissao> status);
 
+  @Query("select c from Comissao c where c.competencia >= :de and c.competencia <= :ate "
+      + "and c.status in ('DEVIDA', 'EM_CONTA', 'PAGA', 'LANCADA', 'COMPENSADA')")
+  List<Comissao> daCompetencia(@Param("de") LocalDate de, @Param("ate") LocalDate ate);
+
   /** Comissões (devidas/pagas e reversões) com competência no intervalo, para o resultado do mês. */
   @Query("select coalesce(sum(c.valor), 0) from Comissao c where c.competencia >= :de and c.competencia <= :ate "
       + "and c.status in ('DEVIDA', 'EM_CONTA', 'PAGA', 'LANCADA', 'COMPENSADA')")

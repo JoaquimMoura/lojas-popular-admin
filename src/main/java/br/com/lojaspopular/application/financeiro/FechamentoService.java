@@ -236,10 +236,20 @@ public class FechamentoService {
       }
     }
     BigDecimal rest = restituicoes.somaEfetivadaNoPeriodo(mes, fim);
-    BigDecimal taxas = recebiveis.somaTaxasDoPeriodo(mes, fim);
+    var ids = vendas.stream().map(Pedido::getId).collect(java.util.stream.Collectors.toSet());
+    // Taxa de cartão: despesa PREVISTA da própria venda, reconhecida na competência da venda (D06). A liquidação financeira
+    // (valor retido pela operadora no depósito) é outro fato e aparece à parte (taxasCartaoLiquidadas / EmAberto).
+    var recs = ids.isEmpty() ? java.util.List.<br.com.lojaspopular.domain.financeiro.model.RecebivelCartao>of()
+        : recebiveis.findByPedidoIdIn(ids);
+    BigDecimal taxas = recs.stream().filter(r -> r.getStatus() != br.com.lojaspopular.domain.financeiro.enums.StatusRecebivel.CANCELADO)
+        .map(r -> r.getValorTaxa()).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal taxasLiq = recs.stream().filter(r -> r.getStatus() == br.com.lojaspopular.domain.financeiro.enums.StatusRecebivel.LIQUIDADO)
+        .map(r -> r.getValorTaxa()).reduce(BigDecimal.ZERO, BigDecimal::add);
+    long cartaoSemRecebimento = vendas.stream().filter(p -> p.getFormaPagamento() == br.com.lojaspopular.domain.order.enums.FormaPagamento.CARTAO
+        && recs.stream().noneMatch(r -> r.getPedido().getId().equals(p.getId())
+            && r.getStatus() != br.com.lojaspopular.domain.financeiro.enums.StatusRecebivel.CANCELADO)).count();
     BigDecimal despesas = contas.somaDespesasDaCompetencia(mes, fim);
     BigDecimal comissao = comissoes.somaDaCompetencia(mes, fim);
-    var ids = vendas.stream().map(Pedido::getId).toList();
     BigDecimal previstas = ids.isEmpty() ? BigDecimal.ZERO : comissoes.previsoesComStatus(Set.of(StatusComissao.PREVISTA)).stream()
         .filter(c -> c.getTipo() == TipoComissao.PREVISAO && ids.contains(c.getPedido().getId()))
         .map(c -> c.getValor()).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -261,9 +271,37 @@ public class FechamentoService {
     if (previstas.signum() > 0) {
       faltantes.add("Há comissões apenas previstas (R$ " + previstas + ") ainda não apuradas como devidas.");
     }
+    if (cartaoSemRecebimento > 0) {
+      faltantes.add(cartaoSemRecebimento + " venda(s) no cartão sem recebimento registrado: a taxa ainda é desconhecida e não entra no resultado.");
+    }
+    // Mistura de critérios: eventos do mês que pertencem a vendas reconhecidas em OUTRO mês
+    long restFora = restituicoes.efetivadasNoPeriodo(mes, fim).stream().filter(r -> !ids.contains(r.getPedido().getId())).count();
+    long comFora = comissoes.daCompetencia(mes, fim).stream().filter(c -> !ids.contains(c.getPedido().getId())).count();
+    if (restFora > 0) {
+      faltantes.add("Critérios misturados: " + restFora + " restituição(ões) do mês (reconhecidas na data de efetivação) referem-se a "
+          + "vendas de outro mês (D06). Resultado provisório até a regra de reconhecimento ser definida.");
+    }
+    if (comFora > 0) {
+      faltantes.add("Critérios misturados: " + comFora + " comissão(ões) do mês (reconhecidas quando passam a devidas, D02) referem-se a "
+          + "vendas de outro mês (D06). Resultado provisório até a regra de reconhecimento ser definida.");
+    }
+    var legadosMes = pedidos.legadosNoPeriodo(de, ate).stream().filter(x -> x.getStatus() == br.com.lojaspopular.domain.catalog.enums.PedidoStatus.PAGO
+        || x.getStatus() == br.com.lojaspopular.domain.catalog.enums.PedidoStatus.ENTREGUE).toList();
+    if (!legadosMes.isEmpty()) {
+      faltantes.add(legadosMes.size() + " venda(s) legada(s) do checkout online (R$ " + legadosMes.stream()
+          .map(x -> x.getTotal() == null ? BigDecimal.ZERO : x.getTotal()).reduce(BigDecimal.ZERO, BigDecimal::add)
+          + ") do mês não entram no resultado (sem custo, vendedor nem competência): veja o relatório de vendas.");
+    }
+    List<String> criterios = List.of(
+        "Receita: " + (criterio == null ? "data de confirmação, apenas provisória (D06 pendente)" : criterio == CompetenciaReceita.ENTREGA
+            ? "mês da entrega (D06)" : "mês da confirmação (D06)"),
+        "Taxas de cartão: despesa PREVISTA da venda, no mesmo mês da receita (D06). A liquidação financeira (valor retido no depósito) "
+            + "aparece à parte e não altera o resultado.",
+        "Comissões: mês em que passam a devidas (D02). Restituições: data de efetivação. Despesas: competência informada na conta.");
     boolean definitivo = faltantes.isEmpty();
     return new Resultado(receita, rest, taxas, despesas, comissao, previstas, custos, semCusto, parcial,
-        definitivo ? parcial : null, definitivo, criterio == null ? "PROVISORIO_CONFIRMACAO" : criterio.name(), faltantes);
+        definitivo ? parcial : null, definitivo, criterio == null ? "PROVISORIO_CONFIRMACAO" : criterio.name(), faltantes,
+        taxasLiq, taxas.subtract(taxasLiq), criterios);
   }
 
   private List<Pendencia> pendencias(LocalDate mes, LocalDate fim, Resultado resultado) {

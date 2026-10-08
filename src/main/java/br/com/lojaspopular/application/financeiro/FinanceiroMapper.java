@@ -103,6 +103,12 @@ public class FinanceiroMapper {
         r.getAutorizadaEm(), nome(r.getEfetivadaPor()), r.getEfetivadaEm(), r.getDataEfetiva(), r.getMotivoCancelamento());
   }
 
+  /** Visão operacional (sem valores nem detalhes financeiros) para quem não pode consultar o financeiro (D12). */
+  public RestituicaoView viewOperacional(Restituicao r) {
+    return new RestituicaoView(r.getId(), r.getPedido().getId(), r.getOcorrencia().getId(), null, null, r.getStatus(), null,
+        null, null, null, null, null, null, null, null);
+  }
+
   public ComissaoView view(Comissao c) {
     return new ComissaoView(c.getId(), c.getPedido().getId(), c.getVendedor().getId(), nome(c.getVendedor()), c.getTipo(),
         c.getStatus(), c.getBase(), c.getPercentual(), c.getValor(), c.getCompetencia(), c.getAdquiridaEm(),

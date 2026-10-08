@@ -20,6 +20,8 @@ public interface RecebivelCartaoRepository extends JpaRepository<RecebivelCartao
 
   List<RecebivelCartao> findByPedidoIdOrderByIdAsc(Long pedidoId);
 
+  List<RecebivelCartao> findByPedidoIdIn(java.util.Collection<Long> pedidoIds);
+
   List<RecebivelCartao> findByPedidoIdAndStatusOrderByParcelaDesc(Long pedidoId, StatusRecebivel status);
 
   @Lock(LockModeType.PESSIMISTIC_WRITE)

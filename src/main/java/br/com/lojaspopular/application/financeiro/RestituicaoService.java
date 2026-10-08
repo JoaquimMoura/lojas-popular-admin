@@ -221,6 +221,12 @@ public class RestituicaoService {
     return restituicoes.listar(status).stream().map(mapper::view).toList();
   }
 
+  /** Restituições da ocorrência sem valores/detalhes: só a situação (D12: quem não consulta o financeiro). */
+  @Transactional(readOnly = true)
+  public List<RestituicaoView> daOcorrenciaOperacional(Long ocorrenciaId) {
+    return restituicoes.findByOcorrenciaIdOrderByIdDesc(ocorrenciaId).stream().map(mapper::viewOperacional).toList();
+  }
+
   @Transactional(readOnly = true)
   public List<RestituicaoView> daOcorrencia(Long ocorrenciaId) {
     return restituicoes.findByOcorrenciaIdOrderByIdDesc(ocorrenciaId).stream().map(mapper::view).toList();

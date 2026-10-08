@@ -35,6 +35,8 @@ import br.com.lojaspopular.application.financeiro.ContaFinanceiraService;
 import br.com.lojaspopular.application.financeiro.RecebimentoService;
 import br.com.lojaspopular.application.financeiro.Relogio;
 import br.com.lojaspopular.application.financeiro.RelatorioService;
+import br.com.lojaspopular.application.expedicao.ExpedicaoService;
+import br.com.lojaspopular.application.posvenda.PosVendaService;
 import br.com.lojaspopular.application.venda.VendaService;
 import br.com.lojaspopular.domain.catalog.model.Produto;
 import br.com.lojaspopular.domain.catalog.model.ProdutoVariacao;
@@ -51,6 +53,12 @@ import br.com.lojaspopular.domain.order.enums.CanalVenda;
 import br.com.lojaspopular.domain.order.enums.FormaPagamento;
 import br.com.lojaspopular.domain.order.enums.ModalidadeItem;
 import br.com.lojaspopular.domain.order.enums.TipoEntrega;
+import br.com.lojaspopular.domain.expedicao.enums.PeriodoAgenda;
+import br.com.lojaspopular.domain.posvenda.enums.CondicaoFisica;
+import br.com.lojaspopular.domain.posvenda.enums.TipoOcorrencia;
+import br.com.lojaspopular.web.expedicao.AtendimentoDtos.AbrirOcorrenciaRequest;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import br.com.lojaspopular.domain.user.Role;
 import br.com.lojaspopular.domain.user.User;
 import br.com.lojaspopular.domain.user.UserRepository;
@@ -71,6 +79,9 @@ import br.com.lojaspopular.web.venda.dto.VendaDtos.VendaRequest;
 class PermissaoFinanceiraTest {
 
   @Autowired MockMvc mvc;
+  @Autowired ObjectMapper om;
+  @Autowired ExpedicaoService expedicao;
+  @Autowired PosVendaService posVenda;
   @Autowired JwtUtil jwt;
   @Autowired ConfiguracaoComercialService config;
   @Autowired RecebimentoService recebimentos;
@@ -212,6 +223,65 @@ class PermissaoFinanceiraTest {
     mvc.perform(get("/api/v1/financeiro/comissoes/minhas").header("Authorization", "Bearer " + token(vendedor))).andExpect(status().isOk());
     mvc.perform(get("/api/v1/financeiro/caixa/atual").header("Authorization", "Bearer " + token(vendedor))).andExpect(status().isForbidden());
     mvc.perform(get("/api/v1/config/comercial/permissoes-financeiras").header("Authorization", "Bearer " + tg)).andExpect(status().isOk());
+  }
+
+  @Test
+  void posVendaNaoExpoeValoresFinanceirosAoGerenteSemConsultar_apiDireta() throws Exception {
+    como(admin);
+    config.atualizarFinanceiro(new ConfigFinanceiraRequest(new BigDecimal("5.00"), AquisicaoComissao.QUITACAO,
+        CompetenciaReceita.CONFIRMACAO, EnumSet.of(Role.ADMIN), EnumSet.of(Role.ADMIN), true, true, true, false));
+    permissoes(EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE),
+        EnumSet.of(Role.GERENTE));
+    Long v = venda();
+    como(gerente);
+    recebimentos.registrar(v, new RegistrarRecebimentoRequest(vendas.obter(v).total(), null, null, null, null), chave());
+    expedicao.agendarEntrega(v, java.time.LocalDate.now().plusDays(1), PeriodoAgenda.MANHA, null, null);
+    expedicao.registrarSaida(v, chave());
+    expedicao.concluirEntrega(v, "Cliente", null, null);
+    var itemId = vendas.obter(v).itens().get(0).id();
+    long oc = posVenda.abrir(v, new AbrirOcorrenciaRequest(TipoOcorrencia.DEVOLUCAO, "Devolução", itemId, 1, null)).id();
+    posVenda.receberDevolucao(oc, CondicaoFisica.APTA_REVENDA, null, chave());
+    var r = restituicaoService.solicitar(oc, new BigDecimal("500.00"), "Motivo reservado da restituição");
+    como(admin);
+    restituicaoService.autorizar(r.id());
+    como(gerente);
+    restituicaoService.efetivar(r.id(), null, chave());
+
+    // sem CONSULTAR: só a situação operacional
+    permissoes(null, EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE));
+    String tg = token(gerente);
+    JsonNode o = om.readTree(mvc.perform(get("/api/v1/ocorrencias/" + oc).header("Authorization", "Bearer " + tg))
+        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+    assertThat(o.path("situacaoFinanceira").asText()).isEqualTo("RESTITUICAO_CONCLUIDA");
+    assertThat(o.path("restituicoes")).hasSize(1);
+    var rs = o.path("restituicoes").get(0);
+    assertThat(rs.path("status").asText()).isEqualTo("EFETIVADA");
+    for (String campo : List.of("valor", "forma", "motivo", "solicitadaPor", "autorizadaPor", "efetivadaPor", "dataEfetiva")) {
+      assertThat(vazio(rs.path(campo))).as("restituicao.%s", campo).isTrue();
+    }
+    assertThat(vazio(o.path("valorRestituivel"))).isTrue();
+    assertThat(vazio(o.path("contaDiferenca"))).isTrue();
+
+    // a mesma ocorrência embutida no detalhe da venda e o bloco de pagamento
+    JsonNode venda = om.readTree(mvc.perform(get("/api/v1/vendas/" + v).header("Authorization", "Bearer " + tg))
+        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+    assertThat(vazio(venda.path("ocorrencias").get(0).path("restituicoes").get(0).path("valor"))).isTrue();
+    var pag = venda.path("pagamento");
+    assertThat(vazio(pag.path("restituido"))).isTrue();
+    assertThat(pag.path("lancamentos")).isEmpty();
+    assertThat(vazio(pag.path("restituicoes").get(0).path("valor"))).isTrue();
+
+    // com CONSULTAR os valores aparecem
+    permissoes(EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE),
+        EnumSet.of(Role.GERENTE));
+    JsonNode o2 = om.readTree(mvc.perform(get("/api/v1/ocorrencias/" + oc).header("Authorization", "Bearer " + tg))
+        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+    assertThat(o2.path("restituicoes").get(0).path("valor").decimalValue()).isEqualByComparingTo("500.00");
+    assertThat(o2.path("restituicoes").get(0).path("motivo").asText()).contains("reservado");
+  }
+
+  private static boolean vazio(JsonNode n) {
+    return n.isMissingNode() || n.isNull();
   }
 
   @Test

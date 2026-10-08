@@ -138,7 +138,7 @@ public final class AtendimentoDtos {
       String motivoCancelamento, String abertaPor, Instant criadaEm, List<EvidenciaResponse> evidencias,
       Map<String, String> bloqueios, List<br.com.lojaspopular.web.financeiro.FinanceiroDtos.RestituicaoView> restituicoes,
       br.com.lojaspopular.web.financeiro.FinanceiroDtos.ContaView contaDiferenca, BigDecimal valorRestituivel,
-      boolean podeSolicitarRestituicao, boolean podeCobrarDiferenca) {
+      boolean podeSolicitarRestituicao, boolean podeCobrarDiferenca, String situacaoFinanceira) {
   }
 
   public record AgendaItem(String tipo, Long pedidoId, String cliente, LocalDate data, PeriodoAgenda periodo,

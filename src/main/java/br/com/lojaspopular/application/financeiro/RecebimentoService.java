@@ -215,8 +215,10 @@ public class RecebimentoService {
   public PagamentoPedido painel(Pedido p, User ator) {
     var lista = recebimentos.findByPedidoIdOrderByIdAsc(p.getId()).stream().map(mapper::view).toList();
     BigDecimal recebido = recebimentos.somaAtiva(p.getId());
-    BigDecimal restituido = restituicoes.somaPorPedido(p.getId(), List.of(StatusRestituicao.EFETIVADA));
-    var rest = restituicoes.findByPedidoIdOrderByIdDesc(p.getId()).stream().map(mapper::view).toList();
+    boolean consulta = permissoes.pode(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.CONSULTAR);
+    BigDecimal restituido = consulta ? restituicoes.somaPorPedido(p.getId(), List.of(StatusRestituicao.EFETIVADA)) : null;
+    var rest = restituicoes.findByPedidoIdOrderByIdDesc(p.getId()).stream()
+        .map(x -> consulta ? mapper.view(x) : mapper.viewOperacional(x)).toList();
     // lançamentos (livro) só para quem pode consultar o financeiro (D12); o gerente sem essa permissão vê só o pagamento da venda
     var lanc = permissoes.pode(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.CONSULTAR)
         ? lancamentos.findByPedidoIdOrderByIdAsc(p.getId()).stream().map(mapper::view).toList() : List.<br.com.lojaspopular.web.financeiro.FinanceiroDtos.LancamentoView>of();

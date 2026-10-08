@@ -67,6 +67,7 @@ public class PosVendaService {
   private final br.com.lojaspopular.application.financeiro.RestituicaoService restituicaoService;
   private final br.com.lojaspopular.domain.financeiro.repository.ContaFinanceiraRepository contasRepo;
   private final br.com.lojaspopular.application.financeiro.FinanceiroMapper financeiroMapper;
+  private final br.com.lojaspopular.application.financeiro.PermissaoFinanceiraService permissoes;
 
   @Transactional
   public OcorrenciaResponse abrir(Long pedidoId, AbrirOcorrenciaRequest req) {
@@ -267,6 +268,9 @@ public class PosVendaService {
     var cfg = config.obter();
     boolean physical = o.getDevolucaoRecebidaEm() != null;
     BigDecimal restituivel = BigDecimal.ZERO;
+    var ator = usuarioAtual.get();
+    boolean consulta = permissoes.pode(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.CONSULTAR);
+    boolean restitui = permissoes.pode(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RESTITUIR);
     boolean podeSolicitar = false;
     boolean podeCobrar = false;
     if (o.getTipo() != TipoOcorrencia.ASSISTENCIA) {
@@ -285,7 +289,7 @@ public class PosVendaService {
       if (aFavorDoCliente) {
         restituivel = restituicaoService.restituivel(o);
       }
-      boolean gestor = UsuarioAtual.isGestor(usuarioAtual.get());
+      boolean gestor = restitui;   // D12: sem a permissão de restituir não há ação financeira
       podeSolicitar = gestor && physical && aFavorDoCliente && Boolean.TRUE.equals(cfg.getPermiteRestituicao())
           && restituivel.signum() > 0;
       podeCobrar = gestor && physical && cobranca && Boolean.TRUE.equals(cfg.getPermiteCobrancaDiferenca())
@@ -296,17 +300,35 @@ public class PosVendaService {
         bloqueios.put("financeiro", "Receba e avalie a devolução física antes de qualquer ação financeira.");
       }
     }
-    var contaDiferenca = contasRepo.findByOcorrenciaIdAndOrigemAndSituacaoNot(o.getId(),
+    var contaEntidade = contasRepo.findByOcorrenciaIdAndOrigemAndSituacaoNot(o.getId(),
         br.com.lojaspopular.domain.financeiro.enums.OrigemConta.DIFERENCA_TROCA,
-        br.com.lojaspopular.domain.financeiro.enums.SituacaoConta.CANCELADA).stream().findFirst()
-        .map(c -> financeiroMapper.view(c, false)).orElse(null);
+        br.com.lojaspopular.domain.financeiro.enums.SituacaoConta.CANCELADA).stream().findFirst();
+    // D12: valores e detalhes financeiros só para quem pode consultar; os demais veem apenas a situação operacional
+    var contaDiferenca = consulta ? contaEntidade.map(c -> financeiroMapper.view(c, false)).orElse(null) : null;
+    var listaRestituicoes = consulta ? restituicaoService.daOcorrencia(o.getId())
+        : restituicaoService.daOcorrenciaOperacional(o.getId());
+    String situacaoFinanceira = null;
+    if (o.getTipo() != TipoOcorrencia.ASSISTENCIA) {
+      var st = listaRestituicoes.stream().map(r -> r.status().name()).toList();
+      if (st.contains("EFETIVADA")) {
+        situacaoFinanceira = "RESTITUICAO_CONCLUIDA";
+      } else if (st.contains("SOLICITADA") || st.contains("AUTORIZADA")) {
+        situacaoFinanceira = "RESTITUICAO_PENDENTE";
+      } else if (contaEntidade.isPresent()) {
+        situacaoFinanceira = contaEntidade.get().getSituacao() == br.com.lojaspopular.domain.financeiro.enums.SituacaoConta.PAGA
+            ? "DIFERENCA_RECEBIDA" : "DIFERENCA_A_RECEBER";
+      }
+    }
+    if (!consulta) {
+      restituivel = null;
+    }
     return new OcorrenciaResponse(o.getId(), p.getId(), p.getCliente() == null ? null : p.getCliente().getNome(),
         o.getTipo(), o.getStatus(), o.getDescricao(), o.getItem() == null ? null : o.getItem().getId(),
         o.getItem() == null ? null : o.getItem().getDescricaoHistorica(), o.getQuantidade(), trocaItem,
         o.getTrocaQuantidade(), o.getDiferencaCalculada(), o.getCondicaoFisica(), o.getAvaliacao(),
         o.getDevolucaoRecebidaEm(), o.isEstoqueReposto(), o.getSolucao(), o.getResolvidaEm(),
         o.getMotivoCancelamento(), nome(o.getAbertaPor()), o.getCriadaEm(), evidencias, bloqueios,
-        restituicaoService.daOcorrencia(o.getId()), contaDiferenca, restituivel, podeSolicitar, podeCobrar);
+        listaRestituicoes, contaDiferenca, restituivel, podeSolicitar, podeCobrar, situacaoFinanceira);
   }
 
   private static String nome(User u) {

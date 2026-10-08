@@ -55,6 +55,10 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
   @Query("select distinct p from Pedido p where p.statusComercial = 'CONFIRMADA' and p.confirmadoEm >= :de and p.confirmadoEm < :ate")
   List<Pedido> confirmadasNoPeriodo(@Param("de") java.time.Instant de, @Param("ate") java.time.Instant ate);
 
+  /** Pedidos legados (checkout online anterior à gestão) criados no intervalo [de, ate). */
+  @Query("select distinct p from Pedido p where p.statusComercial = 'LEGADO' and p.criadoEm >= :de and p.criadoEm < :ate")
+  List<Pedido> legadosNoPeriodo(@Param("de") java.time.Instant de, @Param("ate") java.time.Instant ate);
+
   @Query("select count(p) from Pedido p where p.statusComercial = 'AGUARDANDO_APROVACAO'")
   long contarAguardandoAprovacao();
 

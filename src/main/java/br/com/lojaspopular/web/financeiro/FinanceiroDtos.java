@@ -194,7 +194,8 @@ public final class FinanceiroDtos {
   public record Resultado(BigDecimal receitaBruta, BigDecimal restituicoes, BigDecimal taxasCartao,
       BigDecimal despesas, BigDecimal comissoes, BigDecimal comissoesPrevistas, BigDecimal custosConhecidos,
       long itensSemCusto, BigDecimal resultadoParcial, BigDecimal lucroApurado, boolean definitivo,
-      String criterioCompetencia, List<String> faltantes) {
+      String criterioCompetencia, List<String> faltantes, BigDecimal taxasCartaoLiquidadas, BigDecimal taxasCartaoEmAberto,
+      List<String> criterios) {
   }
 
   public record CaixaFechamento(BigDecimal entradasCaixa, BigDecimal saidasCaixa, BigDecimal saldoCaixa,
