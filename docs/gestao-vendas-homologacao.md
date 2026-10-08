@@ -67,6 +67,16 @@ Executar com usuários de teste, nunca com dados reais de clientes em canais ext
 
 Contatos, janela e responsável pela decisão de rollback devem ser preenchidos antes do dia.
 
+## 7.1 Instalação com uma V6 diferente da deste repositório
+
+A **V6 está congelada**. Se algum banco tiver uma V6 aplicada diferente do arquivo atual (por exemplo, de uma versão anterior do código):
+
+1. **Não rodar** `flyway repair`, não editar `flyway_schema_history` e não mover colunas à mão ou por script automático.
+2. Coletar: `select installed_rank, version, description, checksum, installed_on, success from flyway_schema_history where version = '6';` e o resultado de `flyway info`/`validate` (mensagem de divergência de checksum).
+3. Comparar o **arquivo que foi aplicado** (recuperar do commit/artefato que subiu aquela versão) com `src/main/resources/db/migration/V6__gestao_vendas_custos.sql`. Versões conhecidas: `c73a71c` (sem as colunas `perm_fin_*` da D12) e a atual (com elas).
+4. Comparar o esquema real: `\d configuracao_comercial` (colunas `perm_fin_consultar|receber|pagar|estornar|restituir`), `\d custos_produto`, `\d itens_pedido` (`custo_origem`) e o CHECK de `auditoria_evento`.
+5. Só então propor a correção, **por escrito e revisada**: normalmente uma **V7** que cria o que falta (ex.: adicionar as colunas `perm_fin_*` se a V6 aplicada era a de `c73a71c`) ou, se houver coluna a mais/diferente, uma V7 explícita. A divergência de checksum se resolve com decisão humana documentada, nunca automaticamente.
+
 ## 8. Limitações que continuam valendo na operação
 
 - **Comprovantes** de pagamento: só referência em texto (sem anexo).
