@@ -45,7 +45,7 @@ public class RelatorioService {
       + "dinheiro recebido: veja o relatório de recebimentos. A competência definitiva da receita depende da D06.";
 
   public record LinhaVenda(String chave, long vendas, BigDecimal totalVendido, BigDecimal ticketMedio, long unidades,
-      BigDecimal custoConhecido, long itensSemCusto, boolean margemCompleta, BigDecimal margemBrutaItens) {
+      BigDecimal custoConhecido, long itensSemCusto, boolean margemCompleta, BigDecimal margemBrutaItens, long vendasLegadas) {
   }
 
   public record Cobertura(long vendasGestao, long legadasIncluidas, BigDecimal totalLegadoIncluido, long legadasNaoPagasExcluidas,
@@ -173,10 +173,11 @@ public class RelatorioService {
         }
       }
     }
+    long legadas = lista.stream().filter(x -> x.getStatusComercial() == br.com.lojaspopular.domain.order.enums.StatusComercial.LEGADO).count();
     boolean completa = !lista.isEmpty() && semCusto == 0;
     BigDecimal ticket = lista.isEmpty() ? BigDecimal.ZERO : total.divide(BigDecimal.valueOf(lista.size()), 2, RoundingMode.HALF_UP);
     return new LinhaVenda(chave, lista.size(), total, ticket, unidades, custo, semCusto, completa,
-        completa ? vendidoComCusto.subtract(custo) : null);
+        completa ? vendidoComCusto.subtract(custo) : null, legadas);
   }
 
   // ------------------------------------------------------------------ dinheiro recebido

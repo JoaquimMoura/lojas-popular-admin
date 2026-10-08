@@ -234,6 +234,8 @@ class CustoRelatorioTest {
     assertThat(depois.cobertura().legadasCanceladasExcluidas() - antes.cobertura().legadasCanceladasExcluidas()).isEqualTo(1);
     assertThat(depois.total().totalVendido().subtract(antes.total().totalVendido())).isEqualByComparingTo("500.00");
     assertThat(depois.cobertura().observacao()).contains("desconhecidos").contains("Fora do total");
+    assertThat(depois.linhas().stream().filter(l -> l.chave().startsWith("LEGADO_ONLINE")).allMatch(l -> l.vendasLegadas() == l.vendas())).isTrue();
+    assertThat(depois.total().vendasLegadas() - antes.total().vendasLegadas()).isEqualTo(2);
     var porVendedor = relatorios.vendas(relogio.hoje(), relogio.hoje(), "VENDEDOR");
     assertThat(porVendedor.linhas()).anyMatch(l -> l.chave().contains("vendedor desconhecido"));
     assertThat(relatorios.recebimentos(relogio.hoje(), relogio.hoje()).cobertura()).contains("NÃO aparecem aqui");
