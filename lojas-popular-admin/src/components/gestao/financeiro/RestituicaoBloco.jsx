@@ -10,7 +10,7 @@ import { useChave } from "../useChave";
 import MotivoModal from "./MotivoModal";
 import { useFinanceiroPermissoes } from "./useFinanceiroPermissoes";
 import { AvisosLista, CampoValor } from "./Comuns";
-import { FORMAS, fmtDate, fmtDateTime, fmtMoney, hojeIso } from "../../../utils/format";
+import { FORMAS, fmtDate, fmtDateTime, fmtMoney, fmtMoneyRestrito, hojeIso } from "../../../utils/format";
 
 export function SolicitarModal({ o, onClose, onFeito }) {
   const max = Number(o.valorRestituivel ?? 0);
@@ -130,7 +130,12 @@ export function AcoesRestituicao({ r, onFeito }) {
 export function RestituicaoResumo({ r }) {
   return (
     <div className="small">
-      <div>Solicitada por {r.solicitadaPor ?? "—"} em {fmtDateTime(r.solicitadaEm)}</div>
+      {r.solicitadaPor == null && r.solicitadaEm == null && (
+        <div className="text-muted">Detalhes restritos a quem consulta o financeiro.</div>
+      )}
+      {(r.solicitadaPor != null || r.solicitadaEm != null) && (
+        <div>Solicitada por {r.solicitadaPor ?? "—"} em {fmtDateTime(r.solicitadaEm)}</div>
+      )}
       {r.autorizadaPor && <div>Autorizada por {r.autorizadaPor} em {fmtDateTime(r.autorizadaEm)}</div>}
       {r.efetivadaPor && (
         <div>Efetivada por {r.efetivadaPor} em {fmtDateTime(r.efetivadaEm)}{r.dataEfetiva ? ` (data ${fmtDate(r.dataEfetiva)})` : ""}</div>
@@ -180,7 +185,10 @@ export default function RestituicaoBloco({ o, onFeito }) {
           A devolução do produto (física) e a devolução do dinheiro (financeira) são controles separados: uma não
           dispara a outra.
         </div>
-        <Linha rotulo="Valor ainda restituível">{fmtMoney(o.valorRestituivel)}</Linha>
+        {o.situacaoFinanceira && (
+          <Linha rotulo="Situação financeira"><StatusBadge tipo="situacaoFinanceira" valor={o.situacaoFinanceira} /></Linha>
+        )}
+        <Linha rotulo="Valor ainda restituível">{fmtMoneyRestrito(o.valorRestituivel)}</Linha>
         <AvisosLista itens={bloqueios} titulo="Bloqueios" />
 
         {restituicoes.length === 0 ? (
@@ -190,10 +198,13 @@ export default function RestituicaoBloco({ o, onFeito }) {
             {restituicoes.map((r) => (
               <div key={r.id} className="border rounded p-2">
                 <div className="d-flex flex-wrap justify-content-between gap-2">
-                  <strong>{fmtMoney(r.valor)} <span className="fw-normal small">({FORMAS[r.forma] ?? r.forma})</span></strong>
+                  <strong>
+                    {fmtMoneyRestrito(r.valor)}
+                    {r.forma && <span className="fw-normal small"> ({FORMAS[r.forma] ?? r.forma})</span>}
+                  </strong>
                   <StatusBadge tipo="restituicao" valor={r.status} />
                 </div>
-                <div>{r.motivo}</div>
+                {r.motivo && <div>{r.motivo}</div>}
                 <RestituicaoResumo r={r} />
                 <AcoesRestituicao r={r} onFeito={onFeito} />
               </div>
@@ -210,15 +221,19 @@ export default function RestituicaoBloco({ o, onFeito }) {
 
       {o.tipo === "TROCA" && (
         <Secao titulo="Diferença da troca">
-          <Linha rotulo="Diferença calculada">{fmtMoney(o.diferencaCalculada)}</Linha>
+          <Linha rotulo="Diferença calculada">{fmtMoneyRestrito(o.diferencaCalculada)}</Linha>
           {o.contaDiferenca ? (
             <div className="border rounded p-2 mt-2">
-              Conta a receber #{o.contaDiferenca.id}: {fmtMoney(o.contaDiferenca.valor)} · vencimento{" "}
+              Conta a receber #{o.contaDiferenca.id}: {fmtMoneyRestrito(o.contaDiferenca.valor)} · vencimento{" "}
               {fmtDate(o.contaDiferenca.vencimento)} · <StatusBadge tipo="conta" valor={o.contaDiferenca.situacao} />
               <div><Link to="/gestao/financeiro/contas">Abrir em Contas</Link></div>
             </div>
           ) : (
-            <div className="text-muted mt-1">Nenhuma cobrança de diferença criada.</div>
+            <div className="text-muted mt-1">
+              {o.situacaoFinanceira?.startsWith("DIFERENCA")
+                ? "Detalhes da cobrança restritos a quem consulta o financeiro."
+                : "Nenhuma cobrança de diferença criada."}
+            </div>
           )}
           {o.podeCobrarDiferenca && perm.RESTITUIR && !o.contaDiferenca && (
             <div className="d-grid d-sm-flex mt-2">

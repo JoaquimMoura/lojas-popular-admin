@@ -80,6 +80,36 @@ function chaveVenda(agrupar, k) {
   return k;
 }
 
+const LEGADO_VENDEDOR = "(vendedor desconhecido — venda legada)";
+const LEGADO_CANAL = "LEGADO_ONLINE (canal desconhecido)";
+const ehLegado = (k) => k === LEGADO_VENDEDOR || k === LEGADO_CANAL || /legad/i.test(String(k ?? ""));
+
+function CoberturaVendas({ cob }) {
+  if (!cob) return null;
+  return (
+    <div className="card border-warning mb-3" role="note">
+      <div className="card-body">
+        <h6 className="card-title">Cobertura do relatório</h6>
+        {cob.observacao && <p className="mb-2">{cob.observacao}</p>}
+        <ul className="mb-2 ps-3">
+          <li>Vendas da gestão: <strong>{cob.vendasGestao ?? 0}</strong></li>
+          <li>
+            Vendas legadas incluídas: <strong>{cob.legadasIncluidas ?? 0}</strong> (total {fmtMoney(cob.totalLegadoIncluido ?? 0)})
+          </li>
+          <li>
+            Legadas não pagas, excluídas: <strong>{cob.legadasNaoPagasExcluidas ?? 0}</strong> (total {fmtMoney(cob.totalLegadoNaoPagoExcluido ?? 0)})
+          </li>
+          <li>Legadas canceladas, excluídas: <strong>{cob.legadasCanceladasExcluidas ?? 0}</strong></li>
+        </ul>
+        <div className="small text-muted">
+          Vendas legadas têm vendedor e canal desconhecidos: aparecem nas linhas marcadas como &quot;legado&quot; e não
+          devem ser atribuídas a nenhum vendedor ou canal.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Margem({ l }) {
   return l.margemCompleta
     ? <span>{fmtMoney(l.margemBrutaItens)}</span>
@@ -120,6 +150,7 @@ function VendasSecao() {
       {r && (
         <>
           <Aviso texto={r.aviso} />
+          <CoberturaVendas cob={r.cobertura} />
           <div className="alert alert-info small">
             Venda realizada não é dinheiro recebido, e a margem bruta dos itens não é lucro (não considera taxas, comissões nem despesas).
           </div>
@@ -132,9 +163,18 @@ function VendasSecao() {
           <TabelaCards
             linhas={linhas}
             chave={(l) => l.chave}
+            destaque={(l) => (ehLegado(l.chave) ? "border-warning bg-warning-subtle" : "")}
             vazio="Nenhuma venda confirmada no período."
             colunas={[
-              { titulo: AGRUPAMENTOS[agrupar], render: (l) => chaveVenda(agrupar, l.chave) },
+              {
+                titulo: AGRUPAMENTOS[agrupar],
+                render: (l) => (
+                  <>
+                    {chaveVenda(agrupar, l.chave)}
+                    {ehLegado(l.chave) && <span className="badge text-bg-warning ms-1">Legado</span>}
+                  </>
+                ),
+              },
               { titulo: "Vendas", fim: true, render: (l) => l.vendas },
               { titulo: "Total vendido", fim: true, render: (l) => fmtMoney(l.totalVendido) },
               { titulo: "Ticket médio", fim: true, render: (l) => fmtMoney(l.ticketMedio) },
@@ -190,6 +230,7 @@ function RecebimentosSecao() {
       {r && (
         <>
           <Aviso texto={r.aviso} />
+          {r.cobertura && <div className="alert alert-warning" role="alert"><strong>Atenção:</strong> {r.cobertura}</div>}
           <Secao titulo="Pagamentos do cliente (por forma)">
             <TabelaCards
               linhas={pag}

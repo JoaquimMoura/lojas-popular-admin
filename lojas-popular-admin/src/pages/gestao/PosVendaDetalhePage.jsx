@@ -10,7 +10,7 @@ import ArquivoLink from "../../components/gestao/ArquivoLink";
 import { Secao, Linha } from "../../components/gestao/Secao";
 import { useChave } from "../../components/gestao/useChave";
 import RestituicaoBloco from "../../components/gestao/financeiro/RestituicaoBloco";
-import { ROTULOS, arquivoGrande, fmtDateTime, fmtMoney } from "../../utils/format";
+import { ROTULOS, arquivoGrande, fmtDateTime, fmtMoneyRestrito } from "../../utils/format";
 
 function EvidenciaModal({ o, onClose, onSalvo }) {
   const [arquivo, setArquivo] = useState(null);
@@ -138,6 +138,9 @@ export default function PosVendaDetalhePage() {
             <span>
               <StatusBadge tipo="tipoOcorrencia" valor={o.tipo} className="me-1" />
               <StatusBadge tipo="ocorrencia" valor={o.status} />
+              {o.situacaoFinanceira && (
+                <StatusBadge tipo="situacaoFinanceira" valor={o.situacaoFinanceira} className="ms-1" />
+              )}
             </span>
           </div>
           <div className="mt-1">
@@ -168,7 +171,7 @@ export default function PosVendaDetalhePage() {
               <Linha rotulo="Produto da troca">{o.trocaItem ?? "—"}</Linha>
               <Linha rotulo="Quantidade">{o.trocaQuantidade ?? "—"}</Linha>
               <Linha rotulo="Diferença calculada">
-                {fmtMoney(o.diferencaCalculada)}
+                {fmtMoneyRestrito(o.diferencaCalculada)}
                 <div className="small text-muted">cálculo informativo — a cobrança ou restituição é feita no bloco financeiro abaixo</div>
               </Linha>
             </Secao>

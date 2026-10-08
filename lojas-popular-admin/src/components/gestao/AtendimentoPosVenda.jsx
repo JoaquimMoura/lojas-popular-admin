@@ -184,6 +184,9 @@ export function OcorrenciasSecao({ venda, onNovaOcorrencia, gestor }) {
                 <span>
                   <StatusBadge tipo="tipoOcorrencia" valor={o.tipo} className="me-1" />
                   <StatusBadge tipo="ocorrencia" valor={o.status} />
+                  {o.situacaoFinanceira && (
+                    <StatusBadge tipo="situacaoFinanceira" valor={o.situacaoFinanceira} className="ms-1" />
+                  )}
                 </span>
                 {gestor ? (
                   <Link to={`/gestao/pos-venda/${o.id}`} className="btn btn-sm btn-outline-primary">

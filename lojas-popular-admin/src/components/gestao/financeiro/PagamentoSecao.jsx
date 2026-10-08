@@ -10,7 +10,7 @@ import { useChave } from "../useChave";
 import MotivoModal from "./MotivoModal";
 import { useFinanceiroPermissoes } from "./useFinanceiroPermissoes";
 import { AvisosLista, CampoValor, TabelaCards } from "./Comuns";
-import { FORMAS, ORIGENS_LANCAMENTO, LIVROS, fmtDate, fmtDateTime, fmtMoney, fmtPercent, hojeIso } from "../../../utils/format";
+import { FORMAS, ORIGENS_LANCAMENTO, LIVROS, fmtDate, fmtDateTime, fmtMoney, fmtMoneyRestrito, fmtPercent, hojeIso } from "../../../utils/format";
 
 /** Parcelas que a operadora vai pagar: bruto, taxa, líquido e previsão. */
 export function RecebiveisMini({ recebiveis }) {
@@ -228,7 +228,7 @@ export default function PagamentoSecao({ venda, onVenda }) {
         <div className="col-md-6">
           <Linha rotulo="Recebido">{fmtMoney(pag.recebido)}</Linha>
           <Linha rotulo="Saldo a receber"><strong>{fmtMoney(pag.saldo)}</strong></Linha>
-          <Linha rotulo="Restituído ao cliente">{fmtMoney(pag.restituido)}</Linha>
+          <Linha rotulo="Restituído ao cliente">{fmtMoneyRestrito(pag.restituido)}</Linha>
         </div>
       </div>
 
@@ -295,13 +295,13 @@ export default function PagamentoSecao({ venda, onVenda }) {
             {pag.restituicoes.map((r) => (
               <div key={r.id} className="border rounded p-2">
                 <div className="d-flex flex-wrap justify-content-between gap-2">
-                  <strong>{fmtMoney(r.valor)}</strong>
+                  <strong>{fmtMoneyRestrito(r.valor)}</strong>
                   <StatusBadge tipo="restituicao" valor={r.status} />
                 </div>
-                <div className="small">{r.motivo}</div>
+                {r.motivo && <div className="small">{r.motivo}</div>}
                 <div className="small text-muted">
-                  Ocorrência <Link to={`/gestao/pos-venda/${r.ocorrenciaId}`}>#{r.ocorrenciaId}</Link> · solicitada por{" "}
-                  {r.solicitadaPor ?? "—"}
+                  Ocorrência <Link to={`/gestao/pos-venda/${r.ocorrenciaId}`}>#{r.ocorrenciaId}</Link>
+                  {r.solicitadaPor ? ` · solicitada por ${r.solicitadaPor}` : ""}
                   {r.efetivadaEm ? ` · efetivada em ${fmtDateTime(r.efetivadaEm)}` : ""}
                 </div>
               </div>
@@ -313,7 +313,9 @@ export default function PagamentoSecao({ venda, onVenda }) {
       <h6 className="mt-3">Lançamentos da venda (entradas e saídas efetivas)</h6>
       <TabelaCards
         linhas={pag.lancamentos ?? []}
-        vazio="Nenhum lançamento efetivo (no cartão, a entrada ocorre só na liquidação da operadora)."
+        vazio={pag.restituido == null
+          ? "Lançamentos restritos a quem consulta o financeiro."
+          : "Nenhum lançamento efetivo (no cartão, a entrada ocorre só na liquidação da operadora)."}
         destaque={(l) => (l.estornado ? "text-muted" : "")}
         colunas={[
           { titulo: "Data", render: (l) => fmtDate(l.dataEfetiva) },

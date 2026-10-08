@@ -115,7 +115,6 @@ export default function FechamentoPage() {
               <div className="col-md-6">
                 <Linha rotulo="Receita bruta">{fmtMoney(r?.receitaBruta)}</Linha>
                 <Linha rotulo="Restituições">{fmtMoney(r?.restituicoes)}</Linha>
-                <Linha rotulo="Taxas de cartão">{fmtMoney(r?.taxasCartao)}</Linha>
                 <Linha rotulo="Despesas">{fmtMoney(r?.despesas)}</Linha>
               </div>
               <div className="col-md-6">
@@ -126,6 +125,12 @@ export default function FechamentoPage() {
               </div>
             </div>
             <hr />
+            <h6>Taxas de cartão</h6>
+            <Linha rotulo="Despesa prevista (reconhecida na competência da venda)">{fmtMoney(r?.taxasCartao)}</Linha>
+            <Linha rotulo="Já liquidada financeiramente">{fmtMoney(r?.taxasCartaoLiquidadas)}</Linha>
+            <Linha rotulo="Ainda a liquidar">{fmtMoney(r?.taxasCartaoEmAberto)}</Linha>
+            <div className="small text-muted mb-2">A liquidação não altera o resultado: a taxa já está na despesa prevista.</div>
+            <hr />
             <Linha rotulo="Resultado parcial"><strong>{fmtMoney(r?.resultadoParcial)}</strong></Linha>
             <Linha rotulo="Lucro apurado">
               {r?.lucroApurado == null ? <span className="text-muted">Não apurado</span> : <strong>{fmtMoney(r.lucroApurado)}</strong>}
@@ -133,7 +138,15 @@ export default function FechamentoPage() {
             <Linha rotulo="Critério de competência da receita">
               <Pendente codigo="D06">{r?.criterioCompetencia}</Pendente>
             </Linha>
-            <AvisosLista itens={r?.faltantes} titulo="O que falta para o resultado definitivo" />
+            {(r?.criterios ?? []).length > 0 && (
+              <AvisosLista itens={r.criterios} titulo="Critérios de reconhecimento" variant="info" />
+            )}
+            <AvisosLista itens={r?.faltantes} titulo="Resultado provisório: o que falta" variant="danger" />
+            {(r?.faltantes ?? []).length > 0 && (
+              <div className="small fw-semibold text-danger">
+                Enquanto houver itens acima, o resultado é provisório e não deve ser tratado como lucro.
+              </div>
+            )}
           </Secao>
 
           <Secao titulo="Pendências do mês">

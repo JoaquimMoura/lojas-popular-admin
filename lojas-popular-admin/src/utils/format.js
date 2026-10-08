@@ -6,6 +6,12 @@ export function fmtMoney(v) {
   return moneyFmt.format(Number(v));
 }
 
+/** Valor financeiro que pode vir nulo para quem não consulta o financeiro (D12): mostra "Restrito" em vez de "—"/R$ 0,00. */
+export function fmtMoneyRestrito(v) {
+  if (v === null || v === undefined || v === "") return "Restrito";
+  return fmtMoney(v);
+}
+
 export function fmtPercent(v) {
   if (v === null || v === undefined || v === "") return "—";
   return `${Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 4 })}%`;
@@ -99,6 +105,12 @@ export const ROTULOS = {
   recebivel: { PREVISTO: "Previsto", LIQUIDADO: "Liquidado", CANCELADO: "Cancelado" },
   restituicao: { SOLICITADA: "Solicitada", AUTORIZADA: "Autorizada", EFETIVADA: "Efetivada", CANCELADA: "Cancelada" },
   conta: { ABERTA: "Aberta", PAGA: "Paga", CANCELADA: "Cancelada" },
+  situacaoFinanceira: {
+    RESTITUICAO_PENDENTE: "Restituição pendente",
+    RESTITUICAO_CONCLUIDA: "Restituição concluída",
+    DIFERENCA_A_RECEBER: "Diferença a receber",
+    DIFERENCA_RECEBIDA: "Diferença recebida",
+  },
   comissao: {
     PREVISTA: "Prevista",
     DEVIDA: "Devida",
@@ -145,6 +157,12 @@ export const COR = {
   recebivel: { PREVISTO: "warning", LIQUIDADO: "success", CANCELADO: "secondary" },
   restituicao: { SOLICITADA: "warning", AUTORIZADA: "info", EFETIVADA: "success", CANCELADA: "secondary" },
   conta: { ABERTA: "warning", PAGA: "success", CANCELADA: "secondary" },
+  situacaoFinanceira: {
+    RESTITUICAO_PENDENTE: "warning",
+    RESTITUICAO_CONCLUIDA: "success",
+    DIFERENCA_A_RECEBER: "warning",
+    DIFERENCA_RECEBIDA: "success",
+  },
   comissao: {
     PREVISTA: "secondary",
     DEVIDA: "warning",
