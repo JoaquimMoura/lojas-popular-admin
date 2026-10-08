@@ -39,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CartaoService {
 
+  private final br.com.lojaspopular.application.financeiro.PermissaoFinanceiraService permissoes;
   private final RecebivelCartaoRepository recebiveis;
   private final TaxaCartaoRepository taxas;
   private final LancamentoFinanceiroRepository lancamentos;
@@ -58,7 +59,9 @@ public class CartaoService {
   @Transactional
   public TaxaCartaoView salvarTaxa(Long id, TaxaCartaoRequest req) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    if (!br.com.lojaspopular.application.auth.UsuarioAtual.tem(ator, br.com.lojaspopular.domain.user.Role.ADMIN)) {
+      throw new org.springframework.security.access.AccessDeniedException("Somente o proprietário cadastra taxas de cartão.");
+    }
     BigDecimal taxa = req.taxaPercentual().setScale(4, RoundingMode.HALF_UP);
     if (taxa.signum() < 0 || taxa.compareTo(new BigDecimal("100")) >= 0) {
       throw new NegocioException("A taxa deve estar entre 0% e 100% (exclusive).");
@@ -98,7 +101,7 @@ public class CartaoService {
   @Transactional
   public RecebivelView liquidar(Long id, LocalDate dataLiquidacao, BigDecimal valorLiquidado, String chave) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RECEBER);
     String k = VendaAcesso.exigirTexto(chave, "Informe a chave de idempotência da liquidação (cabeçalho Idempotency-Key).");
     RecebivelCartao r = recebiveis.findByIdForUpdate(id).orElseThrow(() -> new NotFoundException("Recebível não encontrado"));
     if (r.getStatus() == StatusRecebivel.LIQUIDADO) {
@@ -140,7 +143,7 @@ public class CartaoService {
   @Transactional
   public RecebivelView estornarLiquidacao(Long id, String motivo, String chave) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.ESTORNAR);
     String k = VendaAcesso.exigirTexto(chave, "Informe a chave de idempotência do estorno (cabeçalho Idempotency-Key).");
     String mot = VendaAcesso.exigirTexto(motivo, "Informe o motivo do estorno da liquidação.");
     RecebivelCartao r = recebiveis.findByIdForUpdate(id).orElseThrow(() -> new NotFoundException("Recebível não encontrado"));

@@ -51,6 +51,7 @@ public class CustoService {
   public record ItemSemCusto(Long itemId, Long pedidoId, String descricao, Integer quantidade, java.time.Instant confirmadoEm) {
   }
 
+  private final br.com.lojaspopular.application.financeiro.PermissaoFinanceiraService permissoes;
   private final CustoProdutoRepository custos;
   private final ProdutoRepository produtos;
   private final ItemPedidoRepository itens;
@@ -75,7 +76,7 @@ public class CustoService {
 
   @Transactional(readOnly = true)
   public List<CustoLinha> listar() {
-    VendaAcesso.exigirGestor(usuarioAtual.get());
+    permissoes.exigir(usuarioAtual.get(), br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.CONSULTAR);
     LocalDate hoje = relogio.hoje();
     List<CustoLinha> out = new ArrayList<>();
     for (Produto p : produtos.findAll()) {
@@ -95,7 +96,7 @@ public class CustoService {
 
   @Transactional(readOnly = true)
   public List<CustoHistorico> historico(Long produtoId) {
-    VendaAcesso.exigirGestor(usuarioAtual.get());
+    permissoes.exigir(usuarioAtual.get(), br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.CONSULTAR);
     return custos.historicoDoProduto(produtoId).stream().map(c -> new CustoHistorico(c.getId(),
         c.getVariacao() == null ? null : c.getVariacao().getId(), c.getCusto(), c.getVigenteDesde(), c.getMotivo(),
         c.getCriadoPor().getNome())).toList();
@@ -103,7 +104,7 @@ public class CustoService {
 
   @Transactional(readOnly = true)
   public List<ItemSemCusto> itensSemCusto() {
-    VendaAcesso.exigirGestor(usuarioAtual.get());
+    permissoes.exigir(usuarioAtual.get(), br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.CONSULTAR);
     return itens.confirmadosSemCusto().stream().map(i -> new ItemSemCusto(i.getId(), i.getPedido().getId(),
         i.getDescricaoHistorica(), i.getQuantidade(), i.getPedido().getConfirmadoEm())).toList();
   }

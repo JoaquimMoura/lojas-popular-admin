@@ -39,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ContaFinanceiraService {
 
+  private final br.com.lojaspopular.application.financeiro.PermissaoFinanceiraService permissoes;
   private final ContaFinanceiraRepository contas;
   private final ContaEventoRepository eventos;
   private final LancamentoFinanceiroRepository lancamentos;
@@ -63,7 +64,7 @@ public class ContaFinanceiraService {
   @Transactional
   public ContaView criar(ContaRequest req) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.PAGAR);
     LocalDate competencia = Relogio.primeiroDia(req.competencia());
     periodo.exigirAberto(competencia);
     ContaFinanceira c = contas.save(ContaFinanceira.builder().tipo(req.tipo()).descricao(req.descricao().trim())
@@ -80,7 +81,7 @@ public class ContaFinanceiraService {
   @Transactional
   public ContaView atualizar(Long id, ContaRequest req) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.PAGAR);
     ContaFinanceira c = contas.findByIdForUpdate(id).orElseThrow(() -> new NotFoundException("Conta não encontrada"));
     if (c.getSituacao() != SituacaoConta.ABERTA) {
       throw new NegocioException("Só é possível alterar uma conta em aberto.");
@@ -107,9 +108,9 @@ public class ContaFinanceiraService {
   @Transactional
   public ContaView baixar(Long id, ContaLivro meio, LocalDate data, String chave) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
     String k = VendaAcesso.exigirTexto(chave, "Informe a chave de idempotência da baixa (cabeçalho Idempotency-Key).");
     ContaFinanceira c = contas.findByIdForUpdate(id).orElseThrow(() -> new NotFoundException("Conta não encontrada"));
+    permissoes.exigir(ator, c.getTipo() == br.com.lojaspopular.domain.financeiro.enums.TipoConta.PAGAR ? br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.PAGAR : br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RECEBER);
     String chaveLivro = "conta:" + k;
     if (lancamentos.findByChave(chaveLivro).isPresent()) {
       return mapper.view(c, true);
@@ -144,7 +145,7 @@ public class ContaFinanceiraService {
   @Transactional
   public ContaView estornar(Long id, String motivo, String chave) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.ESTORNAR);
     String k = VendaAcesso.exigirTexto(chave, "Informe a chave de idempotência do estorno (cabeçalho Idempotency-Key).");
     String mot = VendaAcesso.exigirTexto(motivo, "Informe o motivo do estorno.");
     ContaFinanceira c = contas.findByIdForUpdate(id).orElseThrow(() -> new NotFoundException("Conta não encontrada"));
@@ -173,7 +174,7 @@ public class ContaFinanceiraService {
   @Transactional
   public ContaView cancelar(Long id, String motivo) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.PAGAR);
     String mot = VendaAcesso.exigirTexto(motivo, "Informe o motivo do cancelamento da conta.");
     ContaFinanceira c = contas.findByIdForUpdate(id).orElseThrow(() -> new NotFoundException("Conta não encontrada"));
     if (c.getSituacao() == SituacaoConta.CANCELADA) {

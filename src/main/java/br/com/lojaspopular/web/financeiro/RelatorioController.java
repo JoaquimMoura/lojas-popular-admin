@@ -39,6 +39,14 @@ public class RelatorioController {
 
   private final RelatorioService relatorios;
   private final CustoService custos;
+  private final br.com.lojaspopular.application.financeiro.PermissaoFinanceiraService permissoes;
+  private final br.com.lojaspopular.application.auth.UsuarioAtual usuarioAtual;
+
+  /** Permissões financeiras do usuário atual (a tela esconde o que não pode; o servidor sempre confere). */
+  @GetMapping("/permissoes")
+  public java.util.Map<String, Boolean> permissoes() {
+    return permissoes.minhas(usuarioAtual.get());
+  }
 
   @GetMapping("/relatorios/vendas")
   public RelatorioService.RelatorioVendas vendas(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate de,

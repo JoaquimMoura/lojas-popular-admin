@@ -36,6 +36,7 @@ public class ProdutoService {
 	private final CategoriaRepository categoriaRepository;
 	private final ItemPedidoRepository itemPedidoRepository;
 	private final ReservaEstoqueRepository reservaEstoqueRepository;
+	private final br.com.lojaspopular.domain.financeiro.repository.CustoProdutoRepository custoRepository;
 	
     @Value("${app.upload-dir:uploads}")
     private String baseUploadDir;
@@ -140,7 +141,8 @@ public class ProdutoService {
 		for (ProdutoVariacao antiga : atual.getVariacoes()) {
 			if (!resultado.contains(antiga)
 					&& (itemPedidoRepository.existsByVariacaoId(antiga.getId())
-						|| reservaEstoqueRepository.existsByVariacaoId(antiga.getId()))) {
+						|| reservaEstoqueRepository.existsByVariacaoId(antiga.getId())
+						|| custoRepository.existsByVariacaoId(antiga.getId()))) {
 				throw new NegocioException("A variação \"" + EstoqueService.descricao(antiga)
 					+ "\" já foi vendida e não pode ser removida. Zere o estoque dela se não for mais vendida.");
 			}
@@ -153,6 +155,10 @@ public class ProdutoService {
 	@Transactional
 	public void excluir(@NonNull Long id) {
 		var p = buscar(id);
+		if (custoRepository.existsByProdutoId(id)) {
+			throw new NegocioException(
+				"Este produto possui custos cadastrados (histórico financeiro) e não pode ser excluído. Zere o estoque para deixar de vendê-lo.");
+		}
 		if (itemPedidoRepository.existsByProdutoId(id)) {
 			throw new NegocioException(
 				"Este produto possui vendas registradas e não pode ser excluído. Zere o estoque para deixar de vendê-lo.");

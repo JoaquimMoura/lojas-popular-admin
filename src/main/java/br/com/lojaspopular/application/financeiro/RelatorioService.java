@@ -91,6 +91,7 @@ public class RelatorioService {
   public record RelatorioMetas(String mes, List<MetaView> metas, BigDecimal totalMeta, BigDecimal totalVendido) {
   }
 
+  private final br.com.lojaspopular.application.financeiro.PermissaoFinanceiraService permissoes;
   private final PedidoRepository pedidos;
   private final RecebimentoRepository recebimentos;
   private final LancamentoFinanceiroRepository lancamentos;
@@ -322,7 +323,7 @@ public class RelatorioService {
   // ------------------------------------------------------------------ util
 
   private void gestor() {
-    VendaAcesso.exigirGestor(usuarioAtual.get());
+    permissoes.exigir(usuarioAtual.get(), br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.CONSULTAR);
   }
 
   private LocalDate[] periodo(LocalDate de, LocalDate ate) {

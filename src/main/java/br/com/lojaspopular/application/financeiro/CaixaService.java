@@ -35,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CaixaService {
 
+  private final br.com.lojaspopular.application.financeiro.PermissaoFinanceiraService permissoes;
   private final SessaoCaixaRepository sessoes;
   private final LancamentoFinanceiroRepository lancamentos;
   private final LivroService livro;
@@ -46,7 +47,7 @@ public class CaixaService {
   @Transactional
   public SessaoCaixaView abrir(BigDecimal saldoInicial) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RECEBER);
     if (sessoes.findFirstByStatus(StatusSessaoCaixa.ABERTA).isPresent()) {
       throw new NegocioException("Já existe um caixa aberto: feche-o antes de abrir outro.");
     }
@@ -60,7 +61,7 @@ public class CaixaService {
   @Transactional
   public SessaoCaixaView movimentar(TipoMovimentoCaixa tipo, BigDecimal valor, String motivo, String chave) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, tipo.name().equals("RETIRADA") ? br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.PAGAR : br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RECEBER);
     String k = VendaAcesso.exigirTexto(chave, "Informe a chave de idempotência do movimento (cabeçalho Idempotency-Key).");
     String mot = VendaAcesso.exigirTexto(motivo, "Informe o motivo do movimento de caixa.");
     String chaveLivro = "caixa:" + k;
@@ -81,7 +82,7 @@ public class CaixaService {
   @Transactional
   public SessaoCaixaView fechar(BigDecimal saldoContado, String motivoDiferenca) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RECEBER);
     SessaoCaixa aberta = sessoes.findFirstByStatus(StatusSessaoCaixa.ABERTA)
         .orElseThrow(() -> new NegocioException("Não há caixa aberto."));
     SessaoCaixa s = sessoes.findByIdForUpdate(aberta.getId()).orElseThrow();

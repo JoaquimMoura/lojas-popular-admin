@@ -42,3 +42,10 @@ ALTER TABLE public.auditoria_evento ADD CONSTRAINT auditoria_evento_tipo_check C
     'COMISSAO_PREVISTA', 'COMISSAO_DEVIDA', 'COMISSAO_REVERTIDA', 'COMISSAO_PAGAMENTO_GERADO',
     'META_DEFINIDA', 'FECHAMENTO_APROVADO', 'FECHAMENTO_REABERTO',
     'CUSTO_REGISTRADO', 'CUSTO_ITEM_INFORMADO'));
+
+-- D12: permissoes financeiras do gerente por operacao (nulo = pendente: so o proprietario opera)
+ALTER TABLE public.configuracao_comercial ADD COLUMN perm_fin_consultar character varying(40);
+ALTER TABLE public.configuracao_comercial ADD COLUMN perm_fin_receber character varying(40);
+ALTER TABLE public.configuracao_comercial ADD COLUMN perm_fin_pagar character varying(40);
+ALTER TABLE public.configuracao_comercial ADD COLUMN perm_fin_estornar character varying(40);
+ALTER TABLE public.configuracao_comercial ADD COLUMN perm_fin_restituir character varying(40);

@@ -120,9 +120,16 @@ public class ConfiguracaoComercialService {
       p.add(new Pendencia("D11", "Nenhuma taxa/prazo de operadora de cartão cadastrada.",
           "Recebimentos em cartão", fin));
     }
-    // D12 é uma proposta em vigor (não bloqueia nada): ADMIN e GERENTE operam o financeiro até a loja aprovar a matriz
-    p.add(new Pendencia("D12", "Permissões financeiras por operação (consultar, receber, pagar, estornar, restituir) ainda são uma proposta: ADMIN e GERENTE.",
-        "Nada (a proposta ADMIN + GERENTE está em vigor até a aprovação; a aprovação do fechamento é só do proprietário)", fin));
+    var semPerm = new ArrayList<String>();
+    if (cfg.getPermFinConsultar() == null) semPerm.add("consultar");
+    if (cfg.getPermFinReceber() == null) semPerm.add("receber");
+    if (cfg.getPermFinPagar() == null) semPerm.add("pagar");
+    if (cfg.getPermFinEstornar() == null) semPerm.add("estornar");
+    if (cfg.getPermFinRestituir() == null) semPerm.add("restituir");
+    if (!semPerm.isEmpty()) {
+      p.add(new Pendencia("D12", "Permissões financeiras do gerente não decididas: " + String.join(", ", semPerm) + ".",
+          "Operações financeiras do gerente nessas ações (hoje só o proprietário as realiza)", fin));
+    }
     return p;
   }
 
@@ -290,6 +297,28 @@ public class ConfiguracaoComercialService {
             + ", permite cobrança de diferença=" + salvo.getPermiteCobrancaDiferenca() + ", meta abate devoluções="
             + salvo.getMetaDescontaDevolucoes() + ", fechamento exige sem pendências="
             + salvo.getFechamentoExigeSemPendencias(), "CONFIG_COMERCIAL", ConfiguracaoComercial.ID_UNICO);
+    return salvo;
+  }
+
+  /** D12: define, por operação, se o gerente também pode. Decisão explícita; somente o proprietário. */
+  @Transactional
+  public ConfiguracaoComercial atualizarPermissoes(br.com.lojaspopular.web.financeiro.PermissaoDtos.PermissoesFinanceirasRequest r) {
+    User ator = usuarioAtual.get();
+    if (!UsuarioAtual.tem(ator, Role.ADMIN)) {
+      throw new AccessDeniedException("Somente o proprietário define as permissões financeiras.");
+    }
+    var cfg = obter();
+    cfg.setPermFinConsultar(csvPerfis(r.consultar()));
+    cfg.setPermFinReceber(csvPerfis(r.receber()));
+    cfg.setPermFinPagar(csvPerfis(r.pagar()));
+    cfg.setPermFinEstornar(csvPerfis(r.estornar()));
+    cfg.setPermFinRestituir(csvPerfis(r.restituir()));
+    cfg.setAtualizadoEm(Instant.now());
+    cfg.setAtualizadoPor(ator);
+    var salvo = configRepo.save(cfg);
+    auditoria.registrar(AuditoriaTipo.CONFIG_COMERCIAL_ALTERADA, "Permissões financeiras (D12): consultar=" + salvo.getPermFinConsultar()
+        + ", receber=" + salvo.getPermFinReceber() + ", pagar=" + salvo.getPermFinPagar() + ", estornar=" + salvo.getPermFinEstornar()
+        + ", restituir=" + salvo.getPermFinRestituir() + " (nulo = só o proprietário)", "CONFIG_COMERCIAL", ConfiguracaoComercial.ID_UNICO);
     return salvo;
   }
 

@@ -73,6 +73,23 @@ public class ConfiguracaoComercial {
   @Column(length = 100)
   private String perfisReabertura;
 
+  /** D12 — perfis (além do proprietário) autorizados em cada operação financeira. Nulo = pendente: só o proprietário. */
+  @Column(length = 40)
+  private String permFinConsultar;
+
+  @Column(length = 40)
+  private String permFinReceber;
+
+  @Column(length = 40)
+  private String permFinPagar;
+
+  @Column(length = 40)
+  private String permFinEstornar;
+
+  @Column(length = 40)
+  private String permFinRestituir;
+
+
   /** D07 — perfis que podem autorizar restituições. Nulo = autorização indisponível. */
   @Column(length = 100)
   private String perfisRestituicao;

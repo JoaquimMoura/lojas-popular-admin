@@ -20,6 +20,8 @@ import br.com.lojaspopular.domain.comercial.model.CondicaoPagamento;
 import br.com.lojaspopular.domain.order.enums.FormaPagamento;
 import br.com.lojaspopular.domain.user.Role;
 import br.com.lojaspopular.web.financeiro.FinanceiroDtos.ConfigFinanceiraRequest;
+import br.com.lojaspopular.web.financeiro.PermissaoDtos.PermissoesFinanceirasRequest;
+import br.com.lojaspopular.web.financeiro.PermissaoDtos.PermissoesFinanceirasView;
 import br.com.lojaspopular.web.financeiro.FinanceiroDtos.ConfigFinanceiraView;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -57,6 +59,8 @@ public class ConfiguracaoComercialController {
       List<CondicaoResponse> condicoes, ConfigFinanceiraView financeiro) {
   }
 
+  private final br.com.lojaspopular.application.financeiro.PermissaoFinanceiraService permissoes;
+  private final br.com.lojaspopular.application.auth.UsuarioAtual usuarioAtual;
   private final ConfiguracaoComercialService service;
 
   @GetMapping
@@ -76,6 +80,27 @@ public class ConfiguracaoComercialController {
   public ConfiguracaoResponse atualizarFinanceiro(@RequestBody ConfigFinanceiraRequest req) {
     service.atualizarFinanceiro(req);
     return resposta();
+  }
+
+  /** D12: permissões financeiras do gerente, por operação (somente o proprietário altera). */
+  @GetMapping("/permissoes-financeiras")
+  public PermissoesFinanceirasView permissoes() {
+    return permissoesView();
+  }
+
+  @PutMapping("/permissoes-financeiras")
+  public PermissoesFinanceirasView atualizarPermissoes(@RequestBody PermissoesFinanceirasRequest req) {
+    service.atualizarPermissoes(req);
+    return permissoesView();
+  }
+
+  private PermissoesFinanceirasView permissoesView() {
+    var c = service.obter();
+    return new PermissoesFinanceirasView(service.perfis(c.getPermFinConsultar()), service.perfis(c.getPermFinReceber()),
+        service.perfis(c.getPermFinPagar()), service.perfis(c.getPermFinEstornar()), service.perfis(c.getPermFinRestituir()),
+        c.getPermFinConsultar() != null && c.getPermFinReceber() != null && c.getPermFinPagar() != null
+            && c.getPermFinEstornar() != null && c.getPermFinRestituir() != null,
+        permissoes.minhas(usuarioAtual.get()));
   }
 
   @PostMapping("/condicoes")

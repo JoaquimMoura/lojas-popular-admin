@@ -21,6 +21,10 @@ public interface CustoProdutoRepository extends JpaRepository<CustoProduto, Long
       + "order by c.vigenteDesde desc, c.id desc")
   List<CustoProduto> doProduto(@Param("produtoId") Long produtoId, @Param("data") LocalDate data);
 
+  boolean existsByProdutoId(Long produtoId);
+
+  boolean existsByVariacaoId(Long variacaoId);
+
   @Query("select c from CustoProduto c join fetch c.criadoPor where c.produto.id = :produtoId "
       + "order by c.vigenteDesde desc, c.id desc")
   List<CustoProduto> historicoDoProduto(@Param("produtoId") Long produtoId);

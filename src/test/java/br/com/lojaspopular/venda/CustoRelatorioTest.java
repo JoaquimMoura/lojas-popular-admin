@@ -77,6 +77,8 @@ class CustoRelatorioTest {
     vendedor = usuario("vendedor-c-" + UUID.randomUUID().toString().substring(0, 8) + "@loja.com", Role.VENDEDOR);
     como(admin);
     config.atualizar(new BigDecimal("10.00"), Arredondamento.HALF_UP, EnumSet.of(Role.ADMIN, Role.GERENTE), false);
+    config.atualizarPermissoes(new br.com.lojaspopular.web.financeiro.PermissaoDtos.PermissoesFinanceirasRequest(
+        EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE)));
     var c = condicoes.findByFormaAndParcelas(FormaPagamento.PIX, 1);
     if (c.isPresent()) {
       config.atualizarCondicao(c.get().getId(), BigDecimal.ZERO, true);

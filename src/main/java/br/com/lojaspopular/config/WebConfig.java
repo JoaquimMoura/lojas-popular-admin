@@ -10,6 +10,17 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+  private final br.com.lojaspopular.web.financeiro.PermissaoFinanceiraInterceptor permissaoFinanceira;
+
+  public WebConfig(br.com.lojaspopular.web.financeiro.PermissaoFinanceiraInterceptor permissaoFinanceira) {
+    this.permissaoFinanceira = permissaoFinanceira;
+  }
+
+  @Override
+  public void addInterceptors(org.springframework.web.servlet.config.annotation.InterceptorRegistry registry) {
+    registry.addInterceptor(permissaoFinanceira).addPathPatterns("/api/v1/financeiro/**");
+  }
+
   @Value("${app.upload-dir:uploads}")
   private String uploadDir;
 

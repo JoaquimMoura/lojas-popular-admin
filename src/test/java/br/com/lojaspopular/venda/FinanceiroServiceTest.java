@@ -124,6 +124,8 @@ class FinanceiroServiceTest {
     vendedor = usuario("vendedor-f-" + UUID.randomUUID().toString().substring(0, 8) + "@loja.com", Role.VENDEDOR);
     como(admin);
     config.atualizar(new BigDecimal("10.00"), Arredondamento.HALF_UP, EnumSet.of(Role.ADMIN, Role.GERENTE), false);
+    config.atualizarPermissoes(new br.com.lojaspopular.web.financeiro.PermissaoDtos.PermissoesFinanceirasRequest(
+        EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE), EnumSet.of(Role.GERENTE)));
     garantirCondicao(FormaPagamento.PIX, 1, "0.00");
     garantirCondicao(FormaPagamento.DINHEIRO, 1, "0.00");
     garantirCondicao(FormaPagamento.CARTAO, 3, "10.00");

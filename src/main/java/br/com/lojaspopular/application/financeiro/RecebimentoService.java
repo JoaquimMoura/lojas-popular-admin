@@ -63,6 +63,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RecebimentoService {
 
+  private final br.com.lojaspopular.application.financeiro.PermissaoFinanceiraService permissoes;
   private final RecebimentoRepository recebimentos;
   private final RecebivelCartaoRepository recebiveis;
   private final TaxaCartaoRepository taxas;
@@ -81,7 +82,7 @@ public class RecebimentoService {
   @Transactional
   public RecebimentoView registrar(Long pedidoId, RegistrarRecebimentoRequest req, String chave) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RECEBER);
     String k = VendaAcesso.exigirTexto(chave, "Informe a chave de idempotência do recebimento (cabeçalho Idempotency-Key).");
     Pedido p = acesso.travar(pedidoId, ator);
 
@@ -156,7 +157,7 @@ public class RecebimentoService {
   @Transactional
   public RecebimentoView estornar(Long recebimentoId, String motivo, String chave) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.ESTORNAR);
     String k = VendaAcesso.exigirTexto(chave, "Informe a chave de idempotência do estorno (cabeçalho Idempotency-Key).");
     String mot = VendaAcesso.exigirTexto(motivo, "Informe o motivo do estorno.");
 
@@ -178,6 +179,9 @@ public class RecebimentoService {
           + " ao cliente e o valor recebido restante ficaria abaixo disso.");
     }
 
+    if (p.getStatusPagamento() == StatusPagamento.PAGO) {
+      comissoes.exigirEstornoPermitido(p);
+    }
     switch (r.getForma()) {
       case DINHEIRO, PIX -> {
         var original = livro.ativo(lancamentos.findByRecebimentoIdOrderByIdAsc(r.getId()))
@@ -209,18 +213,19 @@ public class RecebimentoService {
   /** Painel financeiro da venda (usado no detalhe do pedido). */
   @Transactional(readOnly = true)
   public PagamentoPedido painel(Pedido p, User ator) {
-    boolean gestor = UsuarioAtual.isGestor(ator);
     var lista = recebimentos.findByPedidoIdOrderByIdAsc(p.getId()).stream().map(mapper::view).toList();
     BigDecimal recebido = recebimentos.somaAtiva(p.getId());
     BigDecimal restituido = restituicoes.somaPorPedido(p.getId(), List.of(StatusRestituicao.EFETIVADA));
     var rest = restituicoes.findByPedidoIdOrderByIdDesc(p.getId()).stream().map(mapper::view).toList();
-    var lanc = lancamentos.findByPedidoIdOrderByIdAsc(p.getId()).stream().map(mapper::view).toList();
+    // lançamentos (livro) só para quem pode consultar o financeiro (D12); o gerente sem essa permissão vê só o pagamento da venda
+    var lanc = permissoes.pode(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.CONSULTAR)
+        ? lancamentos.findByPedidoIdOrderByIdAsc(p.getId()).stream().map(mapper::view).toList() : List.<br.com.lojaspopular.web.financeiro.FinanceiroDtos.LancamentoView>of();
     BigDecimal total = p.getTotal() == null ? BigDecimal.ZERO : p.getTotal();
     BigDecimal saldo = total.subtract(recebido);
 
     Map<String, String> bloqueios = new LinkedHashMap<>();
     boolean confirmada = p.getStatusComercial() == StatusComercial.CONFIRMADA;
-    boolean podeRegistrar = gestor && confirmada && saldo.signum() > 0;
+    boolean podeRegistrar = permissoes.pode(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RECEBER) && confirmada && saldo.signum() > 0;
     if (podeRegistrar && p.getFormaPagamento() == FormaPagamento.CARTAO
         && taxas.findByAtivaTrueOrderByOperadoraAscParcelasAsc().isEmpty()) {
       podeRegistrar = false;
@@ -229,7 +234,7 @@ public class RecebimentoService {
     if (podeRegistrar && p.getFormaPagamento() == FormaPagamento.DINHEIRO) {
       bloqueios.put("caixa", "Pagamento em dinheiro entra no caixa físico: o caixa precisa estar aberto.");
     }
-    boolean podeEstornar = gestor && lista.stream().anyMatch(x -> x.status() == StatusRecebimento.REGISTRADO);
+    boolean podeEstornar = permissoes.pode(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.ESTORNAR) && lista.stream().anyMatch(x -> x.status() == StatusRecebimento.REGISTRADO);
     return new PagamentoPedido(p.getFormaPagamento(), p.getParcelas(), total, recebido, saldo, restituido, lista, rest, lanc,
         bloqueios, podeRegistrar, podeEstornar);
   }

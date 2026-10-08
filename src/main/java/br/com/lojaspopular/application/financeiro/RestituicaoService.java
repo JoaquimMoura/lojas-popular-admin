@@ -61,6 +61,7 @@ public class RestituicaoService {
   private static final Set<StatusRestituicao> EM_USO = Set.of(StatusRestituicao.SOLICITADA, StatusRestituicao.AUTORIZADA,
       StatusRestituicao.EFETIVADA);
 
+  private final br.com.lojaspopular.application.financeiro.PermissaoFinanceiraService permissoes;
   private final RestituicaoRepository restituicoes;
   private final OcorrenciaPosVendaRepository ocorrencias;
   private final RecebimentoRepository recebimentos;
@@ -81,7 +82,7 @@ public class RestituicaoService {
   @Transactional
   public RestituicaoView solicitar(Long ocorrenciaId, BigDecimal valorSolicitado, String motivo) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RESTITUIR);
     String mot = VendaAcesso.exigirTexto(motivo, "Informe o motivo da restituição.");
     exigirPoliticaRestituicao();
     OcorrenciaPosVenda o = ocorrencias.findById(ocorrenciaId).orElseThrow(() -> new NotFoundException("Ocorrência não encontrada"));
@@ -116,7 +117,7 @@ public class RestituicaoService {
   @Transactional
   public RestituicaoView autorizar(Long id) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RESTITUIR);
     Set<Role> perfis = config.perfis(config.obter().getPerfisRestituicao());
     if (perfis.isEmpty()) {
       throw new ConfiguracaoPendenteException("Configuração pendente (D07): defina quais perfis podem autorizar restituições.",
@@ -148,7 +149,7 @@ public class RestituicaoService {
   @Transactional
   public RestituicaoView efetivar(Long id, LocalDate data, String chave) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RESTITUIR);
     String k = VendaAcesso.exigirTexto(chave, "Informe a chave de idempotência da restituição (cabeçalho Idempotency-Key).");
     Long pedidoId = restituicoes.pedidoIdDe(id).orElseThrow(() -> new NotFoundException("Restituição não encontrada"));
     Pedido p = acesso.travar(pedidoId, ator);
@@ -199,7 +200,7 @@ public class RestituicaoService {
   @Transactional
   public RestituicaoView cancelar(Long id, String motivo) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RESTITUIR);
     String mot = VendaAcesso.exigirTexto(motivo, "Informe o motivo do cancelamento da restituição.");
     Restituicao r = restituicoes.findByIdForUpdate(id).orElseThrow(() -> new NotFoundException("Restituição não encontrada"));
     if (r.getStatus() == StatusRestituicao.CANCELADA) {
@@ -232,7 +233,7 @@ public class RestituicaoService {
   @Transactional
   public ContaView cobrarDiferenca(Long ocorrenciaId, LocalDate vencimento) {
     User ator = usuarioAtual.get();
-    VendaAcesso.exigirGestor(ator);
+    permissoes.exigir(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RESTITUIR);
     var cfg = config.obter();
     if (cfg.getPermiteCobrancaDiferenca() == null) {
       throw new ConfiguracaoPendenteException("Configuração pendente (D09): a política de cobrança da diferença de troca não foi definida.",

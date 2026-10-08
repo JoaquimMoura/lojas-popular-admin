@@ -83,6 +83,18 @@ public class ComissaoService {
     repo.previsaoDoPedidoParaAtualizar(p.getId()).ifPresent(c -> avaliarAquisicao(p, c));
   }
 
+  /** Estornar o pagamento desfaria a quitação que gerou uma comissão já em pagamento/paga (D02 = quitação): bloqueia. */
+  public void exigirEstornoPermitido(Pedido p) {
+    if (config.obter().getComissaoAquisicao() != br.com.lojaspopular.domain.financeiro.enums.AquisicaoComissao.QUITACAO) {
+      return;
+    }
+    repo.previsaoDoPedidoParaAtualizar(p.getId())
+        .filter(c -> c.getStatus() == StatusComissao.EM_CONTA || c.getStatus() == StatusComissao.PAGA).ifPresent(c -> {
+          throw new NegocioException("A comissão desta venda (aquisição por quitação) já está em pagamento ou paga. "
+              + "Estorne o pagamento da comissão (ou cancele a conta) antes de estornar este recebimento.");
+        });
+  }
+
   public void aoCancelar(Pedido p) {
     repo.previsaoDoPedidoParaAtualizar(p.getId()).ifPresent(prev -> {
       switch (prev.getStatus()) {
