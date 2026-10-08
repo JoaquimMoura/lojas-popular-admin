@@ -9,6 +9,7 @@ Registro das respostas dadas pelo responsável em 08/10/2026. **Nada disto foi a
 | 1 Desconto sem aprovação (D03) | **Sem desconto** (limite 0%): todo desconto exige aprovação | Configuração comercial › limite de desconto = 0 |
 | 2 Arredondamento (D04) | **Meio para cima** | Configuração comercial › arredondamento |
 | 3a Pix | **0%** (preço de tabela) | Condições de pagamento › Pix 1x = 0 |
+| 3b Cartão | **1x a 6x, sem juros ao cliente (ajuste 0% em todas)** | Condições de pagamento › Cartão 1x, 2x, 3x, 4x, 5x e 6x = 0 |
 | 3c Dinheiro | **0%** | Condições › Dinheiro 1x = 0 |
 | 4 Saída exige pagamento (D05) | **Não** (pode sair a receber) | Configuração comercial › exige pagamento para a saída = não |
 | 5 Quem cancela venda (D07) | **Gerente e proprietário** | Configuração comercial › perfis de cancelamento |
@@ -31,11 +32,9 @@ Registro das respostas dadas pelo responsável em 08/10/2026. **Nada disto foi a
 
 | Pergunta | O que bloqueia |
 |---|---|
-| 3b Cartão: parcelas e ajuste de cada uma ("deixar para parametrizar") | Venda no cartão (não há condição de cartão cadastrada). |
-| 7 Taxas e prazos de cada operadora (D11) | Recebimento no cartão. |
-| 9 Percentual de comissão (D01) | Nenhuma comissão é calculada; o pagamento de comissões fica indisponível. A resposta 10 (devida ao confirmar) só passa a valer quando houver percentual. |
-| 20 Data da contagem de estoque | Liberar a venda (produtos sem saldo não vendem). |
-| 19 Data em que os custos estarão cadastrados | Margem e resultado definitivo (D06 e D01 também precisam estar definidos). |
+| 7 Taxas e prazos de cada operadora (D11): nome, taxa % por parcelas (1x a 6x), dias até a 1ª parcela e dias entre parcelas | Recebimento no cartão (a venda pode ser registrada, mas não recebida). |
+| 9 Percentual de comissão (D01): respondeu "igual para todos", falta o número | Nenhuma comissão é calculada; o pagamento de comissões fica indisponível. A resposta 10 (devida ao confirmar) só passa a valer quando houver percentual. |
+| 20 e 19 Datas | Previstas para a **próxima semana (12 a 16/10/2026)**: contagem do estoque (libera a venda) e cadastro dos custos (margem e resultado definitivo; D01 também precisa estar definido). |
 
 ## Pontos que merecem atenção
 
