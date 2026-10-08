@@ -77,6 +77,17 @@ A **V6 está congelada**. Se algum banco tiver uma V6 aplicada diferente do arqu
 4. Comparar o esquema real: `\d configuracao_comercial` (colunas `perm_fin_consultar|receber|pagar|estornar|restituir`), `\d custos_produto`, `\d itens_pedido` (`custo_origem`) e o CHECK de `auditoria_evento`.
 5. Só então propor a correção, **por escrito e revisada**: normalmente uma **V7** que cria o que falta (ex.: adicionar as colunas `perm_fin_*` se a V6 aplicada era a de `c73a71c`) ou, se houver coluna a mais/diferente, uma V7 explícita. A divergência de checksum se resolve com decisão humana documentada, nunca automaticamente.
 
+## 7.2 Alternativa: instalação do zero (decisão do responsável: sem dump)
+
+Usar **somente** se o responsável aceitar **perder os dados atuais do banco de produção** (usuários, categorias, produtos, pedidos legados). As fotos em `/docker/lojas-popular-uploads` continuam no disco, mas deixam de aparecer porque os produtos deixam de existir. Nesse caminho **não há migração de dados**, então o ensaio das V3 a V6 sobre a cópia real **não se aplica**; no lugar dele vale a verificação abaixo, já executada em 08/10/2026 em PostgreSQL 15 vazio: Flyway aplica V1→V6 sozinho (`baselineOnMigrate`) e o banco nasce com 0 usuários.
+
+1. **Guardar o banco atual mesmo assim** (rede de segurança): `docker compose -f docker-compose.prod.yml down`; copiar o volume: `docker run --rm -v <projeto>_pg_prod_data:/v -v $PWD:/b alpine tar czf /b/pg_prod_data-AAAAMMDD.tgz -C /v .` (nome exato do volume em `docker volume ls`). **Não apagar o volume antigo.**
+2. Subir um banco novo e vazio: renomear o volume no `docker-compose.prod.yml` (ex.: `pg_prod_data_v2`) **ou** remover o volume só depois de confirmar a cópia do passo 1. Depois: `docker compose -f docker-compose.prod.yml up -d --build`. O backend aplica V1 a V6 na subida.
+3. Criar o proprietário: `export LP_OWNER_EMAIL=... LP_OWNER_PASSWORD=...` e `scripts/criar-proprietario.sh` (recusa rodar se já houver usuário).
+4. Configurar as regras (passo 5 e `gestao-vendas-decisoes-da-loja.md`), criar o gerente, cadastrar categorias e produtos (prazo de encomenda e custos), contar o estoque (passo 4) e só então liberar a venda.
+5. Verificação pós-implantação do passo 6.3.
+6. **Recuperação**: parar, voltar o volume antigo (ou o nome antigo no compose) e a imagem anterior. Como o banco novo não tem dados de valor antes das primeiras vendas, voltar é simples; depois de haver vendas, não voltar: corrigir adiante.
+
 ## 8. Limitações que continuam valendo na operação
 
 - **Comprovantes** de pagamento: só referência em texto (sem anexo).
