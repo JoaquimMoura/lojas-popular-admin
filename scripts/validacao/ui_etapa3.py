@@ -34,6 +34,10 @@ def principal():
     cliente = L.criar_cliente(ger["token"], nome="Cliente UI3 %s" % L.SUFIXO)
     produto = L.criar_produto(adm, "Guarda-roupa UI3", 1000.00, estoque=50)
     call("PUT", "/config/comercial/financeiro", adm, FIN_VAZIO)
+    s0, perm0 = call("GET", "/config/comercial/permissoes-financeiras", adm)
+    ops = ["consultar", "receber", "pagar", "estornar", "restituir"]
+    ctx["perm"] = {k: (perm0.get(k) or []) for k in ops} if s0 == 200 else {k: [] for k in ops}
+    call("PUT", "/config/comercial/permissoes-financeiras", adm, {k: ["GERENTE"] for k in ops})   # valores de TESTE
     ctx.update(adm=adm, ger=ger, vend=vend, cliente=cliente, produto=produto)
 
     vws = [tuple(int(x) for x in v.split("x")) for v in (os.environ.get("LP_VIEWPORTS") or "1366x900,390x844").split(",")]
@@ -192,6 +196,7 @@ def finalizar():
     except Exception as e:  # noqa: BLE001
         info("caixa: %s" % e)
     call("PUT", "/config/comercial/financeiro", adm, {k: ctx["fin"].get(k) for k in FIN_TESTE})
+    call("PUT", "/config/comercial/permissoes-financeiras", adm, ctx.get("perm", {}))
     L.config_restaurar(adm, ctx["snap"], ctx.get("criadas", []))
     L.limpar()
 

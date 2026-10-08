@@ -161,6 +161,10 @@ def estoque_branco(tok, produto):
 def principal():
     adm = L.preparar()
     ctx["snap"] = L.config_salvar(adm)
+    _ops = ["consultar", "receber", "pagar", "estornar", "restituir"]
+    s0, p0 = call("GET", "/config/comercial/permissoes-financeiras", adm)
+    ctx["perm"] = {k: (p0.get(k) or []) for k in _ops} if s0 == 200 else {k: [] for k in _ops}
+    call("PUT", "/config/comercial/permissoes-financeiras", adm, {k: ["GERENTE"] for k in _ops})   # valores de TESTE (D12)
     L.rotulo_teste()
     ctx["criadas"] = L.condicoes_teste(adm, ctx["snap"])
     ger = L.novo_usuario(adm, "GERENTE", "ui-ger")
@@ -504,6 +508,7 @@ def principal():
 def finalizar():
     adm = L.login_admin()
     if ctx.get("snap"):
+        call("PUT", "/config/comercial/permissoes-financeiras", adm, ctx.get("perm", {}))
         L.config_restaurar(adm, ctx["snap"], ctx.get("criadas", []))
     L.limpar()
 

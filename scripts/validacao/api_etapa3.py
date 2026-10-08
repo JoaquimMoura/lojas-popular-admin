@@ -21,12 +21,15 @@ FIN_TESTE = {"comissaoPercentual": 5, "comissaoAquisicao": "QUITACAO", "competen
              "perfisReabertura": ["ADMIN"], "perfisRestituicao": ["ADMIN", "GERENTE"], "permiteRestituicao": True,
              "permiteCobrancaDiferenca": True, "metaDescontaDevolucoes": True, "fechamentoExigeSemPendencias": False}
 FIN_VAZIO = {k: None for k in FIN_TESTE}
+PERM_OPS = ["consultar", "receber", "pagar", "estornar", "restituir"]
 
 
 def principal():
     adm = L.preparar()
     ctx["snap"] = L.config_salvar(adm)
     ctx["fin_snap"] = ctx["snap"].get("financeiro") or dict(FIN_VAZIO)
+    s0, perm0 = call("GET", "/config/comercial/permissoes-financeiras", adm)
+    ctx["perm_snap"] = {k: perm0.get(k) or [] for k in PERM_OPS} if s0 == 200 else {k: [] for k in PERM_OPS}
     L.rotulo_teste()
     print("[VALORES DE TESTE FINANCEIROS] comissão=5%%, aquisição=QUITACAO, competência=CONFIRMACAO, taxa de cartão 4%% em 3x "
           "(30/30 dias). Nenhum deles é decisão de negócio: D01, D02, D06, D07, D09, D10 e D11 seguem pendentes para a loja.")
@@ -40,6 +43,8 @@ def principal():
          "op": "OP-%s" % L.SUFIXO[:6].upper()}
     fechar_caixa_aberto(c)
 
+    secao("0. Permissões financeiras do gerente (D12): sem decisão, nada é liberado")
+    permissoes_d12(c)
     secao("1. Decisões financeiras pendentes e permissões")
     aplicar_fin(c, FIN_VAZIO)
     pendencias(c)
@@ -78,6 +83,8 @@ def finalizar():
         info("não foi possível fechar o caixa de teste: %s" % e)
     s, b = call("PUT", "/config/comercial/financeiro", adm, {k: ctx["fin_snap"].get(k) for k in FIN_TESTE})
     info("decisões financeiras restauradas (%s)" % s)
+    s, b = call("PUT", "/config/comercial/permissoes-financeiras", adm, ctx.get("perm_snap", {k: [] for k in PERM_OPS}))
+    info("permissões financeiras restauradas (%s)" % s)
     L.config_restaurar(adm, ctx["snap"], ctx.get("criadas", []))
     L.limpar()
 
@@ -625,6 +632,45 @@ def custos_relatorios(c):
     check("vendedor não acessa relatórios gerenciais (403)", s == 403, (s, b))
     s, b = call("GET", "/financeiro/relatorios/vendas?de=2026-02-01&ate=2026-01-01", gt)
     check("período invertido é recusado (400)", s == 400, (s, b))
+
+
+def permissoes_d12(c):
+    at, gt = c["adm"], c["ger"]["token"]
+    todas = {k: ["GERENTE"] for k in PERM_OPS}
+    nada = {k: [] for k in PERM_OPS}
+    s, b = call("PUT", "/config/comercial/permissoes-financeiras", at, nada)
+    check("proprietário zera as permissões (D12 pendente)", s == 200 and b.get("todasDecididas") is False, (s, b))
+    s, cfg = call("GET", "/config/comercial", at)
+    check("D12 aparece como pendência financeira", any(p["codigo"] == "D12" for p in g(cfg, "pendencias", default=[])), cfg)
+    v = venda(c)
+    for nome, (m, rota, corpo) in {
+        "consultar (caixa)": ("GET", "/financeiro/caixa/atual", None),
+        "consultar (relatório)": ("GET", "/financeiro/relatorios/estoque", None),
+        "receber": ("POST", "/vendas/%s/recebimentos" % v["id"], {"valor": 10}),
+        "operar caixa": ("POST", "/financeiro/caixa/abrir", {"saldoInicial": 0}),
+        "pagar (criar conta)": ("POST", "/financeiro/contas", {"tipo": "PAGAR", "descricao": "x", "categoria": "x", "competencia": datetime.date.today().isoformat(), "valor": 1, "vencimento": L.amanha(2)}),
+        "estornar": ("POST", "/recebimentos/1/estornar", {"motivo": "x"}),
+        "restituir": ("POST", "/ocorrencias/1/restituicoes", {"valor": 1, "motivo": "x"}),
+    }.items():
+        s, b = call(m, rota, gt, corpo, {"Idempotency-Key": L.chave()} if m == "POST" else None)
+        check("sem decisão D12 o gerente NÃO pode %s (403)" % nome, s == 403, (s, b))
+    s, b = call("GET", "/financeiro/caixa/atual", at)
+    check("o proprietário opera normalmente sem decisão", s == 200, (s, b))
+    s, b = call("GET", "/vendas/%s" % v["id"], gt)
+    check("detalhe da venda não oferece ações financeiras ao gerente", g(b, "acoes", "podeRegistrarRecebimento") is False, g(b, "acoes"))
+    s, p = call("GET", "/financeiro/permissoes", gt)
+    check("o gerente consulta as próprias permissões (todas falsas)", s == 200 and not any(p.values()), (s, p))
+    s, b = call("PUT", "/config/comercial/permissoes-financeiras", gt, todas)
+    check("gerente não altera permissões (403)", s == 403, (s, b))
+    s, b = call("PUT", "/config/comercial/permissoes-financeiras", at, dict(nada, receber=["GERENTE"]))
+    s2, b2 = receber(c, v["id"], 10)
+    s3, b3 = call("GET", "/financeiro/caixa/atual", gt)
+    s4, b4 = call("POST", "/financeiro/contas", gt, {"tipo": "PAGAR", "descricao": "x", "categoria": "x",
+                                                     "competencia": datetime.date.today().isoformat(), "valor": 1, "vencimento": L.amanha(2)})
+    check("concedido só RECEBER: o gerente recebe, mas não consulta nem paga",
+          s2 == 200 and s3 == 403 and s4 == 403, (s2, s3, s4))
+    s, b = call("PUT", "/config/comercial/permissoes-financeiras", at, todas)
+    check("proprietário concede todas as operações ao gerente (decisão explícita)", s == 200 and b.get("todasDecididas") is True, (s, b))
 
 
 if __name__ == "__main__":

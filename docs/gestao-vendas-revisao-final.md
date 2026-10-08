@@ -1,109 +1,97 @@
-# Gestão de vendas — revisão final do escopo
+# Gestão de vendas — revisão final
 
-Compara os casos de uso do plano (UC-01 a UC-23) com o que está no código. Evidência = teste automatizado (T), roteiro de API (A), roteiro de navegador (N). Números e datas em "Validação".
+Documentos relacionados: [questionário para a loja](gestao-vendas-questionario-loja.md) · [homologação e implantação](gestao-vendas-homologacao.md) · [Etapa 1](gestao-vendas-etapa1.md) · [Etapa 2](gestao-vendas-etapa2.md) · [Etapa 3](gestao-vendas-etapa3.md).
 
-## 1. Casos de uso
+## 1. Como o trabalho chegou à `master`
 
-| UC | Situação | Evidência | Limitações |
+- A `feature/gestao-vendas` (Etapas 1 a 3) foi levada à `master` por **fast-forward** (`git merge --ff-only`), sem commit de merge: `48a67d3` → `20037a2`, e esse estado foi enviado ao `origin/master` a pedido do responsável. A branch `feature/gestao-vendas` continua em `20037a2`.
+- Depois disso há **commits locais, ainda sem push** na `master`: custos e relatórios (backend e telas), a revisão final e, nesta rodada, a D12 e as correções abaixo.
+- O trabalho anterior foi preservado: `git diff` dos commits locais contra `origin/master` só toca financeiro, custos, relatórios, o ponto de congelamento de custo na confirmação (`VendaService`), configuração comercial, a trava de exclusão de produto com custo, testes, roteiros e docs. Nada fora desse escopo.
+- Fora do histórico: `.env.prod.example` (apagado) e `bb.example` (novo) continuam só no diretório de trabalho, por instrução do responsável.
+- A **V6 ainda não foi aplicada em nenhum banco real** (só em bancos descartáveis), por isso a D12 entrou na própria V6 em vez de uma V7. Depois do primeiro deploy, qualquer mudança de esquema deve virar V7.
+
+## 2. Achados da revisão
+
+| # | Onde | Impacto | Correção |
 |---|---|---|---|
-| 01 Acesso | Completo | `SegurancaApiTest` (T), `api_etapa1` (A), `ui_fluxo` (N) | Limite de 5 usuários ativos (regra existente). |
-| 02 Cliente | Completo | `api_etapa1`, `ui_fluxo` | — |
-| 03 Catálogo | Completo | `ui_fluxo` (variações preservadas, vitrine) | Custo é cadastrado na aba Financeiro › Custos, não no formulário do produto. |
-| 04 Preços | Completo | `VendaServiceTest`, `api_etapa1` | D03/D04 pendentes bloqueiam a venda até a loja definir. |
-| 05 Registrar venda | Completo | `VendaServiceTest`, `ui_fluxo` | — |
-| 06 Aprovar desconto | Completo | `VendaServiceTest`, `ui_fluxo` | Depende de D03. |
-| 07 Confirmar | Completo | `VendaServiceTest` (clique repetido, concorrência) | — |
-| 08 Encomenda | Completo | `AtendimentoServiceTest`, `api_etapa2`, `ui_fluxo` | Prazo padrão (D08) pendente. Recebimento parcial do fornecedor aceito; sem envio ao fornecedor. |
-| 09 Saída | Completo | `AtendimentoServiceTest` (baixa única, concorrência) | D05 pendente bloqueia a saída; sem entrega parcial. |
-| 10 Inventário | Completo | `AtendimentoServiceTest`, `api_etapa2` | Variação sem saldo exige a primeira contagem. |
-| 11 Acompanhar pedido | Completo | `ui_fluxo` | — |
-| 12 Entrega | Completo | `api_etapa2`, `ui_fluxo` | Sem notificação ao cliente. |
-| 13 Montagem | Completo | `api_etapa2`, `ui_fluxo` | Equipe/responsável em texto livre. |
-| 14 Cancelar venda | Completo, com dependências | `VendaServiceTest`, `FinanceiroServiceTest` | Perfis autorizados dependem de D07. Com recebimento ativo, primeiro estornar/restituir. Reversão de comissão automática. |
-| 15 Receber | Parcial | `FinanceiroServiceTest`, `api_etapa3`, `ui_etapa3` | Evidência é referência/observação em texto: **não há anexo de comprovante**. Cartão: um recebimento pelo total. |
-| 16 Cartão | Completo | `FinanceiroServiceTest`, `api_etapa3` | Sem taxa cadastrada (D11) o cartão é recusado. Sem conciliação bancária. |
-| 17 Caixa | Completo | `FinanceiroServiceTest`, `api_etapa3`, `ui_etapa3` | Um caixa físico por vez. |
-| 18 Contas | Completo | `FinanceiroServiceTest`, `api_etapa3` | Sem recorrência nem anexo. |
-| 19 Metas | Completo, atingimento provisório sem D09 | `FinanceiroServiceTest`, `api_etapa3` | Política de devoluções (D09) pendente. |
-| 20 Comissão | Completo, bloqueado por D01/D02 | `FinanceiroServiceTest`, `api_etapa3` | Sem D01 nada é calculado; sem D02 fica só prevista. |
-| 21 Pós-venda | Parcial | `AtendimentoServiceTest`, `FinanceiroServiceTest` | Restituição e diferença só com D09/D07. **Sem crédito de troca e sem reposição automática** (ver seção 5). |
-| 22 Fechar mês | Parcial | `FinanceiroServiceTest`, `api_etapa3` | Prévia, pendências, versões, bloqueio e reabertura prontos. **Resultado definitivo bloqueado** por D06, D01/D02 e itens sem custo. Despesas = contas pagas lançadas. |
-| 23 Relatórios | Completo no escopo pedido | `CustoRelatorioTest`, `api_etapa3`, `ui_etapa3` | Vendas por vendedor/canal/dia/mês, recebimentos, contas pendentes, estoque, entregas, comissões e metas. Sem gráficos/PDF; CSV só em Vendas e Recebimentos. Vendas não filtram por produto/cliente. |
+| 1 | `CartaoService.salvarTaxa` | O gerente podia cadastrar taxas de cartão, contra a regra "só o proprietário" (taxa errada distorce todo o líquido e a previsão). | Somente ADMIN. |
+| 2 | Todos os serviços financeiros (`exigirGestor`) | Gerente tinha **todas** as operações financeiras de forma implícita. | `PermissaoFinanceiraService` + D12: sem decisão o gerente não opera; operações separadas (ver seção 3). |
+| 3 | `RecebimentoService.estornar` × `ComissaoService` | Com D02 = quitação, estornar o pagamento de uma venda cuja comissão já estava em pagamento/paga deixava comissão paga sem quitação. | Estorno bloqueado com instrução (estornar/cancelar antes o pagamento da comissão). |
+| 4 | `ProdutoService.excluir` e remoção de variação | Produto/variação com custo cadastrado violava a FK (`custos_produto`) e viraria erro 500. | Recusa com mensagem clara (`CustoProdutoRepository.existsBy…`). |
+| 5 | `RecebimentoService.painel` | O detalhe da venda mostrava o livro de lançamentos a quem não pode consultar o financeiro. | Lançamentos só para quem tem CONSULTAR. |
+| 6 | `EncomendaService` (Javadoc) | Comentário dizia que o recebimento precisa cobrir a quantidade vendida. | Corrigido (recebimento parcial do fornecedor aceito). |
+| 7 | `FechamentoService.resultado` | Taxas de cartão entram pelo mês do **pagamento**, a receita pelo mês da confirmação/entrega: pode haver defasagem. | **Limitação** (o resultado só é "definitivo" sem faltantes, mas essa defasagem não é um faltante). Tratar na D06. |
+| 8 | `RelatorioService.vendas` | Vendas legadas (checkout online antigo) não entram: o relatório conta vendas confirmadas da gestão. | **Limitação** documentada. |
+| 9 | Ocorrência de pós-venda | A ocorrência mostra as restituições da venda mesmo a gerente sem CONSULTAR. | **Limitação**: dado operacional do atendimento; não alterado. |
+| 10 | `MetaService.definir` | Meta é gestão comercial, não está na D12 (gerente e proprietário definem). | Mantido; registrado. |
 
-## 2. Custos e resultado (V6)
+Verificado sem defeito: parcelas (a última absorve o arredondamento), estornos idempotentes e únicos, reversão de comissão por cancelamento e restituição, despesas sem dupla contagem de comissão (despesas = contas manuais; comissão à parte), congelamento de custo (imutável, nulo nunca vira zero), bloqueio de período fechado, V6 aditiva.
 
-- `custos_produto` guarda cada custo como registro **imutável** (produto ou variação, vigência, motivo, usuário). A variação herda o custo do produto se não tiver o seu.
-- Na **confirmação** o custo vigente é congelado no item (`custoUnitario`, origem `CATALOGO`). Mudar o custo depois **não altera** vendas antigas.
-- Sem custo cadastrado o item fica **nulo** — nunca zero. Vendas antigas e itens sem custo aparecem em "Itens vendidos sem custo"; o proprietário pode informar o custo **uma vez**, com motivo, auditoria e período aberto (origem `MANUAL`).
-- Fechamento e relatórios só mostram margem quando **todos** os itens do grupo têm custo, e a chamam de "margem bruta dos itens" (antes de despesas, taxas e comissões), nunca de lucro. O lucro apurado continua nulo enquanto houver faltantes (D06, D01/D02, custos).
-- A **regra de apuração** (competência por confirmação ou entrega) segue na D06; os relatórios de vendas usam a confirmação e dizem isso no aviso.
-- Cadastrar/informar custo: só o proprietário. Consultar: gerente e proprietário.
+## 3. Permissões financeiras (D12)
 
-## 3. Decisões abertas (para o responsável da loja responder)
+**Enquanto não houver decisão do proprietário, o gerente não opera nenhuma operação financeira.** O proprietário sempre opera. Cada operação é decidida separadamente em Configuração comercial › Permissões financeiras (3 opções: pendente, somente o proprietário, proprietário e gerente).
 
-D01–D10 vêm do plano original. **D11 e D12 foram criadas na implementação**, porque o plano não previa taxas de operadora nem a matriz de permissões financeiras.
+| Operação | Cobre | Padrão do gerente |
+|---|---|---|
+| Consultar | caixa, contas, cartão, comissões, metas, prévia do fechamento, relatórios, custos, lançamentos do pedido | **Negado** |
+| Receber | registrar recebimento, abrir/suprimento/fechar caixa, liquidar cartão, baixar conta a receber | **Negado** |
+| Pagar | criar/alterar/cancelar conta, baixar conta a pagar, retirada de caixa | **Negado** |
+| Estornar | estornar recebimento, liquidação de cartão e baixa de conta | **Negado** |
+| Restituir | solicitar/autorizar/efetivar/cancelar restituição e cobrar diferença (além dos perfis da D07) | **Negado** |
+| Sempre só o proprietário | aprovar fechamento, pagar comissões e gerar previsões, cadastrar custos e taxas de cartão, alterar decisões | — |
 
-| ID | Pergunta | Exemplo de resposta | O que bloqueia enquanto aberta |
+O servidor confere em cada serviço e nas consultas HTTP (`GET /financeiro/**`); a tela esconde o que o usuário não pode. A D12 aparece como pendência até as cinco operações serem decididas.
+
+## 4. Casos de uso: implementado × validado × habilitado
+
+- **Implementado**: existe no código.
+- **Validado**: coberto por teste automatizado (T), roteiro de API (A) ou de navegador (N).
+- **Habilitado para operação**: pode ser usado de fato na loja **depois** de decisões, configuração e dados iniciais. **Decisão pendente não equivale a fluxo concluído.**
+
+| UC | Implementado | Validado | Habilitado para operar quando… |
 |---|---|---|---|
-| D01 | Qual o percentual de comissão sobre o total cobrado? | "5% para todos os vendedores" | Nenhuma comissão é calculada. |
-| D02 | Quando a comissão vira devida? | "Quando a venda estiver 100% paga" (quitação) / na confirmação / na entrega | Comissão fica só prevista; pagamento de comissão bloqueado. |
-| D03 | Limite de desconto do vendedor? | "Até 10%" | Desconto em vendas. |
-| D04 | Arredondamento dos preços e condições de pagamento (Pix, cartão 3x etc.)? | "Arredondar para centavos; Pix -5%, cartão 3x +10%" | Registro de vendas. |
-| D05 | A saída exige pagamento quitado? | "Sim, só sai pago" / "Não" | Saída de mercadoria. |
-| D06 | A receita pertence ao mês da confirmação ou da entrega? | "Mês da entrega" | Resultado definitivo (só provisório). |
-| D07 | Quem cancela venda, autoriza restituição e reabre mês fechado? | "Cancelar: gerente e proprietário; reabrir: só o proprietário" | Cancelamento, restituição e reabertura. |
-| D08 | Prazo padrão de encomenda e atributos de variação? | "Encomenda: 30 dias; variação: cor e tamanho" | Apenas exibição do prazo ("A definir"). |
-| D09 | Há restituição ao cliente e cobrança de diferença de troca? A meta desconta devoluções? | "Restitui em até 7 dias; cobra a diferença; meta desconta devoluções" | Restituições e cobrança de diferença; meta fica provisória. |
-| D10 | O fechamento mensal exige zero pendências? | "Sim: caixa fechado e sem conta vencida" | Aprovação do fechamento (a prévia segue). |
-| **D11** | Quais são a **taxa e os prazos de cada operadora de cartão** por número de parcelas? | "Operadora X, 3x: 4% de taxa, 1ª parcela em 30 dias, demais a cada 30" | Só **recebimento em cartão** (e a agenda de recebíveis). Dinheiro e Pix não dependem. |
-| **D12** | A matriz de permissões financeiras (seção 4) está aprovada? | "Aprovada" ou "gerente não estorna" | Nada: a proposta (gerente e proprietário) está em vigor. |
+| 01 Acesso | Sim | T A N | Sempre (limite de 5 usuários ativos). |
+| 02 Cliente | Sim | A N | Sempre. |
+| 03 Catálogo | Sim | N | Sempre; custos em Financeiro › Custos. |
+| 04 Preços | Sim | T A | **D03 e D04** definidas e condições de pagamento cadastradas. |
+| 05 Registrar venda | Sim | T N | Depois do UC-04. |
+| 06 Aprovar desconto | Sim | T N | **D03** definida. |
+| 07 Confirmar | Sim | T | Depois do UC-05 e **contagem inicial do estoque**. |
+| 08 Encomenda | Sim | T A N | Sempre; prazo padrão (D08) só afeta o texto. |
+| 09 Saída | Sim | T A N | **D05** definida e estoque contado. |
+| 10 Inventário | Sim | T A | Sempre (é a contagem inicial). |
+| 11 Acompanhar pedido | Sim | N | Sempre. |
+| 12 Entrega | Sim | A N | Depois da saída (UC-09). Sem notificação ao cliente. |
+| 13 Montagem | Sim | A N | Depois da entrega. |
+| 14 Cancelar venda | Sim | T | **D07** (perfis de cancelamento). Com recebimento: estornar/restituir antes. |
+| 15 Receber | Sim (parcial*) | T A N | **D12** (se for o gerente), caixa aberto para dinheiro, **D11** para cartão. *Sem anexo de comprovante. |
+| 16 Cartão | Sim | T A | **D11** (taxas e prazos da operadora). |
+| 17 Caixa | Sim | T A N | **D12** (se for o gerente). |
+| 18 Contas | Sim | T A | **D12** (se for o gerente). |
+| 19 Metas | Sim | T A | Metas definidas; atingimento definitivo só com **D09**. |
+| 20 Comissão | Sim | T A | **D01** e **D02**; pagamento só pelo proprietário. |
+| 21 Pós-venda | Sim (parcial*) | T A N | Restituição/diferença: **D09 + D07 + D12**. *Sem crédito de troca e sem reposição automática. |
+| 22 Fechar mês | Sim (parcial*) | T A N | **D10 e D07**; resultado definitivo só com **D06**, D01/D02 e custos. *Defasagem das taxas (achado 7). |
+| 23 Relatórios | Sim | T A N | **D12** consultar (gerente); margem só com custos cadastrados. |
 
-D11 tem origem no UC-16 (cartão com valores brutos, taxas e líquidos): sem a taxa e o prazo informados pela loja o sistema não inventa líquido nem previsão. O cadastro fica em Financeiro › Cartão › Taxas; vendas já registradas mantêm o plano gravado.
+Em resumo: o que **pode operar hoje, só com o proprietário e sem decisões**: usuários, clientes, catálogo, encomendas, inventário e acompanhamento. Vender, receber, pagar comissão, restituir e fechar o mês **dependem das decisões do questionário**.
 
-## 4. Permissões financeiras (proposta D12)
+## 5. Limitações explícitas
 
-**ADMIN e GERENTE são uma proposta pendente de aprovação.** Estado atual no código e a separação que a loja pode pedir:
+- **Comprovantes**: o recebimento guarda referência/observação em texto; **não há upload de comprovante** de pagamento (só de entrega e montagem).
+- **Trocas**: sem crédito/haver de troca e sem reposição física automática. A conclusão é manual, com rastreio (a diferença vira cobrança ou restituição; a reposição é uma nova venda citando a ocorrência, e a ocorrência registra a solução).
+- **Resultado**: o lucro nunca é apresentado como definitivo enquanto houver faltantes (D06, D01/D02, itens sem custo, comissões só previstas); margem só em grupos com todos os itens com custo e sempre como "margem bruta dos itens". Taxas de cartão entram pelo mês do pagamento (achado 7).
+- **Mercado Pago**: o checkout online legado segue o `PaymentService` endurecido (valor divergente recusado, evento repetido sem efeito, rejeição não cancela). Está coberto por teste de integração, **sem validação ponta a ponta com o gateway**. Vendas da gestão recebem pelo Financeiro.
+- Sem validação em dispositivo físico e outros navegadores; sem notificações; sem conciliação bancária; relatórios sem gráficos/PDF.
 
-| Operação | Hoje | Observação |
-|---|---|---|
-| Consultar (caixa, contas, cartão, relatórios, custos) | ADMIN, GERENTE | Vendedor só vê a própria comissão e meta. |
-| Receber (recebimento, caixa, liquidar cartão) | ADMIN, GERENTE | Uma única verificação central (`VendaAcesso.exigirGestor`), fácil de separar. |
-| Pagar (baixar conta) | ADMIN, GERENTE | — |
-| Estornar (recebimento, liquidação, baixa) | ADMIN, GERENTE | Sempre com motivo e rastro. |
-| Restituir | Perfis de D07 (padrão de teste: ADMIN, GERENTE); quem solicita não autoriza | Configurável pelo proprietário. |
-| Fechar período (aprovar) | **Só ADMIN** | Fixo, conforme o plano. |
-| Reabrir período | Perfis de D07, com justificativa | Configurável. |
-| Pagar comissões, gerar previsões, decisões financeiras, cadastrar custos, taxas de cartão | **Só ADMIN** | — |
+## 6. Cartão e parcelamento
 
-Para separar "receber" de "pagar/estornar" basta decidir D12; o ponto de controle é único.
+"Cartão pelo valor total" **permite parcelamento na operadora**: a venda define as parcelas (ex.: 3x) e o recebimento é um só, pelo total, gerando um recebível por parcela. Não existe dividir a venda em dois cartões, pagar parte no cartão ou misturar formas.
 
-## 5. Cartão, parcelamento e trocas
+## 7. Custos
 
-- **"Cartão pelo valor total" permite parcelamento na operadora.** A venda define as parcelas (ex.: 3x); o recebimento é **um só, pelo total**, e gera N recebíveis (bruto, taxa, líquido, data prevista). O que não existe é dividir a venda em dois cartões, pagar parte no cartão ou misturar formas (uma forma por venda).
-- **Crédito de troca e reposição automática estão pendentes** (dependem de D09). Para concluir uma troca **manualmente, com rastreio**:
-  1. Abrir a ocorrência de troca no pedido original e **receber a devolução física** (condição APTA/NÃO APTA).
-  2. Diferença a favor da loja: **Cobrar diferença** (conta a receber ligada à ocorrência; exige D09) e baixar. Diferença a favor do cliente: **Restituição** (solicitar → autorizar por outra pessoa → efetivar), ou nenhuma movimentação se a loja preferir compensar na nova venda.
-  3. Reposição: registrar uma **nova venda** do produto novo, escrevendo na observação "Troca da ocorrência #N / pedido #M".
-  4. Resolver a ocorrência informando a solução ("Reposição na venda #X; diferença na conta #Y"). Tudo fica na auditoria e no histórico da ocorrência.
+Registro imutável por produto/variação; custo vigente congelado no item na **confirmação**; sem custo o item fica **nulo** (nunca zero); itens vendidos sem custo podem receber o custo **uma vez**, pelo proprietário, com motivo e auditoria. O catálogo também impede excluir produto/variação que tenha custo.
 
-## 6. Validação final (07/10/2026)
+## 8. Validação
 
-Resultados **separados** por tipo:
-
-| Tipo | Ambiente | Resultado |
-|---|---|---|
-| Suíte JUnit | H2 (perfil `test`) | **100 testes passam** |
-| Suíte JUnit | **PostgreSQL 15**, esquema só das migrações V1→V6, Hibernate `validate` (`scripts/validacao/suite-pg.sh`) | **100 testes passam** |
-| Roteiros de API | PostgreSQL 15 | `api_etapa1` 118/118 · `api_etapa2` 154/154 · `api_etapa3` 142/142 |
-| Roteiros de navegador | PostgreSQL 15, Chromium 1366 px e 390 px | `ui_etapa3` 50/50 · `ui_fluxo` 68/68 |
-| Frontend | — | `npm run build` OK; `npm run lint` com os **mesmos 6 erros anteriores** (ImageCropModal, ProductGalleryModal, AuthContext, CartContext, ProductDetails, routes.jsx:43), nenhum novo |
-
-Reconciliação da contagem de testes: 57 antes da Etapa 3 (23 + 9 + 22 + 2 + 1 de contexto) + 1 teste a mais em `AtendimentoServiceTest` (recebimento além do vendido) + 34 de `FinanceiroServiceTest` = **92**; + 8 de `CustoRelatorioTest` = **100**.
-
-Não coberto: dispositivo físico e outros navegadores; Mercado Pago ponta a ponta (regras cobertas por teste de integração).
-
-## 7. Condições para produção
-
-- **Ensaio das migrações V3, V4, V5 e V6 na cópia do banco real: PENDENTE e obrigatório** (`scripts/ensaio-migracao-v3.sh`, que já confere as quatro). Sem push/deploy até lá.
-- Respostas da loja às decisões abertas (seção 3), no mínimo D05, D03/D04 e D11 para começar a vender e receber.
-- Contagem física do estoque e cadastro de custos antes de usar relatórios de margem.
+Ver a tabela no fim de [gestao-vendas-homologacao.md](gestao-vendas-homologacao.md) (resultados por tipo de teste, atualizados a cada rodada).

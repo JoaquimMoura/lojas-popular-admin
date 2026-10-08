@@ -63,7 +63,7 @@ Todas nascem **nulas** (V5) e aparecem como pendência da área `FINANCEIRO` na 
 
 ## API (resumo)
 
-Todas as rotas financeiras são de **ADMIN e GERENTE**, exceto: `GET /financeiro/comissoes/minhas` e `GET /financeiro/metas/minha` (o vendedor lê só o que é dele); gerar previsões/pagamento de comissão, aprovar/reabrir fechamento e editar decisões financeiras são **só do proprietário**; metas são definidas por gerente ou proprietário.
+As rotas financeiras são do **proprietário** e, por operação, do **gerente** quando o proprietário concede (D12), exceto: `GET /financeiro/comissoes/minhas` e `GET /financeiro/metas/minha` (o vendedor lê só o que é dele); gerar previsões/pagamento de comissão, aprovar/reabrir fechamento e editar decisões financeiras são **só do proprietário**; metas são definidas por gerente ou proprietário.
 
 | Rota | Função |
 |---|---|
@@ -110,7 +110,7 @@ Todas as rotas financeiras são de **ADMIN e GERENTE**, exceto: `GET /financeiro
 ## Limitações conhecidas
 
 - **Cartão**: exige pagamento pelo valor total em um único recebimento. Restituição de cartão **reduz recebíveis previstos de trás para frente**; se o recebível já foi liquidado, a restituição sai pelo banco.
-- **Quem é "usuário financeiro"** é a proposta D12 (pendente de aprovação): ADMIN e GERENTE (o vendedor só vê a própria comissão e meta). Confirmar com a loja.
+- **Quem é "usuário financeiro"** é a D12: sem decisão o gerente **não** opera o financeiro; o proprietário concede por operação (ver revisão final) (o vendedor só vê a própria comissão e meta). Confirmar com a loja.
 - **Crédito/haver** de diferença de troca e **reposição física automática** da troca não existem (a diferença a cobrar vira conta a receber; a reposição é nova venda/saída manual).
 - Relatórios gerenciais foram adicionados depois (ver revisão final); conciliação bancária não existe.
 - Pagamentos pelo **Mercado Pago** (checkout legado) seguem o `PaymentService` com regras mais estritas (valor divergente é recusado, evento repetido não duplica, rejeição não cancela o pedido, pendente nunca rebaixa pago) — cobertas por teste de integração, sem simulação ponta a ponta. Vendas da gestão recebem pelo Financeiro.
