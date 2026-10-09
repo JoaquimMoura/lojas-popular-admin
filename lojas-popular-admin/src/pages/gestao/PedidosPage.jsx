@@ -147,7 +147,13 @@ export default function PedidosPage() {
                       <td><StatusBadge tipo="entrega" valor={v.statusEntrega} /></td>
                       <td className="text-end">{fmtMoney(v.total)}</td>
                       <td>{fmtDateTime(v.criadoEm)}</td>
-                      <td className="text-end">
+                      <td className="text-end text-nowrap">
+                        {!["RASCUNHO", "AGUARDANDO_APROVACAO"].includes(v.statusComercial) && (
+                          <Link className="btn btn-sm btn-outline-secondary me-1" to={`/gestao/pedidos/${v.id}/imprimir`}
+                            title="Imprimir o comprovante de compra (pedido de venda)">
+                            Imprimir
+                          </Link>
+                        )}
                         <Link className="btn btn-sm btn-outline-primary" to={`/gestao/pedidos/${v.id}`}>
                           Abrir
                         </Link>
