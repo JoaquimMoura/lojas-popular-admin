@@ -291,8 +291,35 @@ def cartao(c):
     check("cadastrar taxa de cartão (D11) da operadora de teste", s == 200, (s, b))
     v = venda(c, forma="CARTAO", parcelas=3)
     vid, total = v["id"], v["total"]
-    s, b = receber(c, vid, total, extra={"operadora": "OPERADORA-SEM-TAXA"})
-    check("operadora sem taxa cadastrada bloqueia (422 D11)", s == 422 and "D11" in str(g(b, "message")), (s, b))
+    # sem taxa cadastrada (D11) o cartão NÃO bloqueia: plano manual, sem taxa inventada
+    v2 = venda(c, forma="CARTAO", parcelas=3)
+    s, b = receber(c, v2["id"], v2["total"], extra={"operadora": "OPERADORA-SEM-TAXA"})
+    r2 = g(b, "pagamento", "recebimentos", default=[{}])[0]
+    check("operadora sem taxa cadastrada: cartão em plano manual (1 recebível, sem taxa)",
+          s == 200 and r2.get("planoManual") is True and len(r2.get("recebiveis", [])) == 1 and r2["recebiveis"][0]["valorTaxa"] == 0
+          and r2.get("tipoCartao") == "CREDITO", (s, r2))
+    sl, lq = call("POST", "/financeiro/recebiveis/%s/liquidar" % r2["recebiveis"][0]["id"], c["ger"]["token"],
+                  {"valorLiquidado": round(v2["total"] - 20, 2)}, {"Idempotency-Key": L.chave()})
+    check("plano manual: liquidação com o valor realmente depositado registra a diferença", sl == 200 and abs(g(lq, "diferencaLiquidacao") + 20) < 0.005, (sl, lq))
+    # forma e tipo escolhidos no pagamento
+    s, nova = call("POST", "/config/comercial/condicoes", c["adm"], {"forma": "CARTAO", "parcelas": 1, "ajustePercentual": "10.00", "ativa": True})
+    if s == 200:
+        ctx["criadas"].append(nova["id"])
+    else:   # já existe neste ambiente: iguala o ajuste ao do cartão 3x (restaurado ao final pelo snapshot)
+        s0, cfg0 = call("GET", "/config/comercial", c["adm"])
+        ex = next((x for x in cfg0["condicoes"] if x["forma"] == "CARTAO" and x["parcelas"] == 1), None)
+        if ex:
+            call("PUT", "/config/comercial/condicoes/%s" % ex["id"], c["adm"], {"ajustePercentual": "10.00", "ativa": True})
+    v3 = venda(c, forma="CARTAO", parcelas=3)
+    s, b = receber(c, v3["id"], v3["total"], extra={"operadora": c["op"], "tipoCartao": "DEBITO"})
+    r3 = g(b, "pagamento", "recebimentos", default=[{}])[0]
+    check("cartão débito é sempre 1x (a venda passa a 1x)", s == 200 and r3.get("tipoCartao") == "DEBITO" and r3.get("parcelas") == 1
+          and g(b, "pagamento", "parcelas") == 1, (s, r3))
+    v4 = venda(c)   # Pix
+    s, b = receber(c, v4["id"], v4["total"], extra={"forma": "CARTAO", "parcelas": 3, "tipoCartao": "CREDITO", "operadora": c["op"]})
+    check("trocar a forma para uma que mudaria o preço é recusado (400)", s == 400 and "mudaria o preço" in str(g(b, "message")), (s, b))
+    s, b = receber(c, v4["id"], v4["total"], extra={"forma": "CARTAO", "parcelas": 3, "operadora": c["op"]})
+    check("cartão sem crédito/débito informado é recusado (400)", s == 400 and "crédito ou débito" in str(g(b, "message")), (s, b))
     s, b = receber(c, vid, round(total / 2, 2), extra={"operadora": c["op"]})
     check("cartão exige o valor total da venda (400)", s == 400 and "valor total" in str(g(b, "message")), (s, b))
     s, b = receber(c, vid, total, extra={"operadora": c["op"], "referencia": "NSU-%s" % L.SUFIXO})

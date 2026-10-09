@@ -33,8 +33,14 @@ Registro das respostas dadas pelo responsável em 08/10/2026. **Nada disto foi a
 
 | Pergunta | O que bloqueia |
 |---|---|
-| 7 Taxas e prazos de cada operadora (D11): nome, taxa % por parcelas (1x a 6x), dias até a 1ª parcela e dias entre parcelas | Recebimento no cartão (a venda pode ser registrada, mas não recebida). |
+| D13a: o vendedor pode ver compras do cliente feitas por outros vendedores? | Nada: vale o escopo atual (cada vendedor vê só as próprias vendas). |
+| D13b: quem pode trocar o cliente de uma venda já confirmada (gerente, proprietário)? | A troca de cliente fica bloqueada para todos. |
+| 7 Taxas e prazos de cada operadora (D11): nome, taxa % por parcelas (1x a 6x), dias até a 1ª parcela e dias entre parcelas | **Nada bloqueia.** Sem taxa, o cartão é registrado em plano manual (um recebível sem taxa, previsão na data do pagamento; ao dar baixa, informa-se o valor realmente depositado). Com taxa cadastrada, o sistema calcula líquido e previsão por parcela. |
 | 20 e 19 Datas | Previstas para a **próxima semana (12 a 16/10/2026)**: contagem do estoque (libera a venda) e cadastro dos custos (margem e resultado definitivo; D01 também precisa estar definido). |
+
+## Pagamentos são registro manual
+
+Maquininha de cartão e Pix são externos: o sistema **não processa pagamento**. Na tela do pedido alguém registra o que já foi pago: **Pix, dinheiro ou cartão**; no cartão, **crédito ou débito** (débito é sempre 1x) e, no crédito, o **número de parcelas** (1x a 6x). A forma pode ser escolhida na hora do pagamento (padrão: a da venda), desde que não mude o preço da venda, e fica travada depois do primeiro recebimento.
 
 ## Pontos que merecem atenção
 

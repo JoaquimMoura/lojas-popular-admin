@@ -48,6 +48,11 @@ Responda ao lado de cada pergunta. Os exemplos são **só ilustração**: nenhum
 17. **O fechamento do mês exige estar sem pendências? (D10)** ☐ sim (caixa fechado, sem conta/recebível vencido…) ☐ não, pode fechar com pendências
 18. **Quem pode reabrir um mês fechado? (D07)** ☐ só o proprietário ☐ proprietário e gerente *(sempre com justificativa)*
 
+## E2. Clientes (D13)
+
+- **O vendedor pode ver as compras de um cliente feitas por outros vendedores?** ☐ Sim, para atender melhor ☐ Não, só as próprias
+- **Quem pode trocar o cliente de uma venda já confirmada?** ☐ Só o proprietário ☐ Gerente e proprietário ☐ Ninguém por enquanto (sempre com justificativa)
+
 ## F. Dados iniciais
 
 19. **Custo dos produtos** — Vão informar o custo de compra de cada produto/variação? ☐ sim, a partir de ___/___/___ ☐ não por enquanto *(sem custo não há margem nem resultado definitivo)*

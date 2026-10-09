@@ -83,7 +83,7 @@ def completo(bc):
     check("seção Pagamento com botão Registrar recebimento", pg.locator("button", has_text="Registrar recebimento").count() >= 1)
     pg.locator("button", has_text="Registrar recebimento").first.click()
     pg.wait_for_selector(".modal")
-    check("a forma de pagamento é a da venda (sem seleção de forma)", "única forma" in U.texto(pg) or "uma única forma" in U.texto(pg))
+    check("o modal pede como o cliente pagou (Pix, dinheiro ou cartão)", "Como o cliente pagou" in U.texto(pg))
     btn = U.mbtn(pg, "Registrar recebimento")
     btn.dblclick()   # duplo clique: precisa gerar um único recebimento
     pg.wait_for_timeout(1500)

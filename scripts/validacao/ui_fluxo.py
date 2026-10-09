@@ -165,6 +165,10 @@ def principal():
     s0, p0 = call("GET", "/config/comercial/permissoes-financeiras", adm)
     ctx["perm"] = {k: (p0.get(k) or []) for k in _ops} if s0 == 200 else {k: [] for k in _ops}
     call("PUT", "/config/comercial/permissoes-financeiras", adm, {k: ["GERENTE"] for k in _ops})   # valores de TESTE (D12)
+    _fin = ["comissaoPercentual", "comissaoAquisicao", "competenciaReceita", "perfisReabertura", "perfisRestituicao", "permiteRestituicao",
+            "permiteCobrancaDiferenca", "metaDescontaDevolucoes", "fechamentoExigeSemPendencias"]
+    ctx["fin"] = {k: (ctx["snap"].get("financeiro") or {}).get(k) for k in _fin}
+    call("PUT", "/config/comercial/financeiro", adm, {k: None for k in _fin})   # o roteiro parte das decisões financeiras pendentes
     L.rotulo_teste()
     ctx["criadas"] = L.condicoes_teste(adm, ctx["snap"])
     ger = L.novo_usuario(adm, "GERENTE", "ui-ger")
@@ -223,7 +227,7 @@ def principal():
                 pg_a.locator("#perfil-ADMIN").check()
                 pg_a.locator("#perfil-GERENTE").check()
                 pg_a.locator("select", has=pg_a.locator("option", has_text="Não exigir pagamento")).select_option(label="Não definido (saída bloqueada)")
-                pg_a.get_by_role("button", name="Salvar regras").click()
+                pg_a.get_by_role("button", name="Salvar regras").first.click()
                 pg_a.wait_for_timeout(1200)
                 L.condicoes_teste(adm, L.config_salvar(adm))
                 pg_a.reload()
@@ -511,6 +515,7 @@ def finalizar():
     adm = L.login_admin()
     if ctx.get("snap"):
         call("PUT", "/config/comercial/permissoes-financeiras", adm, ctx.get("perm", {}))
+        call("PUT", "/config/comercial/financeiro", adm, ctx.get("fin", {}))
         L.config_restaurar(adm, ctx["snap"], ctx.get("criadas", []))
     L.limpar()
 

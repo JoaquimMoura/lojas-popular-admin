@@ -51,7 +51,7 @@ O servidor confere em cada serviço e nas consultas HTTP (`GET /financeiro/**`);
 | UC | Implementado | Validado | Habilitado para operar quando… |
 |---|---|---|---|
 | 01 Acesso | Sim | T A N | Sempre (limite de 5 usuários ativos). |
-| 02 Cliente | Sim | A N | Sempre. |
+| 02 Cliente | Sim | T A N | Sempre; histórico de compras, vínculo e troca de cliente em [gestao-vendas-clientes.md](gestao-vendas-clientes.md). A **troca de cliente** em venda confirmada fica bloqueada até a **D13**. |
 | 03 Catálogo | Sim | N | Sempre; custos em Financeiro › Custos. |
 | 04 Preços | Sim | T A | **D03 e D04** definidas e condições de pagamento cadastradas. |
 | 05 Registrar venda | Sim | T N | Depois do UC-04. |
