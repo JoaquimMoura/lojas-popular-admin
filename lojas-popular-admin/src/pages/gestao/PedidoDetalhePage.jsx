@@ -34,6 +34,7 @@ export default function PedidoDetalhePage() {
   const [erro, setErro] = useState(null);
   const [erroAcao, setErroAcao] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [obsCliente, setObsCliente] = useState(null);   // null = ainda não editou (usa o valor salvo)
   const [modal, setModal] = useState(null); // 'cancelar' | 'aprovar' | 'rejeitar'
   // Chave de idempotência da confirmação: mesma chave para reenvios da mesma tentativa.
   const chaveConfirmacao = useRef({ id: null, chave: null });
@@ -221,6 +222,41 @@ export default function PedidoDetalhePage() {
                 Nenhuma ação geral neste momento. Entrega, montagem e pós-venda estão nas seções abaixo.
               </span>
             )}
+        </div>
+      </div>
+
+      {/* Comprovante de compra (pedido de venda, sem valor fiscal) */}
+      <div className="card mb-3">
+        <div className="card-header">Comprovante de compra</div>
+        <div className="card-body">
+          <p className="small text-muted mb-2">
+            Documento para entregar ao cliente: “Pedido de venda — não é documento fiscal”. Reimprimir não altera estoque,
+            pagamento nem a situação do pedido.
+          </p>
+          {venda.statusComercial === "RASCUNHO" || venda.statusComercial === "AGUARDANDO_APROVACAO" ? (
+            <div className="alert alert-warning mb-0">
+              O comprovante só fica disponível depois que a venda for confirmada.
+            </div>
+          ) : (
+            <>
+              <label className="form-label">Observações para o cliente (acesso, entrega, montagem)</label>
+              <textarea className="form-control mb-2" rows={2} maxLength={500}
+                value={obsCliente ?? venda.observacaoCliente ?? ""} onChange={(e) => setObsCliente(e.target.value)}
+                placeholder="Ex.: Portaria recebe até as 17h. Elevador de serviço no 2º bloco." />
+              <div className="form-text mb-2">Estas observações saem impressas. As observações internas da equipe não saem.</div>
+              <div className="d-grid d-sm-flex gap-2">
+                <button className="btn btn-outline-secondary" disabled={busy || obsCliente === null}
+                  onClick={() => executar(async () => {
+                    await vendasApi.definirObservacaoCliente(venda.id, obsCliente);
+                    setObsCliente(null);
+                    return vendasApi.obter(venda.id);
+                  }, "Observação ao cliente salva.")}>
+                  Salvar observação
+                </button>
+                <Link className="btn btn-primary" to={`/gestao/pedidos/${venda.id}/imprimir`}>Imprimir pedido</Link>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

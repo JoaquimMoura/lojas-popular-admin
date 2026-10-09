@@ -22,6 +22,7 @@ import CartPage from "./pages/CartPage";
 import GestaoLayout from "./pages/gestao/GestaoLayout";
 import PedidosPage from "./pages/gestao/PedidosPage";
 import PedidoDetalhePage from "./pages/gestao/PedidoDetalhePage";
+import ComprovantePage from "./pages/gestao/ComprovantePage";
 import NovaVendaPage from "./pages/gestao/NovaVendaPage";
 import ClientesPage from "./pages/gestao/ClientesPage";
 import ClienteDetalhePage from "./pages/gestao/ClienteDetalhePage";
@@ -114,6 +115,8 @@ export const router = createBrowserRouter([
         element: <PrivateRoute roles={["ADMIN", "GERENTE", "VENDEDOR"]} />,
         handle: { noFooter: true },
         children: [
+          // visualização de impressão do comprovante (sem o menu da gestão)
+          { path: "pedidos/:id/imprimir", element: <ComprovantePage /> },
           {
             element: <GestaoLayout />,
             children: [

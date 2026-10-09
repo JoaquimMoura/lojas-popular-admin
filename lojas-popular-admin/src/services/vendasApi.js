@@ -18,6 +18,10 @@ export const vendasApi = {
   rejeitarDesconto: (id, motivo) =>
     api.post(`/vendas/${id}/desconto/rejeitar`, { motivo: motivo || null }).then((r) => r.data),
 
+  comprovante: (id) => api.get(`/vendas/${id}/comprovante`).then((r) => r.data),
+  definirObservacaoCliente: (id, texto) =>
+    api.put(`/vendas/${id}/observacao-cliente`, { texto }).then((r) => r.data),
+
   vincularCliente: (id, body) => api.post(`/vendas/${id}/vincular-cliente`, body).then((r) => r.data),
   trocarCliente: (id, body) => api.post(`/vendas/${id}/trocar-cliente`, body).then((r) => r.data),
 
