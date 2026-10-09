@@ -121,6 +121,17 @@ if [ "$TEM_V6" = "1" ]; then
   confere "custo_unitario dos itens antigos permanece como estava (nenhum zero inventado)" "0" "$(psql_ -c "select count(*) from itens_pedido i join pedidos p on p.id = i.pedido_id where i.custo_unitario = 0 and p.status_comercial = 'LEGADO'")"
 fi
 
+# --- Catalogo dinamico (V10): materiais antigos copiados; vinculos categoria x material preservados; nenhum produto recebe material
+TEM_V10=$(psql_ -c "select count(*) from information_schema.tables where table_schema='public' and table_name='materiais'")
+if [ "$TEM_V10" = "1" ]; then
+  echo "    -- V10 (materiais e características)"
+  confere "os 6 materiais antigos entraram no cadastro, sem duplicar" "6" "$(psql_ -c "select count(*) from materiais where nome_normalizado in ('mdf','mdp','madeira','ferro','vidro','plastico')")"
+  confere "cada categoria com material antigo recebeu exatamente 1 vínculo categoria x material" "$(psql_ -c "select count(*) from categorias where material is not null")" "$(psql_ -c 'select count(*) from categoria_materiais')"
+  confere "nenhum material foi atribuído a produto por suposição" "0" "$(psql_ -c 'select count(*) from produto_materiais')"
+  confere "nenhuma característica nem valor foi criado" "0" "$(psql_ -c 'select (select count(*) from caracteristicas) + (select count(*) from produto_caracteristica_valores)')"
+  confere "produtos e estoque inalterados pela V10" "$ANTES_PRODUTOS" "$(psql_ -c 'select count(*) from produtos')"
+fi
+
 echo "==> Pontos de atenção (não são falhas)"
 SEM_SALDO=$(psql_ -c "select count(*) from produto_variacoes v where v.estoque is null")
 echo "    variações sem saldo (não poderão ser vendidas até informar o estoque): $SEM_SALDO"

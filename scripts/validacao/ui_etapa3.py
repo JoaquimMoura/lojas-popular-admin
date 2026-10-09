@@ -23,6 +23,7 @@ ABAS = ["caixa", "contas", "cartao", "comissoes", "metas", "fechamento", "restit
 
 def principal():
     adm = L.preparar()
+    fechar_caixa(adm)   # o roteiro parte do caixa fechado
     ctx["snap"] = L.config_salvar(adm)
     ctx["fin"] = ctx["snap"].get("financeiro") or dict(FIN_VAZIO)
     L.rotulo_teste()
@@ -183,6 +184,12 @@ def layout(bc, nome):
     U.shot(pg, "e3_layout_%s" % nome)
     check("%s: sem erros de JavaScript nem HTTP 5xx" % nome, not pg.errs, pg.errs[-3:])
     pg.close()
+
+
+def fechar_caixa(adm):
+    s, a = call("GET", "/financeiro/caixa/atual", adm)
+    if s == 200 and g(a, "aberta"):
+        call("POST", "/financeiro/caixa/fechar", adm, {"saldoContado": g(a, "sessao", "saldoEsperado")})
 
 
 def finalizar():

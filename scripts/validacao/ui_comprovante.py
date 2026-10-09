@@ -146,6 +146,11 @@ def principal():
 
 
 def finalizar():
+    adm = L.login_admin()
+    if adm:   # deixa o caixa como estava: fechado
+        s, a = call("GET", "/financeiro/caixa/atual", adm)
+        if s == 200 and a.get("aberta"):
+            call("POST", "/financeiro/caixa/fechar", adm, {"saldoContado": a["sessao"]["saldoEsperado"]})
     L.limpar()
 
 
