@@ -27,7 +27,11 @@ public record ProdutoResponse(
     List<String> galeria,
     Long version,
     ModalidadeProduto modalidade,
-    Integer prazoEncomendaDias
+    Integer prazoEncomendaDias,
+    List<br.com.lojaspopular.web.catalog.dto.CatalogoDtos.MaterialRef> materiais,
+    List<br.com.lojaspopular.web.catalog.dto.CatalogoDtos.ValorView> caracteristicas,
+    /** Características obrigatórias ainda sem valor (cadastro a complementar). */
+    List<String> pendencias
 ) {
   public record VariacaoResponse(
       Long id,

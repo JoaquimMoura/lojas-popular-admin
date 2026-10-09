@@ -109,6 +109,13 @@ public class Produto {
 	@JoinColumn(name = "categoria_id")
 	private Categoria categoria;
 
+	/** Composição do produto (pode ter mais de um material). Não é presumida a partir da categoria. */
+	@jakarta.persistence.ManyToMany
+	@jakarta.persistence.JoinTable(name = "produto_materiais", joinColumns = @JoinColumn(name = "produto_id"),
+		inverseJoinColumns = @JoinColumn(name = "material_id"))
+	@Builder.Default
+	private java.util.Set<Material> materiais = new java.util.LinkedHashSet<>();
+
 	@OneToMany(mappedBy = "produto", cascade = CascadeType.ALL, orphanRemoval = true)
 	@Builder.Default
 	private List<ProdutoVariacao> variacoes = new ArrayList<>();

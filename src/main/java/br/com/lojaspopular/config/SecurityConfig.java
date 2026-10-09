@@ -64,7 +64,7 @@ public class SecurityConfig {
                 "/api/v1/arquivos/**")
                 .hasAnyRole("ADMIN", "GERENTE", "VENDEDOR")
             .requestMatchers("/api/v1/fanpage/**").hasRole("ADMIN")
-            .requestMatchers("/api/v1/produtos/**", "/api/v1/categorias/**").hasAnyRole("ADMIN", "GERENTE", "VENDEDOR")
+            .requestMatchers("/api/v1/produtos/**", "/api/v1/categorias/**", "/api/v1/materiais/**").hasAnyRole("ADMIN", "GERENTE", "VENDEDOR")
             .requestMatchers("/api/v1/pedidos/**", "/api/v1/payments/**").hasAnyRole("CLIENTE", "ADMIN", "GERENTE", "VENDEDOR")
 
             .anyRequest().authenticated()

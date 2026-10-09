@@ -26,7 +26,13 @@ public record ProdutoRequest(
     List<VariacaoRequest> variacoes,
     Long version,
     ModalidadeProduto modalidade,
-    Integer prazoEncomendaDias
+    Integer prazoEncomendaDias,
+    /** Materiais do produto (nulo = não altera). */
+    List<Long> materialIds,
+    /** Valores das características da categoria (nulo = não altera; informado = estado completo do formulário). */
+    List<br.com.lojaspopular.web.catalog.dto.CatalogoDtos.ValorRequest> caracteristicas,
+    /** Confirma o descarte de materiais/valores que não se aplicam à nova categoria. */
+    Boolean confirmarDescarte
 ) {
   public record VariacaoRequest(
       String cor,

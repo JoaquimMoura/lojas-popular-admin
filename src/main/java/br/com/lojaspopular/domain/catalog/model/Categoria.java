@@ -2,7 +2,6 @@ package br.com.lojaspopular.domain.catalog.model;
 
 import java.time.LocalDateTime;
 
-import br.com.lojaspopular.domain.catalog.enums.MaterialType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,15 +22,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(
-    name = "categorias",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_categoria_nome_material",
-            columnNames = {"nome", "material"}
-        )
-    }
-)
+@Table(name = "categorias")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -51,9 +42,12 @@ public class Categoria {
     @Size(max = 255, message = "A descrição deve ter no máximo 255 caracteres.")
     private String descricao;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 50, nullable = false)
-    private MaterialType material;
+    /** Materiais disponíveis para os produtos desta categoria (cadastro compartilhado). Pode ser vazio. */
+    @jakarta.persistence.ManyToMany
+    @jakarta.persistence.JoinTable(name = "categoria_materiais", joinColumns = @jakarta.persistence.JoinColumn(name = "categoria_id"),
+        inverseJoinColumns = @jakarta.persistence.JoinColumn(name = "material_id"))
+    @Builder.Default
+    private java.util.Set<Material> materiais = new java.util.LinkedHashSet<>();
 
     @Column(name = "imagem_url", length = 500)
     private String imagemUrl;

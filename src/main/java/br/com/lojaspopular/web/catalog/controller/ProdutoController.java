@@ -39,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 public class ProdutoController {
 
   private final ProdutoService service;
+  private final br.com.lojaspopular.application.catalog.CatalogoConfigService catalogo;
 
   @GetMapping
   @Transactional(readOnly = true)
@@ -101,6 +102,7 @@ public class ProdutoController {
     }
 
     var result = service.salvar(produto);
+    catalogo.aplicarProduto(result, null, req.materialIds(), req.caracteristicas());
     return toResponse(result);
   }
 
@@ -147,7 +149,11 @@ public class ProdutoController {
     }
     variacoes.forEach(novo::addVariacao);
 
+    var anterior = service.buscar(id);
+    Long categoriaAnterior = anterior.getCategoria() == null ? null : anterior.getCategoria().getId();
+    catalogo.exigirConfirmacaoTroca(anterior, cat, Boolean.TRUE.equals(req.confirmarDescarte()));
     var att = service.atualizar(id, novo);
+    catalogo.aplicarProduto(att, categoriaAnterior, req.materialIds(), req.caracteristicas());
     return toResponse(att);
   }
 
@@ -250,6 +256,19 @@ public class ProdutoController {
         galeria,
         produto.getVersion(),
         produto.getModalidade(),
-        produto.getPrazoEncomendaDias());
+        produto.getPrazoEncomendaDias(),
+        catalogo.materiaisDoProduto(produto),
+        catalogo.valoresDoProduto(produto),
+        catalogo.faltando(produto));
+  }
+
+  /** O que seria descartado ao mover o produto para outra categoria (mostrar antes de salvar). */
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
+  @GetMapping("/{id}/impacto-categoria")
+  @Transactional(readOnly = true)
+  public br.com.lojaspopular.web.catalog.dto.CatalogoDtos.Impacto impactoCategoria(@PathVariable Long id,
+      @RequestParam(required = false) Long categoriaId) {
+    var nova = categoriaId == null ? null : service.buscarCategoria(categoriaId);
+    return catalogo.impactoTroca(service.buscar(id), nova);
   }
 }

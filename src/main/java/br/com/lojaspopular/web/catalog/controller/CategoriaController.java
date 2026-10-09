@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import br.com.lojaspopular.application.catalog.CategoriaService;
-import br.com.lojaspopular.domain.catalog.mapper.CategoriaMapper;
 import br.com.lojaspopular.web.catalog.dto.CategoriaRequest;
 import br.com.lojaspopular.web.catalog.dto.CategoriaResponse;
 import jakarta.validation.Valid;
@@ -30,26 +29,23 @@ import lombok.RequiredArgsConstructor;
 public class CategoriaController {
 
   private final CategoriaService service;
-  private final CategoriaMapper mapper;
+  private final br.com.lojaspopular.application.catalog.CatalogoConfigService catalogo;
 
   @GetMapping
   public ResponseEntity<List<CategoriaResponse>> listar() {
-    var categorias = service.listar();
-    return ResponseEntity.ok(mapper.toResponseList(categorias));
+    return ResponseEntity.ok(service.listar().stream().map(service::toResponse).toList());
   }
 
   @GetMapping("/{id}")
   public ResponseEntity<CategoriaResponse> buscar(@PathVariable Long id) {
     var categoria = service.buscar(id);
-    return ResponseEntity.ok(mapper.toResponse(categoria));
+    return ResponseEntity.ok(service.toResponse(categoria));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
   @PostMapping
   public ResponseEntity<CategoriaResponse> criar(@Valid @RequestBody CategoriaRequest req) {
-    var entidade = mapper.toEntity(req);
-    var salva = service.salvar(entidade);
-    return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(salva));
+    return ResponseEntity.status(HttpStatus.CREATED).body(service.toResponse(service.criar(req)));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
@@ -57,9 +53,14 @@ public class CategoriaController {
   public ResponseEntity<CategoriaResponse> atualizar(
       @PathVariable Long id,
       @Valid @RequestBody CategoriaRequest req) {
-    var entidade = mapper.toEntity(req);
-    var atualizada = service.atualizar(id, entidade);
-    return ResponseEntity.ok(mapper.toResponse(atualizada));
+    return ResponseEntity.ok(service.toResponse(service.atualizar(id, req)));
+  }
+
+  /** Produtos da categoria que precisam de complementação (característica obrigatória sem valor). */
+  @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
+  @GetMapping("/{id}/pendencias")
+  public ResponseEntity<List<br.com.lojaspopular.web.catalog.dto.CatalogoDtos.ProdutoPendente>> pendencias(@PathVariable Long id) {
+    return ResponseEntity.ok(catalogo.pendentesDaCategoria(id));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN','GERENTE','VENDEDOR')")
