@@ -25,6 +25,7 @@ e nunca são impressas. `validacao-out/` e `scripts/validacao/.ambiente.env` est
 | `api_etapa2.py` | roteiro de API da Etapa 2 (saída, entrega, montagem, encomendas, inventário, pós-venda, agenda) |
 | `suite-pg.sh` | roda a suíte JUnit inteira contra um PostgreSQL 15 descartável (V1→V6, `ddl-auto=validate`), separado dos roteiros |
 | `ui_etapa3.py` | navegador (computador e celular) do financeiro: pagamento no pedido, caixa, abas, fechamento, vendedor |
+| `ui_comprovante.py` | navegador (A4, PDF, celular) do comprovante de compra: seis cenários, sem observação interna, sem "quitado"/"recibo" |
 | `api_clientes.py` | roteiro de API do vínculo cliente x venda e histórico de compras (escopo, exclusão, vínculo/troca) |
 | `api_etapa3.py` | roteiro de API da Etapa 3 (recebimentos, caixa, contas, cartão, comissões, metas, restituição, fechamento) |
 | `ui_fluxo.py` | roteiro de navegador (Playwright): fluxo completo da Etapa 1 e 2 em computador e celular, mais a vitrine pública |
