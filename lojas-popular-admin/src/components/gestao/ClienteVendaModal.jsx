@@ -1,7 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { clientesApi } from "../../services/clientesApi";
 import { vendasApi } from "../../services/vendasApi";
 import FormModal from "./FormModal";
+import FiltroAutocomplete from "../FiltroAutocomplete";
+import { mascararTelefone } from "../../utils/mascaras";
+
+const buscarAtivos = (t) =>
+  clientesApi.buscar(t).then((l) => (Array.isArray(l) ? l.filter((c) => c.ativo !== false) : []));
 
 /**
  * Vincula (venda sem cliente) ou troca (venda confirmada) o cliente de uma venda.
@@ -10,31 +15,8 @@ import FormModal from "./FormModal";
 export default function ClienteVendaModal({ venda, modo, onClose, onFeito }) {
   const trocar = modo === "trocar";
   const [busca, setBusca] = useState("");
-  const [resultados, setResultados] = useState(null);
-  const [buscando, setBuscando] = useState(false);
   const [escolhido, setEscolhido] = useState(null);
   const [justificativa, setJustificativa] = useState("");
-
-  useEffect(() => {
-    const t = busca.trim();
-    if (t.length < 2) {
-      setResultados(null);
-      return undefined;
-    }
-    let ativo = true;
-    setBuscando(true);
-    const h = setTimeout(() => {
-      clientesApi
-        .buscar(t)
-        .then((l) => ativo && setResultados(Array.isArray(l) ? l.filter((c) => c.ativo !== false) : []))
-        .catch(() => ativo && setResultados([]))
-        .finally(() => ativo && setBuscando(false));
-    }, 300);
-    return () => {
-      ativo = false;
-      clearTimeout(h);
-    };
-  }, [busca]);
 
   const mesmo = trocar && escolhido && escolhido.id === venda.cliente?.id;
 
@@ -64,7 +46,7 @@ export default function ClienteVendaModal({ venda, modo, onClose, onFeito }) {
           <div>
             <strong>{escolhido.nome}</strong>
             <div className="small text-muted">
-              {escolhido.telefone || "Sem telefone"}
+              {escolhido.telefone ? mascararTelefone(escolhido.telefone) : "Sem telefone"}
               {escolhido.cpf ? ` · CPF ${escolhido.cpf}` : ""}
             </div>
           </div>
@@ -75,23 +57,19 @@ export default function ClienteVendaModal({ venda, modo, onClose, onFeito }) {
       ) : (
         <div className="mb-3">
           <label className="form-label">Cliente (nome, CPF ou telefone)</label>
-          <input type="search" className="form-control" value={busca} autoFocus
-            onChange={(e) => setBusca(e.target.value)} placeholder="Digite ao menos 2 caracteres" />
-          {buscando && <div className="small text-muted mt-2">Buscando...</div>}
-          {resultados && (
-            <div className="list-group mt-2">
-              {resultados.length === 0 && !buscando && (
-                <div className="list-group-item text-muted">Nenhum cliente encontrado.</div>
-              )}
-              {resultados.map((c) => (
-                <button key={c.id} type="button" className="list-group-item list-group-item-action"
-                  onClick={() => setEscolhido(c)}>
-                  <strong>{c.nome}</strong>
-                  <div className="small text-muted">{c.telefone || "Sem telefone"}{c.cpf ? ` · CPF ${c.cpf}` : ""}</div>
-                </button>
-              ))}
-            </div>
-          )}
+          <FiltroAutocomplete
+            inline
+            autoFocus
+            value={busca}
+            onChange={setBusca}
+            fetchSugestoes={buscarAtivos}
+            getRotulo={(c) => c.nome}
+            getDetalhe={(c) => `${c.telefone ? mascararTelefone(c.telefone) : "Sem telefone"}${c.cpf ? ` · CPF ${c.cpf}` : ""}`}
+            itemClass="list-group-item-action"
+            onSelecionar={setEscolhido}
+            placeholder="Digite ao menos 2 caracteres"
+            ariaLabel="Buscar cliente por nome, CPF ou telefone"
+          />
         </div>
       )}
       {mesmo && <div className="text-danger small mb-2">Este já é o cliente da venda.</div>}

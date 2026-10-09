@@ -1,9 +1,10 @@
 // src/pages/ProductsPage.jsx
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { productsApi } from "../services/productsApi";
 import ProductForm from "../components/ProductForm";
 import ProductGalleryModal from "../components/ProductGalleryModal";
 import { resolveImageUrl } from "../utils/url";
+import FiltroAutocomplete, { SemResultados } from "../components/FiltroAutocomplete";
 
 export default function ProductsPage() {
   const [galleryProd, setGalleryProd] = useState(null);
@@ -11,13 +12,25 @@ export default function ProductsPage() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  async function load() {
-    const resp = await productsApi.list({ page: 0, size: 20 });
+  const [busca, setBusca] = useState("");
+  const [q, setQ] = useState("");
+  const seq = useRef(0);
+
+  const load = useCallback(async () => {
+    const n = ++seq.current;
+    const resp = await productsApi.list({ page: 0, size: 20, nome: q || undefined });
+    if (n !== seq.current) return; // resposta de uma busca antiga
     const content = resp.data.content ?? resp.data;
     setItems(content);
-  }
+  }, [q]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
+
+  // a lista filtra em tempo real (debounce de 250 ms; busca por nome no servidor)
+  useEffect(() => {
+    const t = setTimeout(() => setQ(busca.trim()), 250);
+    return () => clearTimeout(t);
+  }, [busca]);
 
   function onEdit(prod) { setEditing(prod); }
 
@@ -95,6 +108,18 @@ export default function ProductsPage() {
         </div>
       )}
 
+      <div className="mb-3">
+        <FiltroAutocomplete
+          value={busca}
+          onChange={setBusca}
+          itens={items}
+          filtrarLocal={false}
+          getRotulo={(p) => p.nome}
+          getDetalhe={(p) => [p.categoria, `R$ ${Number(p.preco).toFixed(2)}`, `estoque ${p.estoque}`].filter(Boolean).join(" · ")}
+          placeholder="Buscar produto por nome"
+        />
+      </div>
+
       <div className="card">
         <div className="card-body">
           <div className="table-responsive">
@@ -155,7 +180,7 @@ export default function ProductsPage() {
                   </tr>
                 ))}
                 {items.length === 0 && (
-                  <tr><td colSpan={7} className="text-center text-muted py-4">Nenhum produto</td></tr>
+                  <tr><td colSpan={7}><SemResultados busca={q} vazio="Nenhum produto" /></td></tr>
                 )}
               </tbody>
             </table>

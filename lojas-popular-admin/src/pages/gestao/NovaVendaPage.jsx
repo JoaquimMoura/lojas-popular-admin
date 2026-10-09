@@ -9,6 +9,8 @@ import { productsApi } from "../../services/productsApi";
 import { useAuth } from "../../context/AuthContext";
 import ClienteForm from "../../components/gestao/ClienteForm";
 import ErroAlert from "../../components/gestao/ErroAlert";
+import FiltroAutocomplete from "../../components/FiltroAutocomplete";
+import { mascararTelefone } from "../../utils/mascaras";
 import ModalShell from "../../components/gestao/ModalShell";
 import PendenciasAlert from "../../components/gestao/PendenciasAlert";
 import {
@@ -21,6 +23,8 @@ import {
   isGestor,
   novaChave,
 } from "../../utils/format";
+
+const buscarClientes = (t) => clientesApi.buscar(t);
 
 const ETAPAS = ["Cliente", "Itens", "Pagamento e entrega", "Revisão"];
 
@@ -57,8 +61,6 @@ export default function NovaVendaPage() {
   // cliente
   const [cliente, setCliente] = useState(null);
   const [buscaCliente, setBuscaCliente] = useState("");
-  const [resultadosCliente, setResultadosCliente] = useState(null);
-  const [buscandoCliente, setBuscandoCliente] = useState(false);
   const [modalCliente, setModalCliente] = useState(false);
 
   // itens
@@ -151,28 +153,6 @@ export default function NovaVendaPage() {
       ativo = false;
     };
   }, [editando, id]);
-
-  // busca de clientes (debounce)
-  useEffect(() => {
-    const t = buscaCliente.trim();
-    if (t.length < 2) {
-      setResultadosCliente(null);
-      return undefined;
-    }
-    let ativo = true;
-    setBuscandoCliente(true);
-    const timer = setTimeout(() => {
-      clientesApi
-        .buscar(t)
-        .then((l) => ativo && setResultadosCliente(Array.isArray(l) ? l : []))
-        .catch(() => ativo && setResultadosCliente([]))
-        .finally(() => ativo && setBuscandoCliente(false));
-    }, 400);
-    return () => {
-      ativo = false;
-      clearTimeout(timer);
-    };
-  }, [buscaCliente]);
 
   // busca de produtos (debounce)
   useEffect(() => {
@@ -288,7 +268,6 @@ export default function NovaVendaPage() {
     setCliente(c);
     setEnderecoId("");
     setBuscaCliente("");
-    setResultadosCliente(null);
   }
 
   const enderecos = cliente?.enderecos ?? [];
@@ -395,7 +374,7 @@ export default function NovaVendaPage() {
                 <div>
                   <strong>{cliente.nome}</strong>
                   <div className="small">
-                    {cliente.telefone || "Sem telefone"}
+                    {cliente.telefone ? mascararTelefone(cliente.telefone) : "Sem telefone"}
                     {cliente.email ? ` · ${cliente.email}` : ""}
                     {cliente.cpf ? ` · CPF ${cliente.cpf}` : ""}
                   </div>
@@ -406,23 +385,18 @@ export default function NovaVendaPage() {
             {!cliente && (
               <>
                 <label className="form-label">Buscar cliente (nome, CPF ou telefone)</label>
-                <input type="search" className="form-control" value={buscaCliente}
-                  onChange={(e) => setBuscaCliente(e.target.value)} placeholder="Digite ao menos 2 caracteres" />
-                {buscandoCliente && <div className="small text-muted mt-2">Buscando...</div>}
-                {resultadosCliente && (
-                  <div className="list-group mt-2">
-                    {resultadosCliente.length === 0 && !buscandoCliente && (
-                      <div className="list-group-item text-muted">Nenhum cliente encontrado.</div>
-                    )}
-                    {resultadosCliente.map((c) => (
-                      <button key={c.id} type="button" className="list-group-item list-group-item-action"
-                        onClick={() => escolherCliente(c)}>
-                        <strong>{c.nome}</strong>
-                        <div className="small text-muted">{c.telefone || "Sem telefone"}{c.cpf ? ` · CPF ${c.cpf}` : ""}</div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <FiltroAutocomplete
+                  inline
+                  value={buscaCliente}
+                  onChange={setBuscaCliente}
+                  fetchSugestoes={buscarClientes}
+                  getRotulo={(c) => c.nome}
+                  getDetalhe={(c) => `${c.telefone ? mascararTelefone(c.telefone) : "Sem telefone"}${c.cpf ? ` · CPF ${c.cpf}` : ""}`}
+                  itemClass="list-group-item-action"
+                  onSelecionar={escolherCliente}
+                  placeholder="Digite ao menos 2 caracteres"
+                  ariaLabel="Buscar cliente por nome, CPF ou telefone"
+                />
                 <div className="d-grid mt-3">
                   <button className="btn btn-outline-primary" onClick={() => setModalCliente(true)}>
                     + Cadastrar novo cliente
@@ -671,7 +645,7 @@ export default function NovaVendaPage() {
             <div className="mb-2">
               <span className="text-muted">Cliente:</span> <strong>{cliente?.nome}</strong>
               <div className="small">
-                Contato: {cliente?.telefone || "sem telefone"}
+                Contato: {cliente?.telefone ? mascararTelefone(cliente.telefone) : "sem telefone"}
                 {cliente?.email ? ` · ${cliente.email}` : ""}
                 {cliente?.cpf ? ` · CPF ${cliente.cpf}` : ""}
               </div>

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { storeConfigApi } from "../services/storeConfigApi";
 import { resolveImageUrl as resolveUrl } from "../utils/url";
+import { erroTelefone, mascararTelefone, telefoneParaEnvio } from "../utils/mascaras";
 
 export default function StoreConfigPage() {
   const [cfg, setCfg] = useState(null);
@@ -9,24 +10,25 @@ export default function StoreConfigPage() {
 
   async function load() {
     const data = await storeConfigApi.get();
-    setCfg(data);
+    setCfg(data ? { ...data, whatsapp: mascararTelefone(data.whatsapp ?? "") } : data);
   }
 
   useEffect(() => { load(); }, []);
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setCfg((c) => ({ ...c, [name]: value }));
+    setCfg((c) => ({ ...c, [name]: name === "whatsapp" ? mascararTelefone(value) : value }));
   }
 
   async function save(e) {
     e.preventDefault();
+    if (erroTelefone(cfg.whatsapp)) return;
     setSaving(true);
     await storeConfigApi.update({
       nomeLoja: cfg.nomeLoja,
       corPrimaria: cfg.corPrimaria,
       corSecundaria: cfg.corSecundaria,
-      whatsapp: cfg.whatsapp,
+      whatsapp: telefoneParaEnvio(cfg.whatsapp) ?? "",
       endereco: cfg.endereco,
       ctaTexto: cfg.ctaTexto,
     });
@@ -70,7 +72,9 @@ export default function StoreConfigPage() {
             </div>
             <div className="col-md-4">
               <label className="form-label">WhatsApp</label>
-              <input name="whatsapp" className="form-control" value={cfg.whatsapp || ""} onChange={handleChange} placeholder="119611-8141" />
+              <input name="whatsapp" type="tel" inputMode="tel" className={`form-control ${erroTelefone(cfg.whatsapp) ? "is-invalid" : ""}`}
+                value={cfg.whatsapp || ""} onChange={handleChange} placeholder="(11) 98765-4321" />
+              {erroTelefone(cfg.whatsapp) && <div className="invalid-feedback d-block">{erroTelefone(cfg.whatsapp)}</div>}
             </div>
             <div className="col-md-8">
               <label className="form-label">Endereço</label>

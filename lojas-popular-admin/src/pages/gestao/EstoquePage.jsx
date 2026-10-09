@@ -6,6 +6,8 @@ import ErroAlert from "../../components/gestao/ErroAlert";
 import FormModal from "../../components/gestao/FormModal";
 import StatusBadge from "../../components/gestao/StatusBadge";
 import { useChave } from "../../components/gestao/useChave";
+import FiltroAutocomplete, { SemResultados } from "../../components/FiltroAutocomplete";
+import { casaBusca } from "../../utils/busca";
 import { fmtDateTime, isGestor, sinal } from "../../utils/format";
 
 function nomeItem(s) {
@@ -204,11 +206,7 @@ export default function EstoquePage() {
   }, [carregar]);
 
   const filtrados = useMemo(() => {
-    const t = busca.trim().toLowerCase();
-    if (!t) return saldos;
-    return saldos.filter(
-      (s) => nomeItem(s).toLowerCase().includes(t) || (s.sku ?? "").toLowerCase().includes(t),
-    );
+    return saldos.filter((s) => casaBusca(busca, nomeItem(s), s.sku));
   }, [saldos, busca]);
 
   function verMovimentacoes(s) {
@@ -248,8 +246,16 @@ export default function EstoquePage() {
         <>
           <div className="row g-2 mb-3 align-items-center">
             <div className="col-12 col-md-6">
-              <input type="search" className="form-control" placeholder="Buscar por nome ou SKU" value={busca}
-                onChange={(e) => setBusca(e.target.value)} />
+              <FiltroAutocomplete
+                value={busca}
+                onChange={setBusca}
+                itens={saldos}
+                getRotulo={nomeItem}
+                getDetalhe={(s) => (s.sku ? `SKU ${s.sku}` : "Sem SKU")}
+                getTextoBusca={(s) => [nomeItem(s), s.sku]}
+                getChave={(s, i) => `${s.produtoId}-${s.variacaoId ?? "p"}-${i}`}
+                placeholder="Buscar por nome ou SKU"
+              />
             </div>
             <div className="col-12 col-md-6">
               <div className="form-check form-switch">
@@ -265,7 +271,7 @@ export default function EstoquePage() {
           {loading ? (
             <div className="text-center text-muted py-5">Carregando estoque...</div>
           ) : filtrados.length === 0 ? (
-            <div className="text-center text-muted py-5">Nenhum item encontrado.</div>
+            <SemResultados busca={busca} vazio="Nenhum item encontrado." />
           ) : (
             <>
               <div className="card d-none d-md-block">

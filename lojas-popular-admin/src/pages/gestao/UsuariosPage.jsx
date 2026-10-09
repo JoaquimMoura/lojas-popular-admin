@@ -1,14 +1,21 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { usuariosApi } from "../../services/usuariosApi";
 import ErroAlert from "../../components/gestao/ErroAlert";
 import ModalShell from "../../components/gestao/ModalShell";
+import FiltroAutocomplete, { SemResultados } from "../../components/FiltroAutocomplete";
+import { casaBusca } from "../../utils/busca";
+import { erroTelefone, mascararTelefone, telefoneParaEnvio } from "../../utils/mascaras";
 import { PERFIS, fmtDateTime } from "../../utils/format";
 
 const PERFIS_USUARIO = ["ADMIN", "GERENTE", "VENDEDOR"];
 
 function perfilDe(u) {
   return (u.perfis ?? []).find((p) => PERFIS_USUARIO.includes(p)) ?? "";
+}
+
+function perfilNome(u) {
+  return PERFIS[perfilDe(u)] ?? (u.perfis ?? []).join(", ");
 }
 
 function UsuarioForm({ usuario, onSaved, onCancel }) {
@@ -18,18 +25,21 @@ function UsuarioForm({ usuario, onSaved, onCancel }) {
     email: usuario?.email ?? "",
     senha: "",
     perfil: usuario ? perfilDe(usuario) : "VENDEDOR",
-    telefone: usuario?.telefone ?? "",
+    telefone: mascararTelefone(usuario?.telefone ?? ""),
   });
   const [saving, setSaving] = useState(false);
   const [erro, setErro] = useState(null);
 
   function change(e) {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: name === "telefone" ? mascararTelefone(value) : value }));
   }
+
+  const erroTel = erroTelefone(form.telefone);
 
   async function submit(e) {
     e.preventDefault();
-    if (saving) return;
+    if (saving || erroTel) return;
     setSaving(true);
     setErro(null);
     try {
@@ -37,7 +47,7 @@ function UsuarioForm({ usuario, onSaved, onCancel }) {
         await usuariosApi.atualizar(usuario.id, {
           nome: form.nome.trim(),
           perfil: form.perfil,
-          telefone: form.telefone.trim() || null,
+          telefone: telefoneParaEnvio(form.telefone),
         });
       } else {
         await usuariosApi.criar({
@@ -45,7 +55,7 @@ function UsuarioForm({ usuario, onSaved, onCancel }) {
           email: form.email.trim(),
           senha: form.senha,
           perfil: form.perfil,
-          telefone: form.telefone.trim() || null,
+          telefone: telefoneParaEnvio(form.telefone),
         });
       }
       onSaved();
@@ -86,12 +96,15 @@ function UsuarioForm({ usuario, onSaved, onCancel }) {
         </div>
         <div className="col-12 col-md-6">
           <label className="form-label">Telefone</label>
-          <input name="telefone" className="form-control" inputMode="tel" value={form.telefone} onChange={change} />
+          <input name="telefone" type="tel" inputMode="tel" autoComplete="tel-national"
+            className={`form-control ${erroTel ? "is-invalid" : ""}`} placeholder="(11) 98765-4321"
+            value={form.telefone} onChange={change} aria-invalid={!!erroTel} />
+          {erroTel && <div className="invalid-feedback d-block">{erroTel}</div>}
         </div>
       </div>
       <div className="d-grid d-sm-flex justify-content-sm-end gap-2 mt-3">
         <button type="button" className="btn btn-outline-secondary" onClick={onCancel} disabled={saving}>Cancelar</button>
-        <button type="submit" className="btn btn-success" disabled={saving}>
+        <button type="submit" className="btn btn-success" disabled={saving || !!erroTel}>
           {saving ? "Salvando..." : "Salvar"}
         </button>
       </div>
@@ -141,6 +154,7 @@ export default function UsuariosPage() {
   const [erro, setErro] = useState(null);
   const [modal, setModal] = useState(null); // { tipo: 'form'|'senha', usuario? }
   const [busyId, setBusyId] = useState(null);
+  const [busca, setBusca] = useState("");
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -174,11 +188,28 @@ export default function UsuariosPage() {
     }
   }
 
+  const filtrados = useMemo(
+    () => lista.filter((u) => casaBusca(busca, u.nome, u.email, perfilNome(u), u.telefone, mascararTelefone(u.telefone))),
+    [lista, busca],
+  );
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-3 gap-2">
         <h3 className="mb-0">Usuários</h3>
         <button className="btn btn-success" onClick={() => setModal({ tipo: "form" })}>+ Novo usuário</button>
+      </div>
+
+      <div className="mb-3">
+        <FiltroAutocomplete
+          value={busca}
+          onChange={setBusca}
+          itens={lista}
+          getRotulo={(u) => u.nome || u.email}
+          getDetalhe={(u) => [u.email, perfilNome(u), mascararTelefone(u.telefone)].filter(Boolean).join(" · ")}
+          getTextoBusca={(u) => [u.nome, u.email, perfilNome(u), u.telefone, mascararTelefone(u.telefone)]}
+          placeholder="Buscar por nome, e-mail, perfil ou telefone"
+        />
       </div>
 
       <ErroAlert erro={erro} onClose={() => setErro(null)} />
@@ -187,9 +218,11 @@ export default function UsuariosPage() {
         <div className="text-center text-muted py-5">Carregando usuários...</div>
       ) : lista.length === 0 ? (
         <div className="text-center text-muted py-5">Nenhum usuário.</div>
+      ) : filtrados.length === 0 ? (
+        <SemResultados busca={busca} />
       ) : (
         <div className="row g-2">
-          {lista.map((u) => (
+          {filtrados.map((u) => (
             <div key={u.id} className="col-12 col-lg-6">
               <div className="card h-100">
                 <div className="card-body">
@@ -197,7 +230,7 @@ export default function UsuariosPage() {
                     <div>
                       <strong>{u.nome || u.email}</strong>
                       <div className="small text-muted">{u.email}</div>
-                      {u.telefone && <div className="small text-muted">{u.telefone}</div>}
+                      {u.telefone && <div className="small text-muted">{mascararTelefone(u.telefone)}</div>}
                     </div>
                     <div className="text-end">
                       <span className="badge text-bg-dark me-1">{PERFIS[perfilDe(u)] ?? (u.perfis ?? []).join(", ")}</span>

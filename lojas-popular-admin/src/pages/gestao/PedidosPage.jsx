@@ -4,6 +4,7 @@ import { vendasApi } from "../../services/vendasApi";
 import StatusBadge from "../../components/gestao/StatusBadge";
 import PendenciasAlert from "../../components/gestao/PendenciasAlert";
 import ErroAlert from "../../components/gestao/ErroAlert";
+import FiltroAutocomplete, { SemResultados } from "../../components/FiltroAutocomplete";
 import { CANAIS, DESCRICOES, NOME_STATUS, ROTULOS, fmtDateTime, fmtMoney } from "../../utils/format";
 
 const TAMANHO = 20;
@@ -35,6 +36,17 @@ export default function PedidosPage() {
       .then((c) => setPendencias(c?.pendencias ?? []))
       .catch(() => setPendencias([]));
   }, []);
+
+  // a lista filtra em tempo real (debounce de 250 ms); "Buscar" aplica na hora
+  useEffect(() => {
+    const n = busca.trim();
+    if (n === q) return undefined;
+    const t = setTimeout(() => {
+      setPagina(0);
+      setQ(n);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [busca, q]);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -96,14 +108,19 @@ export default function PedidosPage() {
           </select>
         </div>
         <div className="col-12 col-md-8">
-          <div className="input-group">
-            <input
-              type="search"
-              className="form-control"
-              placeholder="Buscar por cliente ou nº do pedido"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-            />
+          <div className="d-flex gap-2 align-items-start">
+            <div className="flex-grow-1 min-w-0">
+              <FiltroAutocomplete
+                value={busca}
+                onChange={setBusca}
+                itens={dados?.conteudo ?? []}
+                filtrarLocal={false}
+                getRotulo={(v) => `#${v.id} — ${v.cliente ?? "Cliente não identificado"}`}
+                getValorBusca={(v) => String(v.id)}
+                getDetalhe={(v) => `${fmtMoney(v.total)} · ${fmtDateTime(v.criadoEm)}`}
+                placeholder="Buscar por cliente ou nº do pedido"
+              />
+            </div>
             <button className="btn btn-primary" type="submit">Buscar</button>
           </div>
         </div>
@@ -111,10 +128,10 @@ export default function PedidosPage() {
 
       <ErroAlert erro={erro} />
 
-      {loading ? (
+      {loading && !dados ? (
         <div className="text-center text-muted py-5">Carregando pedidos...</div>
       ) : itens.length === 0 ? (
-        <div className="text-center text-muted py-5">Nenhum pedido encontrado.</div>
+        <SemResultados busca={q} vazio="Nenhum pedido encontrado." />
       ) : (
         <>
           {/* Desktop: tabela */}

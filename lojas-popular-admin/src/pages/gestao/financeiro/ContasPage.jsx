@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useFinanceiroPermissoes } from "../../../components/gestao/financeiro/useFinanceiroPermissoes";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -10,6 +10,8 @@ import StatusBadge from "../../../components/gestao/StatusBadge";
 import { useChave } from "../../../components/gestao/useChave";
 import { useCarga } from "../../../components/gestao/useCarga";
 import MotivoModal from "../../../components/gestao/financeiro/MotivoModal";
+import FiltroAutocomplete from "../../../components/FiltroAutocomplete";
+import { casaBusca } from "../../../utils/busca";
 import { CampoValor, Carregando, TabelaCards, Totais } from "../../../components/gestao/financeiro/Comuns";
 import { EVENTOS_CONTA, LIVROS, ORIGENS_CONTA, ROTULOS, TIPOS_CONTA, fmtDate, fmtDateTime, fmtMoney, hojeIso } from "../../../utils/format";
 
@@ -143,12 +145,15 @@ export default function ContasPage() {
   const [situacao, setSituacao] = useState("");
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
+  const [busca, setBusca] = useState("");
   const [modal, setModal] = useState(null); // { acao, conta }
   const { dados, loading, erro, recarregar } = useCarga(
     () => financeiroApi.contas({ tipo, situacao, de, ate }),
     [tipo, situacao, de, ate],
   );
-  const lista = Array.isArray(dados) ? dados : [];
+  const lista = useMemo(() => (Array.isArray(dados) ? dados : []), [dados]);
+  const textoConta = (c) => [c.descricao, c.categoria, c.id, c.vendedor, ORIGENS_CONTA[c.origem]];
+  const exibidas = useMemo(() => lista.filter((c) => casaBusca(busca, textoConta(c))), [lista, busca]);
   const abertas = (t) => lista.filter((c) => c.tipo === t && c.situacao === "ABERTA");
   const soma = (l) => l.reduce((s, c) => s + Number(c.valor ?? 0), 0);
   const vencidas = lista.filter((c) => c.vencida && c.situacao === "ABERTA");
@@ -189,6 +194,18 @@ export default function ContasPage() {
         </div>
       </div>
 
+      <div className="mb-3">
+        <FiltroAutocomplete
+          value={busca}
+          onChange={setBusca}
+          itens={lista}
+          getRotulo={(c) => c.descricao}
+          getDetalhe={(c) => `#${c.id} · ${c.categoria}`}
+          getTextoBusca={textoConta}
+          placeholder="Buscar conta por descrição, categoria ou nº"
+        />
+      </div>
+
       <Totais itens={[
         { rotulo: "A pagar (em aberto)", valor: soma(abertas("PAGAR")), nota: `${abertas("PAGAR").length} conta(s)` },
         { rotulo: "A receber (em aberto)", valor: soma(abertas("RECEBER")), nota: `${abertas("RECEBER").length} conta(s)` },
@@ -198,8 +215,8 @@ export default function ContasPage() {
       <ErroAlert erro={erro} />
       {loading && !dados ? <Carregando texto="Carregando contas..." /> : (
         <TabelaCards
-          linhas={lista}
-          vazio="Nenhuma conta encontrada."
+          linhas={exibidas}
+          vazio={busca.trim() ? `Nenhum resultado para «${busca.trim()}»` : "Nenhuma conta encontrada."}
           destaque={(c) => (c.vencida && c.situacao === "ABERTA" ? "border-danger bg-danger-subtle" : "")}
           colunas={[
             { titulo: "Conta", render: (c) => (

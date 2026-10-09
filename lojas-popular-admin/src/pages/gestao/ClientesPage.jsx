@@ -4,6 +4,8 @@ import { toast } from "react-toastify";
 import { clientesApi } from "../../services/clientesApi";
 import ClienteForm from "../../components/gestao/ClienteForm";
 import ErroAlert from "../../components/gestao/ErroAlert";
+import FiltroAutocomplete, { SemResultados } from "../../components/FiltroAutocomplete";
+import { mascararTelefone } from "../../utils/mascaras";
 import { useAuth } from "../../context/AuthContext";
 import { isGestor } from "../../utils/format";
 
@@ -17,6 +19,12 @@ export default function ClientesPage() {
   const [erro, setErro] = useState(null);
   const [form, setForm] = useState(null); // null | { cliente: obj|null }
   const [recarga, setRecarga] = useState(0);
+
+  // a lista filtra em tempo real (debounce de 250 ms)
+  useEffect(() => {
+    const t = setTimeout(() => setQ(busca.trim()), 250);
+    return () => clearTimeout(t);
+  }, [busca]);
 
   useEffect(() => {
     let ativo = true;
@@ -74,26 +82,29 @@ export default function ClientesPage() {
         </button>
       </div>
 
-      <form className="mb-1" onSubmit={buscar}>
-        <div className="input-group">
-          <input
-            type="search"
-            className="form-control"
-            placeholder="Buscar por nome, CPF ou telefone"
+      <form className="mb-1 d-flex gap-2 align-items-start" onSubmit={buscar}>
+        <div className="flex-grow-1 min-w-0">
+          <FiltroAutocomplete
             value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            onChange={setBusca}
+            itens={lista}
+            filtrarLocal={false}
+            getRotulo={(c) => c.nome}
+            getDetalhe={(c) => [c.telefone ? mascararTelefone(c.telefone) : null, c.cpf ? `CPF ${c.cpf}` : null, c.email].filter(Boolean).join(" · ")}
+            placeholder="Buscar por nome, CPF ou telefone"
+            ariaLabel="Buscar cliente por nome, CPF, telefone ou e-mail"
           />
-          <button className="btn btn-primary" type="submit">Buscar</button>
         </div>
+        <button className="btn btn-primary" type="submit">Buscar</button>
       </form>
       <div className="form-text mb-3">Busque antes de cadastrar para evitar clientes duplicados.</div>
 
       <ErroAlert erro={erro} onClose={() => setErro(null)} />
 
-      {loading ? (
+      {loading && lista.length === 0 ? (
         <div className="text-center text-muted py-5">Carregando clientes...</div>
       ) : lista.length === 0 ? (
-        <div className="text-center text-muted py-5">Nenhum cliente encontrado.</div>
+        <SemResultados busca={q} vazio="Nenhum cliente encontrado." />
       ) : (
         <div className="row g-2">
           {lista.map((c) => {
@@ -107,7 +118,7 @@ export default function ClientesPage() {
                       {!c.ativo && <span className="badge text-bg-secondary">Inativo</span>}
                     </div>
                     <div className="small text-muted">
-                      {c.telefone || "Sem telefone"}
+                      {c.telefone ? mascararTelefone(c.telefone) : "Sem telefone"}
                       {c.cpf ? ` · CPF ${c.cpf}` : ""}
                     </div>
                     {c.email && <div className="small text-muted">{c.email}</div>}

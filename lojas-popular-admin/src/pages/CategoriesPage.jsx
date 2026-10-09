@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { categoriesApi } from "../services/categoriesApi";
 import { useAuth } from "../context/AuthContext";
 import CategoryForm from "../components/CategoryForm";
 import ErroAlert from "../components/gestao/ErroAlert";
+import FiltroAutocomplete, { SemResultados } from "../components/FiltroAutocomplete";
+import { casaBusca } from "../utils/busca";
 
 function Pendencias({ categoria }) {
   const [aberto, setAberto] = useState(false);
@@ -54,6 +56,7 @@ export default function CategoriesPage() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState(null);
   const [erro, setErro] = useState(null);
+  const [busca, setBusca] = useState("");
 
   async function load() {
     try {
@@ -68,6 +71,11 @@ export default function CategoriesPage() {
   useEffect(() => {
     load();
   }, []);
+
+  const filtradas = useMemo(
+    () => (items ?? []).filter((c) => casaBusca(busca, c.nome, c.descricao, (c.materiais ?? []).map((m) => m.nome))),
+    [items, busca],
+  );
 
   // Os formulários recebem o erro (rejeição) e o exibem sem fechar.
   async function onCreate(payload) {
@@ -141,8 +149,20 @@ export default function CategoriesPage() {
         </div>
       )}
 
+      <div className="mb-3">
+        <FiltroAutocomplete
+          value={busca}
+          onChange={setBusca}
+          itens={items}
+          getRotulo={(c) => c.nome}
+          getDetalhe={(c) => (c.materiais ?? []).map((m) => m.nome).join(", ")}
+          getTextoBusca={(c) => [c.nome, c.descricao, (c.materiais ?? []).map((m) => m.nome)]}
+          placeholder="Buscar categoria por nome ou material"
+        />
+      </div>
+
       <div className="row g-3">
-        {items?.map((c) => (
+        {filtradas.map((c) => (
           <div className="col-12 col-lg-6" key={c.id}>
             <div className="card h-100">
               <div className="card-body">
@@ -188,6 +208,9 @@ export default function CategoriesPage() {
           </div>
         ))}
         {(items?.length ?? 0) === 0 && <div className="col-12 text-center text-muted">Nenhuma categoria cadastrada</div>}
+        {(items?.length ?? 0) > 0 && filtradas.length === 0 && (
+          <div className="col-12"><SemResultados busca={busca} /></div>
+        )}
       </div>
     </div>
   );

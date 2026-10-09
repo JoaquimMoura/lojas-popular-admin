@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { encomendasApi } from "../../services/encomendasApi";
@@ -6,6 +6,8 @@ import ErroAlert from "../../components/gestao/ErroAlert";
 import FormModal from "../../components/gestao/FormModal";
 import StatusBadge from "../../components/gestao/StatusBadge";
 import { useChave } from "../../components/gestao/useChave";
+import FiltroAutocomplete, { SemResultados } from "../../components/FiltroAutocomplete";
+import { casaBusca } from "../../utils/busca";
 import { ROTULOS, fmtDate, fmtDateTime } from "../../utils/format";
 
 const ABERTAS = ["AGUARDANDO_PEDIDO", "PEDIDO_REALIZADO", "PARCIALMENTE_RECEBIDA"];
@@ -87,6 +89,7 @@ function ReceberModal({ e, onClose, onRecebida }) {
 export default function EncomendasPage() {
   const [lista, setLista] = useState([]);
   const [status, setStatus] = useState("");
+  const [busca, setBusca] = useState("");
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [modal, setModal] = useState(null); // { tipo: 'editar' | 'receber', e }
@@ -113,6 +116,8 @@ export default function EncomendasPage() {
     carregar();
   }
 
+  const textoEnc = (e) => [e.descricao, e.cliente, e.pedidoId, e.id, e.fornecedor, e.referenciaFornecedor];
+  const filtradas = useMemo(() => lista.filter((e) => casaBusca(busca, textoEnc(e))), [lista, busca]);
   const atrasadas = lista.filter((e) => e.atrasada).length;
 
   return (
@@ -129,6 +134,18 @@ export default function EncomendasPage() {
             ))}
           </select>
         </div>
+        <div className="col-12 col-md-8">
+          <label className="form-label small mb-1">Buscar</label>
+          <FiltroAutocomplete
+            value={busca}
+            onChange={setBusca}
+            itens={lista}
+            getRotulo={(e) => e.descricao}
+            getDetalhe={(e) => `Pedido #${e.pedidoId} · ${e.cliente ?? "—"}`}
+            getTextoBusca={textoEnc}
+            placeholder="Produto, cliente ou nº do pedido"
+          />
+        </div>
         {atrasadas > 0 && (
           <div className="col-12 col-md-auto">
             <span className="badge text-bg-danger fs-6">{atrasadas} atrasada(s)</span>
@@ -140,11 +157,11 @@ export default function EncomendasPage() {
 
       {loading ? (
         <div className="text-center text-muted py-5">Carregando encomendas...</div>
-      ) : lista.length === 0 ? (
-        <div className="text-center text-muted py-5">Nenhuma encomenda encontrada.</div>
+      ) : filtradas.length === 0 ? (
+        <SemResultados busca={busca} vazio="Nenhuma encomenda encontrada." />
       ) : (
         <div className="d-grid gap-2">
-          {lista.map((e) => {
+          {filtradas.map((e) => {
             const aberta = ABERTAS.includes(e.status);
             return (
               <div key={e.id} className={`card ${e.atrasada ? "border-danger" : ""}`}>

@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { posVendaApi } from "../../services/posVendaApi";
 import ErroAlert from "../../components/gestao/ErroAlert";
 import StatusBadge from "../../components/gestao/StatusBadge";
+import FiltroAutocomplete, { SemResultados } from "../../components/FiltroAutocomplete";
+import { casaBusca } from "../../utils/busca";
 import { ROTULOS, fmtDateTime } from "../../utils/format";
 
 export default function PosVendaPage() {
   const [lista, setLista] = useState([]);
   const [status, setStatus] = useState("");
   const [tipo, setTipo] = useState("");
+  const [busca, setBusca] = useState("");
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
 
@@ -26,6 +29,9 @@ export default function PosVendaPage() {
     };
   }, [status, tipo]);
 
+  const textoOc = (o) => [o.cliente, o.pedidoId, o.id, o.item, o.descricao];
+  const filtradas = useMemo(() => lista.filter((o) => casaBusca(busca, textoOc(o))), [lista, busca]);
+
   return (
     <div>
       <h3 className="mb-3">Pós-venda</h3>
@@ -39,6 +45,19 @@ export default function PosVendaPage() {
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
+        </div>
+        <div className="col-12 col-md-3 order-md-last">
+          <label className="form-label small mb-1">Buscar</label>
+          <FiltroAutocomplete
+            value={busca}
+            onChange={setBusca}
+            itens={lista}
+            getRotulo={(o) => `#${o.id} · ${o.cliente ?? "—"}`}
+            getValorBusca={(o) => o.cliente ?? String(o.id)}
+            getDetalhe={(o) => `Pedido #${o.pedidoId}${o.item ? ` · ${o.item}` : ""}`}
+            getTextoBusca={textoOc}
+            placeholder="Cliente, produto ou nº"
+          />
         </div>
         <div className="col-6 col-md-3">
           <label className="form-label small mb-1">Tipo</label>
@@ -55,11 +74,11 @@ export default function PosVendaPage() {
 
       {loading ? (
         <div className="text-center text-muted py-5">Carregando ocorrências...</div>
-      ) : lista.length === 0 ? (
-        <div className="text-center text-muted py-5">Nenhuma ocorrência encontrada.</div>
+      ) : filtradas.length === 0 ? (
+        <SemResultados busca={busca} vazio="Nenhuma ocorrência encontrada." />
       ) : (
         <div className="d-grid gap-2">
-          {lista.map((o) => (
+          {filtradas.map((o) => (
             <Link key={o.id} to={`/gestao/pos-venda/${o.id}`} className="gestao-card-link">
               <div className="card">
                 <div className="card-body">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { clientesApi } from "../../services/clientesApi";
 import ErroAlert from "./ErroAlert";
+import { erroTelefone, mascararTelefone, telefoneParaEnvio } from "../../utils/mascaras";
 
 const ENDERECO_VAZIO = {
   apelido: "", cep: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", uf: "", principal: false,
@@ -15,7 +16,7 @@ function Duplicados({ lista, titulo, variant = "warning" }) {
         {lista.map((c) => (
           <li key={c.id}>
             {c.nome}
-            {c.telefone ? ` · ${c.telefone}` : ""}
+            {c.telefone ? ` · ${mascararTelefone(c.telefone)}` : ""}
             {c.cpf ? ` · CPF ${c.cpf}` : ""}
           </li>
         ))}
@@ -32,7 +33,7 @@ export default function ClienteForm({ initial, onSaved, onCancel }) {
   const [form, setForm] = useState({
     nome: initial?.nome ?? "",
     cpf: initial?.cpf ?? "",
-    telefone: initial?.telefone ?? "",
+    telefone: mascararTelefone(initial?.telefone ?? ""),
     email: initial?.email ?? "",
     observacoes: initial?.observacoes ?? "",
   });
@@ -51,7 +52,7 @@ export default function ClienteForm({ initial, onSaved, onCancel }) {
   // Alerta de possíveis duplicados enquanto digita
   useEffect(() => {
     const cpf = form.cpf.trim();
-    const telefone = form.telefone.trim();
+    const telefone = telefoneParaEnvio(form.telefone) ?? "";
     const nome = form.nome.trim();
     if (!cpf && !telefone && nome.length < 3) return undefined;
     let ativo = true;
@@ -59,7 +60,7 @@ export default function ClienteForm({ initial, onSaved, onCancel }) {
       clientesApi
         .duplicidades({
           cpf: cpf || undefined,
-          telefone: telefone || undefined,
+          telefone: telefone.length >= 10 ? telefone : undefined,
           nome: nome.length >= 3 ? nome : undefined,
           ignorarId: initial?.id,
         })
@@ -78,7 +79,7 @@ export default function ClienteForm({ initial, onSaved, onCancel }) {
 
   function change(e) {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm((f) => ({ ...f, [name]: name === "telefone" ? mascararTelefone(value) : value }));
     setConflito(null);
   }
 
@@ -100,13 +101,13 @@ export default function ClienteForm({ initial, onSaved, onCancel }) {
   }
 
   async function salvar(confirmarDuplicidade) {
-    if (saving) return;
+    if (saving || erroTel) return;
     setSaving(true);
     setErro(null);
     const payload = {
       nome: form.nome.trim(),
       cpf: form.cpf.trim() || null,
-      telefone: form.telefone.trim() || null,
+      telefone: telefoneParaEnvio(form.telefone),
       email: form.email.trim() || null,
       observacoes: form.observacoes.trim() || null,
       enderecos: enderecos.map((e) => ({ ...e, uf: e.uf.trim().toUpperCase() })),
@@ -129,6 +130,8 @@ export default function ClienteForm({ initial, onSaved, onCancel }) {
       setSaving(false);
     }
   }
+
+  const erroTel = erroTelefone(form.telefone);
 
   function submit(e) {
     e.preventDefault();
@@ -178,7 +181,10 @@ export default function ClienteForm({ initial, onSaved, onCancel }) {
         </div>
         <div className="col-12 col-md-4">
           <label className="form-label">Telefone</label>
-          <input name="telefone" className="form-control" inputMode="tel" value={form.telefone} onChange={change} />
+          <input name="telefone" type="tel" inputMode="tel" autoComplete="tel-national"
+            className={`form-control ${erroTel ? "is-invalid" : ""}`} placeholder="(11) 98765-4321"
+            value={form.telefone} onChange={change} aria-invalid={!!erroTel} />
+          {erroTel && <div className="invalid-feedback d-block">{erroTel}</div>}
         </div>
         <div className="col-12 col-md-4">
           <label className="form-label">E-mail</label>
@@ -260,7 +266,7 @@ export default function ClienteForm({ initial, onSaved, onCancel }) {
             Cancelar
           </button>
         )}
-        <button type="submit" className="btn btn-success" disabled={saving}>
+        <button type="submit" className="btn btn-success" disabled={saving || !!erroTel}>
           {saving ? "Salvando..." : initial?.id ? "Salvar alterações" : "Cadastrar cliente"}
         </button>
       </div>
