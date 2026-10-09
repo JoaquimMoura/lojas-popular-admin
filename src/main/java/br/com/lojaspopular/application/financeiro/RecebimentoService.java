@@ -22,6 +22,7 @@ import br.com.lojaspopular.domain.comercial.enums.Arredondamento;
 import br.com.lojaspopular.domain.financeiro.enums.ContaLivro;
 import br.com.lojaspopular.domain.financeiro.enums.OrigemLancamento;
 import br.com.lojaspopular.domain.financeiro.enums.StatusRecebimento;
+import br.com.lojaspopular.domain.financeiro.enums.TipoCartao;
 import br.com.lojaspopular.domain.financeiro.enums.StatusRecebivel;
 import br.com.lojaspopular.domain.financeiro.enums.StatusRestituicao;
 import br.com.lojaspopular.domain.financeiro.enums.TipoLancamento;
@@ -96,9 +97,42 @@ public class RecebimentoService {
     if (p.getStatusComercial() != StatusComercial.CONFIRMADA) {
       throw new NegocioException("O recebimento só pode ser registrado em venda confirmada.");
     }
-    FormaPagamento forma = p.getFormaPagamento();
+    FormaPagamento formaVenda = p.getFormaPagamento();
+    FormaPagamento forma = req.forma() != null ? req.forma() : formaVenda;
     if (forma == null) {
-      throw new NegocioException("A venda não tem forma de pagamento definida.");
+      throw new NegocioException("Informe a forma de pagamento (Pix, dinheiro ou cartão).");
+    }
+    var ativos = recebimentos.findByPedidoIdOrderByIdAsc(pedidoId).stream()
+        .filter(x -> x.getStatus() == StatusRecebimento.REGISTRADO).toList();
+    if (!ativos.isEmpty() && ativos.get(0).getForma() != forma) {
+      throw new NegocioException("Esta venda já tem recebimento em " + ativos.get(0).getForma()
+          + ": uma venda tem uma única forma de pagamento. Estorne o recebimento para trocar.");
+    }
+    TipoCartao tipoCartao = null;
+    int parcelasPag = 1;
+    if (forma == FormaPagamento.CARTAO) {
+      tipoCartao = req.tipoCartao() != null ? req.tipoCartao() : (formaVenda == FormaPagamento.CARTAO ? TipoCartao.CREDITO : null);
+      if (tipoCartao == null) {
+        throw new NegocioException("Informe se o cartão é crédito ou débito.");
+      }
+      parcelasPag = tipoCartao == TipoCartao.DEBITO ? 1
+          : req.parcelas() != null ? req.parcelas() : (formaVenda == FormaPagamento.CARTAO && p.getParcelas() != null ? p.getParcelas() : 1);
+      if (parcelasPag < 1) {
+        throw new NegocioException("O número de parcelas deve ser no mínimo 1.");
+      }
+    }
+    int parcelasVenda = p.getParcelas() == null ? 1 : p.getParcelas();
+    if (forma != formaVenda || parcelasPag != parcelasVenda) {
+      // trocar a forma/parcelas no momento do pagamento só é possível se NÃO muda o preço da venda
+      var nova = config.exigirCondicao(forma, parcelasPag);
+      BigDecimal atual = p.getAjusteCondicaoPercentual() == null ? BigDecimal.ZERO : p.getAjusteCondicaoPercentual();
+      BigDecimal novoAjuste = nova.getAjustePercentual() == null ? BigDecimal.ZERO : nova.getAjustePercentual();
+      if (atual.compareTo(novoAjuste) != 0) {
+        throw new NegocioException("Trocar para " + forma + " em " + parcelasPag + "x mudaria o preço da venda (ajuste de "
+            + atual + "% para " + novoAjuste + "%). Cancele e refaça a venda com a forma correta.");
+      }
+      p.setFormaPagamento(forma);
+      p.setParcelas(parcelasPag);
     }
 
     BigDecimal valor = req.valor().setScale(2, RoundingMode.HALF_UP);
@@ -122,13 +156,10 @@ public class RecebimentoService {
       if (valor.compareTo(p.getTotal()) != 0) {
         throw new NegocioException("O pagamento em cartão é feito pelo valor total da venda (R$ " + p.getTotal() + ").");
       }
-      if (operadora == null) {
-        throw new NegocioException("Informe a operadora do cartão.");
-      }
     }
 
     Recebimento r = recebimentos.save(Recebimento.builder().pedido(p).forma(forma).valor(valor)
-        .parcelas(forma == FormaPagamento.CARTAO ? p.getParcelas() : null).dataPagamento(data)
+        .parcelas(forma == FormaPagamento.CARTAO ? parcelasPag : null).tipoCartao(tipoCartao).dataPagamento(data)
         .referencia(limpar(req.referencia())).operadora(operadora).observacao(limpar(req.observacao()))
         .status(StatusRecebimento.REGISTRADO).registradoPor(ator).chave(k).build());
 
@@ -228,10 +259,10 @@ public class RecebimentoService {
     Map<String, String> bloqueios = new LinkedHashMap<>();
     boolean confirmada = p.getStatusComercial() == StatusComercial.CONFIRMADA;
     boolean podeRegistrar = permissoes.pode(ator, br.com.lojaspopular.domain.financeiro.enums.OperacaoFinanceira.RECEBER) && confirmada && saldo.signum() > 0;
-    if (podeRegistrar && p.getFormaPagamento() == FormaPagamento.CARTAO
-        && taxas.findByAtivaTrueOrderByOperadoraAscParcelasAsc().isEmpty()) {
-      podeRegistrar = false;
-      bloqueios.put("recebimento", "Configuração pendente (D11): cadastre a taxa e os prazos da operadora de cartão.");
+    if (podeRegistrar && taxas.findByAtivaTrueOrderByOperadoraAscParcelasAsc().isEmpty()) {
+      // não bloqueia: o cartão é registrado em plano manual (sem taxa) até a D11 ser cadastrada
+      bloqueios.put("cartao", "Sem taxa de operadora cadastrada (D11): o cartão é registrado em plano manual, sem taxa e com a "
+          + "previsão na data do pagamento; ao liquidar, informe o valor realmente depositado.");
     }
     if (podeRegistrar && p.getFormaPagamento() == FormaPagamento.DINHEIRO) {
       bloqueios.put("caixa", "Pagamento em dinheiro entra no caixa físico: o caixa precisa estar aberto.");
@@ -264,12 +295,20 @@ public class RecebimentoService {
 
   private void gerarRecebiveis(Recebimento r, Pedido p) {
     Arredondamento arred = config.exigirArredondamento();
-    int n = p.getParcelas();
-    TaxaCartao taxa = taxas.findByOperadoraAndParcelas(r.getOperadora(), n).filter(TaxaCartao::isAtiva)
-        .orElseThrow(() -> new ConfiguracaoPendenteException("Configuração pendente (D11): não há taxa/prazo cadastrados para a "
-            + "operadora \"" + r.getOperadora() + "\" em " + n + "x. Cadastre em Cartão > Taxas e prazos.",
-            config.descricoesFinanceiras("D11", "cartão")));
+    int n = r.getParcelas() == null ? 1 : r.getParcelas();
+    TaxaCartao taxa = r.getOperadora() == null ? null
+        : taxas.findByOperadoraAndParcelas(r.getOperadora(), n).filter(TaxaCartao::isAtiva).orElse(null);
     BigDecimal total = r.getValor();
+    if (taxa == null) {
+      // Sem taxa cadastrada (D11): registro manual. Um recebível único, sem taxa, previsto para a data do pagamento; quem
+      // recebe informa o valor real depositado ao liquidar (a diferença fica registrada). Nada é presumido.
+      r.setPlanoManual(true);
+      recebiveis.save(RecebivelCartao.builder().recebimento(r).pedido(p)
+          .operadora(r.getOperadora() == null ? "(não informada)" : r.getOperadora()).parcela(1).totalParcelas(1)
+          .valorBruto(total).taxaPercentual(BigDecimal.ZERO).valorTaxa(BigDecimal.ZERO).valorLiquido(total)
+          .dataPrevista(r.getDataPagamento()).status(StatusRecebivel.PREVISTO).build());
+      return;
+    }
     // Divisão em parcelas: arredonda para baixo e a última parcela absorve a diferença (soma bate com o total).
     BigDecimal base = total.divide(BigDecimal.valueOf(n), 2, RoundingMode.DOWN);
     BigDecimal acumulado = BigDecimal.ZERO;

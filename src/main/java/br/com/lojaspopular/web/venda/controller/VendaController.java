@@ -43,7 +43,13 @@ public class VendaController {
       BigDecimal limiteDescontoPercentual, Arredondamento arredondamento) {
   }
 
+  public record VincularClienteRequest(@jakarta.validation.constraints.NotNull(message = "Informe o cliente") Long clienteId,
+      @jakarta.validation.constraints.NotBlank(message = "Informe a justificativa")
+      @jakarta.validation.constraints.Size(max = 300) String justificativa) {
+  }
+
   private final VendaService service;
+  private final br.com.lojaspopular.application.venda.VendaClienteService clienteVenda;
   private final ConfiguracaoComercialService config;
 
   @GetMapping("/configuracao")
@@ -92,6 +98,20 @@ public class VendaController {
   @PostMapping("/{id}/cancelar")
   public VendaDetalheResponse cancelar(@PathVariable Long id, @Valid @RequestBody CancelarRequest req) {
     return service.cancelar(id, req.motivo());
+  }
+
+  /** Vincula uma venda antiga (sem cliente) a um cliente: só o proprietário, com justificativa. Sem efeito financeiro. */
+  @PostMapping("/{id}/vincular-cliente")
+  public VendaDetalheResponse vincularCliente(@PathVariable Long id, @Valid @RequestBody VincularClienteRequest req) {
+    clienteVenda.vincular(id, req.clienteId(), req.justificativa());
+    return service.obter(id);
+  }
+
+  /** Troca o cliente de uma venda confirmada: exige a permissão específica (D13) e justificativa. */
+  @PostMapping("/{id}/trocar-cliente")
+  public VendaDetalheResponse trocarCliente(@PathVariable Long id, @Valid @RequestBody VincularClienteRequest req) {
+    clienteVenda.trocar(id, req.clienteId(), req.justificativa());
+    return service.obter(id);
   }
 
   @PostMapping("/{id}/desconto/aprovar")

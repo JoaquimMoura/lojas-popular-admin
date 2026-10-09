@@ -79,6 +79,14 @@ public class ConfiguracaoComercialService {
       p.add(new Pendencia("D05", "Regra de pagamento exigido para a saída (expedição) não definida.",
           "Saída de mercadoria (baixa de estoque)", "ATENDIMENTO"));
     }
+    if (cfg.getPerfisTrocaCliente() == null || cfg.getPerfisTrocaCliente().isBlank()) {
+      p.add(new Pendencia("D13", "Perfis autorizados a trocar o cliente de uma venda confirmada não definidos.",
+          "Troca de cliente em venda confirmada (bloqueada)", "VENDAS"));
+    }
+    if (cfg.getVendedorVeHistoricoCliente() == null) {
+      p.add(new Pendencia("D13", "Não definido se o vendedor pode ver compras do cliente feitas com outros vendedores.",
+          "Nada (vale o escopo atual: o vendedor vê só as próprias vendas)", "VENDAS"));
+    }
     // ---- Etapa 3 (financeiro): nenhuma decisão é presumida
     String fin = "FINANCEIRO";
     if (cfg.getComissaoPercentual() == null) {
@@ -118,7 +126,7 @@ public class ConfiguracaoComercialService {
     }
     if (taxas.findByAtivaTrueOrderByOperadoraAscParcelasAsc().isEmpty()) {
       p.add(new Pendencia("D11", "Nenhuma taxa/prazo de operadora de cartão cadastrada.",
-          "Recebimentos em cartão", fin));
+          "Nada: o cartão é registrado em plano manual (sem taxa, previsão na data do pagamento) até haver taxa", fin));
     }
     var semPerm = new ArrayList<String>();
     if (cfg.getPermFinConsultar() == null) semPerm.add("consultar");
@@ -319,6 +327,25 @@ public class ConfiguracaoComercialService {
     auditoria.registrar(AuditoriaTipo.CONFIG_COMERCIAL_ALTERADA, "Permissões financeiras (D12): consultar=" + salvo.getPermFinConsultar()
         + ", receber=" + salvo.getPermFinReceber() + ", pagar=" + salvo.getPermFinPagar() + ", estornar=" + salvo.getPermFinEstornar()
         + ", restituir=" + salvo.getPermFinRestituir() + " (nulo = só o proprietário)", "CONFIG_COMERCIAL", ConfiguracaoComercial.ID_UNICO);
+    return salvo;
+  }
+
+  /** D13: histórico do cliente para vendedores e troca de cliente em venda confirmada. Só o proprietário. */
+  @Transactional
+  public ConfiguracaoComercial atualizarClientes(Boolean vendedorVeHistorico, Set<Role> perfisTrocaCliente) {
+    User ator = usuarioAtual.get();
+    if (!UsuarioAtual.tem(ator, Role.ADMIN)) {
+      throw new AccessDeniedException("Somente o proprietário define estas regras.");
+    }
+    var cfg = obter();
+    cfg.setVendedorVeHistoricoCliente(vendedorVeHistorico);
+    cfg.setPerfisTrocaCliente(csvPerfis(perfisTrocaCliente));
+    cfg.setAtualizadoEm(Instant.now());
+    cfg.setAtualizadoPor(ator);
+    var salvo = configRepo.save(cfg);
+    auditoria.registrar(AuditoriaTipo.CONFIG_COMERCIAL_ALTERADA, "Clientes (D13): vendedor vê histórico completo="
+        + salvo.getVendedorVeHistoricoCliente() + ", troca de cliente=" + salvo.getPerfisTrocaCliente(), "CONFIG_COMERCIAL",
+        ConfiguracaoComercial.ID_UNICO);
     return salvo;
   }
 

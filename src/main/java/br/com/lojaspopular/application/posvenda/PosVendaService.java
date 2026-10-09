@@ -322,7 +322,7 @@ public class PosVendaService {
     if (!consulta) {
       restituivel = null;
     }
-    return new OcorrenciaResponse(o.getId(), p.getId(), p.getCliente() == null ? null : p.getCliente().getNome(),
+    return new OcorrenciaResponse(o.getId(), p.getId(), p.clienteNomeHistorico(),
         o.getTipo(), o.getStatus(), o.getDescricao(), o.getItem() == null ? null : o.getItem().getId(),
         o.getItem() == null ? null : o.getItem().getDescricaoHistorica(), o.getQuantidade(), trocaItem,
         o.getTrocaQuantidade(), o.getDiferencaCalculada(), o.getCondicaoFisica(), o.getAvaliacao(),

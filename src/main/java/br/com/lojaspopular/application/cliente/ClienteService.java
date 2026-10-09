@@ -32,6 +32,7 @@ public class ClienteService {
 
   private final ClienteRepository repo;
   private final AuditoriaService auditoria;
+  private final br.com.lojaspopular.domain.order.repository.PedidoRepository pedidos;
 
   @Transactional(readOnly = true)
   public List<Cliente> buscar(String q) {
@@ -107,6 +108,17 @@ public class ClienteService {
     c.getEnderecos().size();
     auditoria.registrar(AuditoriaTipo.CLIENTE_ALTERADO, "Cliente desativado: " + c.getNome(), "CLIENTE", c.getId());
     return c;
+  }
+
+  /** Exclusão física só de cliente SEM compras; com vendas vinculadas, apenas inativação (preserva o histórico). */
+  @Transactional
+  public void excluir(Long id) {
+    Cliente c = repo.findById(id).orElseThrow(() -> new NotFoundException("Cliente não encontrado"));
+    if (pedidos.existsByClienteId(id)) {
+      throw new NegocioException("Este cliente possui vendas vinculadas e não pode ser excluído. Inative o cadastro: o histórico é preservado.");
+    }
+    repo.delete(c);
+    auditoria.registrar(AuditoriaTipo.CLIENTE_EXCLUIDO, "Cliente excluído (sem vendas): " + c.getNome(), "CLIENTE", id);
   }
 
   // ---- internos ----

@@ -46,6 +46,11 @@ import lombok.Setter;
 @Table(name = "pedidos")
 public class Pedido {
 
+	/** Nome do cliente como na venda; sem cópia, o do cadastro; sem cliente, nulo. */
+	public String clienteNomeHistorico() {
+		return clienteNomeHist != null ? clienteNomeHist : (cliente == null ? null : cliente.getNome());
+	}
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -58,6 +63,16 @@ public class Pedido {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "usuario_id", nullable = false)
 	private User usuario;
+
+	/** Dados do cliente COMO ESTAVAM na venda (alterar o cadastro depois não muda o histórico). */
+	@Column(length = 150)
+	private String clienteNomeHist;
+
+	@Column(length = 11)
+	private String clienteCpfHist;
+
+	@Column(length = 20)
+	private String clienteTelefoneHist;
 
 	/** Comprador. Nulo em pedidos legados (não é inventado na migração). */
 	@ManyToOne(fetch = FetchType.LAZY)

@@ -53,6 +53,7 @@ public class ClienteController {
   }
 
   private final ClienteService service;
+  private final br.com.lojaspopular.application.cliente.ClienteHistoricoService historico;
 
   /** Busca por nome, CPF ou telefone. Deve ser feita antes de cadastrar. */
   @GetMapping
@@ -80,6 +81,28 @@ public class ClienteController {
   @PutMapping("/{id}")
   public ClienteResponse atualizar(@PathVariable Long id, @Valid @RequestBody ClienteRequest req) {
     return toResponse(service.atualizar(id, toDados(req), req.confirmarDuplicidade()));
+  }
+
+  @GetMapping("/{id}/compras")
+  public br.com.lojaspopular.application.cliente.ClienteHistoricoService.PaginaCompras compras(@PathVariable Long id,
+      @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate de,
+      @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate ate,
+      @RequestParam(required = false) br.com.lojaspopular.domain.order.enums.StatusComercial situacao,
+      @RequestParam(required = false) String produto, @RequestParam(defaultValue = "0") int pagina,
+      @RequestParam(defaultValue = "10") int tamanho) {
+    return historico.compras(id, de, ate, situacao, produto, pagina, tamanho);
+  }
+
+  @GetMapping("/{id}/resumo")
+  public br.com.lojaspopular.application.cliente.ClienteHistoricoService.Resumo resumo(@PathVariable Long id) {
+    return historico.resumo(id);
+  }
+
+  /** Só cliente sem vendas; com vendas, use desativar. */
+  @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
+  public void excluir(@PathVariable Long id) {
+    service.excluir(id);
   }
 
   @PostMapping("/{id}/desativar")

@@ -129,6 +129,7 @@ class FinanceiroServiceTest {
     garantirCondicao(FormaPagamento.PIX, 1, "0.00");
     garantirCondicao(FormaPagamento.DINHEIRO, 1, "0.00");
     garantirCondicao(FormaPagamento.CARTAO, 3, "10.00");
+    garantirCondicao(FormaPagamento.CARTAO, 1, "10.00");
     // Regras financeiras de TESTE (nenhuma é recomendação de negócio)
     financeira(new BigDecimal("5.00"), AquisicaoComissao.QUITACAO, CompetenciaReceita.CONFIRMACAO, EnumSet.of(Role.ADMIN),
         EnumSet.of(Role.ADMIN, Role.GERENTE), true, true, true, false);
@@ -235,14 +236,69 @@ class FinanceiroServiceTest {
   }
 
   @Test
-  void cartaoSemTaxaCadastradaFicaBloqueado() {
+  void cartaoSemTaxaCadastradaEhRegistradoEmPlanoManual() {
     var v = venda(FormaPagamento.CARTAO, 3, 1);
     como(gerente);
-    assertThatThrownBy(() -> recebimentos.registrar(v, new RegistrarRecebimentoRequest(new BigDecimal("1100.00"), null, null,
-        "OUTRA-OP", null), chave())).isInstanceOf(ConfiguracaoPendenteException.class).hasMessageContaining("D11");
     assertThatThrownBy(() -> recebimentos.registrar(v, new RegistrarRecebimentoRequest(new BigDecimal("500.00"), null, null,
         "OPTESTE", null), chave())).isInstanceOf(NegocioException.class).hasMessageContaining("valor total");
     assertThat(vendas.obter(v).statusPagamento()).isEqualTo(StatusPagamento.PENDENTE);
+    // operadora sem taxa cadastrada (ou sem operadora): não bloqueia; vira plano manual, sem taxa inventada
+    var r = recebimentos.registrar(v, new RegistrarRecebimentoRequest(new BigDecimal("1100.00"), null, null, "OUTRA-OP", null), chave());
+    assertThat(r.planoManual()).isTrue();
+    assertThat(r.recebiveis()).hasSize(1);
+    assertThat(r.recebiveis().get(0).valorTaxa()).isEqualByComparingTo("0");
+    assertThat(r.recebiveis().get(0).valorLiquido()).isEqualByComparingTo("1100.00");
+    assertThat(vendas.obter(v).statusPagamento()).isEqualTo(StatusPagamento.PAGO);
+    assertThat(lancamentos.findByPedidoIdOrderByIdAsc(v)).isEmpty();   // entra no banco só quando alguém informar a liquidação
+    // liquidação manual com o valor realmente depositado: a diferença fica registrada
+    var liq = cartao.liquidar(r.recebiveis().get(0).id(), null, new BigDecimal("1050.00"), chave());
+    assertThat(liq.diferencaLiquidacao()).isEqualByComparingTo("-50.00");
+    assertThat(lancamentos.findByPedidoIdOrderByIdAsc(v)).hasSize(1);
+    como(admin);
+    assertThat(fechamento.previa(Relogio.texto(relogio.hoje())).resultado().faltantes()).anyMatch(f -> f.contains("plano manual"));
+  }
+
+  @Test
+  void formaEhEscolhidaNoPagamentoSeNaoMudaOPreco() {
+    var v = venda(FormaPagamento.PIX, 1, 1);
+    como(gerente);
+    caixa.abrir(BigDecimal.ZERO);
+    var r = recebimentos.registrar(v, new RegistrarRecebimentoRequest(new BigDecimal("1000.00"), null, null, null, null,
+        FormaPagamento.DINHEIRO, null, null), chave());
+    assertThat(r.forma()).isEqualTo(FormaPagamento.DINHEIRO);
+    assertThat(vendas.obter(v).pagamento().forma()).isEqualTo(FormaPagamento.DINHEIRO);   // a venda passa a refletir o real
+    assertThat(lancamentos.findByPedidoIdOrderByIdAsc(v).get(0).getConta()).isEqualTo(ContaLivro.CAIXA);
+  }
+
+  @Test
+  void trocarParaFormaQueMudariaOPrecoEhRecusada_eFormaFicaTravadaDepoisDoPrimeiroRecebimento() {
+    var v = venda(FormaPagamento.PIX, 1, 1);
+    como(gerente);
+    assertThatThrownBy(() -> recebimentos.registrar(v, new RegistrarRecebimentoRequest(new BigDecimal("1000.00"), null, null,
+        "OPTESTE", null, FormaPagamento.CARTAO, 3, br.com.lojaspopular.domain.financeiro.enums.TipoCartao.CREDITO), chave()))
+        .isInstanceOf(NegocioException.class).hasMessageContaining("mudaria o preço");
+    receber(v, "400.00", null);
+    assertThatThrownBy(() -> recebimentos.registrar(v, new RegistrarRecebimentoRequest(new BigDecimal("600.00"), null, null,
+        null, null, FormaPagamento.DINHEIRO, null, null), chave())).isInstanceOf(NegocioException.class)
+        .hasMessageContaining("única forma");
+  }
+
+  @Test
+  void cartaoExigeCreditoOuDebito_debitoEhSempreAVista() {
+    var v = venda(FormaPagamento.PIX, 1, 1);
+    como(admin);
+    config.atualizarCondicao(condicoes.findByFormaAndParcelas(FormaPagamento.CARTAO, 1).orElseThrow().getId(), BigDecimal.ZERO, true);
+    como(gerente);
+    assertThatThrownBy(() -> recebimentos.registrar(v, new RegistrarRecebimentoRequest(new BigDecimal("1000.00"), null, null,
+        "OPTESTE", null, FormaPagamento.CARTAO, 1, null), chave())).isInstanceOf(NegocioException.class)
+        .hasMessageContaining("crédito ou débito");
+    var r = recebimentos.registrar(v, new RegistrarRecebimentoRequest(new BigDecimal("1000.00"), null, null, "OPTESTE", null,
+        FormaPagamento.CARTAO, 3, br.com.lojaspopular.domain.financeiro.enums.TipoCartao.DEBITO), chave());   // 3 ignorado: débito = 1x
+    assertThat(r.tipoCartao()).isEqualTo(br.com.lojaspopular.domain.financeiro.enums.TipoCartao.DEBITO);
+    assertThat(r.parcelas()).isEqualTo(1);
+    assertThat(vendas.obter(v).pagamento().forma()).isEqualTo(FormaPagamento.CARTAO);
+    como(admin);
+    garantirCondicao(FormaPagamento.CARTAO, 1, "10.00");
   }
 
   @Test

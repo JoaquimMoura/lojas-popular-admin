@@ -46,7 +46,14 @@ public final class FinanceiroDtos {
       LocalDate dataPagamento,
       @Size(max = 100, message = "Referência: máximo de 100 caracteres") String referencia,
       @Size(max = 60, message = "Operadora: máximo de 60 caracteres") String operadora,
-      @Size(max = 300, message = "Observação: máximo de 300 caracteres") String observacao) {
+      @Size(max = 300, message = "Observação: máximo de 300 caracteres") String observacao,
+      FormaPagamento forma, Integer parcelas, br.com.lojaspopular.domain.financeiro.enums.TipoCartao tipoCartao) {
+
+    /** Forma, parcelas e tipo do cartão são opcionais: sem eles vale o que a venda já tem. */
+    public RegistrarRecebimentoRequest(BigDecimal valor, LocalDate dataPagamento, String referencia, String operadora,
+        String observacao) {
+      this(valor, dataPagamento, referencia, operadora, observacao, null, null, null);
+    }
   }
 
   public record AbrirCaixaRequest(
@@ -135,13 +142,13 @@ public final class FinanceiroDtos {
   public record RecebivelView(Long id, Long recebimentoId, Long pedidoId, String operadora, Integer parcela,
       Integer totalParcelas, BigDecimal valorBruto, BigDecimal taxaPercentual, BigDecimal valorTaxa,
       BigDecimal valorLiquido, LocalDate dataPrevista, StatusRecebivel status, LocalDate dataLiquidacao,
-      BigDecimal valorLiquidado, BigDecimal diferencaLiquidacao, boolean vencido) {
+      BigDecimal valorLiquidado, BigDecimal diferencaLiquidacao, boolean vencido, boolean planoManual) {
   }
 
   public record RecebimentoView(Long id, Long pedidoId, FormaPagamento forma, BigDecimal valor, Integer parcelas,
       LocalDate dataPagamento, String referencia, String operadora, String observacao, StatusRecebimento status,
       String registradoPor, Instant criadoEm, Instant estornadoEm, String estornadoPor, String motivoEstorno,
-      List<RecebivelView> recebiveis) {
+      List<RecebivelView> recebiveis, br.com.lojaspopular.domain.financeiro.enums.TipoCartao tipoCartao, boolean planoManual) {
   }
 
   public record LancamentoView(Long id, ContaLivro conta, TipoLancamento tipo, BigDecimal valor, LocalDate dataEfetiva,

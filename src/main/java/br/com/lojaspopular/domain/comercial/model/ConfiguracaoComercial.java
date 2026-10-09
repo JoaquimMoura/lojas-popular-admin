@@ -73,6 +73,13 @@ public class ConfiguracaoComercial {
   @Column(length = 100)
   private String perfisReabertura;
 
+  /** D13 — o vendedor vê as compras do cliente feitas com outros vendedores? Nulo = pendente: só as próprias. */
+  private Boolean vendedorVeHistoricoCliente;
+
+  /** D13 — perfis que podem trocar o cliente de uma venda confirmada. Nulo = bloqueado. */
+  @Column(length = 100)
+  private String perfisTrocaCliente;
+
   /** D12 — perfis (além do proprietário) autorizados em cada operação financeira. Nulo = pendente: só o proprietário. */
   @Column(length = 40)
   private String permFinConsultar;

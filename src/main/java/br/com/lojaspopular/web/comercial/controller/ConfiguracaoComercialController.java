@@ -82,6 +82,22 @@ public class ConfiguracaoComercialController {
     return resposta();
   }
 
+  public record ClientesRequest(Boolean vendedorVeHistoricoCompleto, Set<Role> perfisTrocaCliente) {
+  }
+
+  /** D13: histórico do cliente para vendedores e troca de cliente (somente o proprietário altera). */
+  @GetMapping("/clientes")
+  public ClientesRequest clientes() {
+    var c = service.obter();
+    return new ClientesRequest(c.getVendedorVeHistoricoCliente(), service.perfis(c.getPerfisTrocaCliente()));
+  }
+
+  @PutMapping("/clientes")
+  public ClientesRequest atualizarClientes(@RequestBody ClientesRequest req) {
+    service.atualizarClientes(req.vendedorVeHistoricoCompleto(), req.perfisTrocaCliente());
+    return clientes();
+  }
+
   /** D12: permissões financeiras do gerente, por operação (somente o proprietário altera). */
   @GetMapping("/permissoes-financeiras")
   public PermissoesFinanceirasView permissoes() {

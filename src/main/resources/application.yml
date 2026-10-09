@@ -78,7 +78,7 @@ whatsapp:
   provider: zenvia
   base-url: https://api.zenvia.com/v2/channels/whatsapp/messages
   api-key: ${WHATSAPP_API_KEY}
-  remetente: Lojas Popular Móveis
+  remetente: Lá Casa Popular Móveis
 
 mercadopago:
   access-token: ${MP_ACCESS_TOKEN}

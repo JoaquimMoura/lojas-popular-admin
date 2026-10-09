@@ -59,7 +59,7 @@ public class NotificacaoService {
 				✅ Pagamento aprovado!
 				Pedido #%d confirmado.
 				Valor total: R$ %.2f
-				Obrigado por comprar na Lojas Popular Móveis 💙
+				Obrigado por comprar na Lá Casa Popular Móveis 💙
 				""", pedido.getId(), pedido.getTotal());
 
 		enviarWhatsAppAsync(pedido.getUsuario(), texto);

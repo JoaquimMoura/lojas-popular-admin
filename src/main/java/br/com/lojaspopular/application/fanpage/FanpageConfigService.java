@@ -79,7 +79,7 @@ public class FanpageConfigService {
 
         private FanpageConfig createDefault() {
                 FanpageConfig config = FanpageConfig.builder()
-                                .heroTitle("Popular Móveis — móveis planejados com preço popular")
+                                .heroTitle("Lá Casa Popular Móveis — móveis planejados com preço popular")
                                 .heroSubtitle("Sua casa renovada sem complicacoes")
                                 .heroDescription(
                                                 "Kits completos de sala, cozinha, quarto e escritorio com condicoes especiais. Entregamos e montamos em tempo recorde para voce usar no mesmo dia.")

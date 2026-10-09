@@ -22,7 +22,7 @@ public class LojaConfigService {
  public LojaConfig getOrCreateDefault() {
      return repository.findAll().stream().findFirst().orElseGet(() -> {
          LojaConfig cfg = LojaConfig.builder()
-             .nome("Popular movies")
+             .nome("Lá Casa Popular Móveis")
              .corPrimaria("#D11B1B") // vermelho
              .corSecundaria("#FFD200") // amarelo
              .whatsapp("1196111-8141")

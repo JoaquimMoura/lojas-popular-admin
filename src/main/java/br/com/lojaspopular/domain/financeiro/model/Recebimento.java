@@ -56,6 +56,16 @@ public class Recebimento {
 
   private Integer parcelas;
 
+  /** CREDITO ou DEBITO (só no cartão). */
+  @Enumerated(EnumType.STRING)
+  @Column(length = 10)
+  private br.com.lojaspopular.domain.financeiro.enums.TipoCartao tipoCartao;
+
+  /** Cartão registrado sem taxa cadastrada: um recebível único, sem taxa, liquidado à mão com o valor real depositado. */
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean planoManual = false;
+
   @Column(nullable = false)
   private LocalDate dataPagamento;
 

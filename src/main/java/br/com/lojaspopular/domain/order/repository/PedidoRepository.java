@@ -23,6 +23,11 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
   Optional<Pedido> findByChaveCriacao(String chaveCriacao);
 
+  @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "vendedor", "itens" })
+  List<Pedido> findByClienteIdOrderByIdDesc(Long clienteId);
+
+  boolean existsByClienteId(Long clienteId);
+
   Optional<Pedido> findByPaymentId(String paymentId);
 
   /** Trava o pedido: serializa confirmação, cancelamento e edição concorrentes. */

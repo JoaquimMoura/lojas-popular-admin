@@ -18,6 +18,9 @@ public interface OcorrenciaPosVendaRepository extends JpaRepository<OcorrenciaPo
 
   List<OcorrenciaPosVenda> findByPedidoIdOrderByIdDesc(Long pedidoId);
 
+  @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "item", "pedido" })
+  List<OcorrenciaPosVenda> findByPedidoIdIn(java.util.Collection<Long> pedidoIds);
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select o from OcorrenciaPosVenda o where o.id = :id")
   Optional<OcorrenciaPosVenda> findByIdForUpdate(@Param("id") Long id);

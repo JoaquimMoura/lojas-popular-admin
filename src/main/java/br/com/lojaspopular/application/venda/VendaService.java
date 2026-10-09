@@ -413,6 +413,9 @@ public class VendaService {
     var condicao = config.exigirCondicao(req.formaPagamento(), req.parcelas());
 
     p.setCliente(cliente);
+    p.setClienteNomeHist(cliente.getNome());
+    p.setClienteCpfHist(cliente.getCpf());
+    p.setClienteTelefoneHist(cliente.getTelefone());
     p.setVendedor(vendedor);
     p.setCanal(req.canal());
     p.setFormaPagamento(req.formaPagamento());
@@ -596,7 +599,7 @@ public class VendaService {
 
   private VendaResumoResponse resumo(Pedido p) {
     return new VendaResumoResponse(p.getId(), p.getStatusComercial(), p.getStatusPagamento(), p.getStatusEntrega(),
-        p.getCliente() == null ? null : p.getCliente().getNome(),
+        p.clienteNomeHistorico(),
         p.getVendedor() == null ? null : nome(p.getVendedor()), p.getCanal(), p.getTotal(), p.getCriadoEm(),
         p.isRevisaoLegado());
   }
@@ -635,7 +638,8 @@ public class VendaService {
     return new VendaDetalheResponse(p.getId(), p.getVersion(), p.getStatusComercial(), p.getStatusPagamento(),
         p.getStatusEntrega(), p.getStatusMontagem(), p.isRevisaoLegado(), p.getCanal(),
         p.getCliente() == null ? null
-            : new PessoaResumo(p.getCliente().getId(), p.getCliente().getNome(), p.getCliente().getTelefone()),
+            : new PessoaResumo(p.getCliente().getId(), p.clienteNomeHistorico(),
+                p.getClienteTelefoneHist() != null ? p.getClienteTelefoneHist() : p.getCliente().getTelefone()),
         p.getVendedor() == null ? null : new PessoaResumo(p.getVendedor().getId(), nome(p.getVendedor()), null),
         p.getTipoEntrega(), endereco, p.getFormaPagamento(), p.getParcelas(), p.getAjusteCondicaoPercentual(),
         p.getSubtotal(), p.getDesconto(), p.getFrete(), p.getTotal(), p.getObservacao(), p.getCriadoEm(),

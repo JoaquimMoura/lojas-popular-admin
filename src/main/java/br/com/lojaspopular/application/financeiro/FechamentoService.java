@@ -271,6 +271,12 @@ public class FechamentoService {
     if (previstas.signum() > 0) {
       faltantes.add("Há comissões apenas previstas (R$ " + previstas + ") ainda não apuradas como devidas.");
     }
+    long planosManuais = recs.stream().filter(r -> r.getStatus() != br.com.lojaspopular.domain.financeiro.enums.StatusRecebivel.CANCELADO
+        && r.getRecebimento().isPlanoManual()).count();
+    if (planosManuais > 0) {
+      faltantes.add(planosManuais + " pagamento(s) no cartão em plano manual (taxa de operadora não cadastrada): a taxa é "
+          + "desconhecida e não entra no resultado. Cadastre a taxa (D11) para as próximas vendas.");
+    }
     if (cartaoSemRecebimento > 0) {
       faltantes.add(cartaoSemRecebimento + " venda(s) no cartão sem recebimento registrado: a taxa ainda é desconhecida e não entra no resultado.");
     }

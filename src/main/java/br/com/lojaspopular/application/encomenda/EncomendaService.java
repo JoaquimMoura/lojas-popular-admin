@@ -190,7 +190,7 @@ public class EncomendaService {
         x.getQuantidade(), x.getRecebidoEm(), x.getUsuario() == null ? null : (x.getUsuario().getNome() != null
             ? x.getUsuario().getNome() : x.getUsuario().getEmail()), x.getObservacao())).toList();
     Integer prazo = i.getProduto().getPrazoEncomendaDias();
-    return new EncomendaResponse(e.getId(), p.getId(), p.getCliente() == null ? null : p.getCliente().getNome(),
+    return new EncomendaResponse(e.getId(), p.getId(), p.clienteNomeHistorico(),
         i.getId(), i.getDescricaoHistorica(), i.getQuantidade(), e.getStatus(), e.getFornecedor(),
         e.getReferenciaFornecedor(), e.getPrevisaoChegada(),
         aberta && e.getPrevisaoChegada() != null && e.getPrevisaoChegada().isBefore(LocalDate.now()),

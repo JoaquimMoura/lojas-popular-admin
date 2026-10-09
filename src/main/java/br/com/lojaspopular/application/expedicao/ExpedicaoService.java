@@ -339,12 +339,12 @@ public class ExpedicaoService {
     var itens = new java.util.ArrayList<AgendaItem>();
     for (Entrega e : entregaRepo.agenda(de, ate)) {
       Pedido p = e.getPedido();
-      itens.add(new AgendaItem(e.getTipo().name(), p.getId(), p.getCliente() == null ? null : p.getCliente().getNome(),
+      itens.add(new AgendaItem(e.getTipo().name(), p.getId(), p.clienteNomeHistorico(),
           e.getDataPrevista(), e.getPeriodo(), e.getEquipe(), e.getStatus().name(), endereco(p), e.getTipo().name()));
     }
     for (Montagem m : montagemRepo.agenda(de, ate)) {
       Pedido p = m.getPedido();
-      itens.add(new AgendaItem("MONTAGEM", p.getId(), p.getCliente() == null ? null : p.getCliente().getNome(),
+      itens.add(new AgendaItem("MONTAGEM", p.getId(), p.clienteNomeHistorico(),
           m.getDataPrevista(), m.getPeriodo(), m.getResponsavel(), m.getStatus().name(), endereco(p), null));
     }
     itens.sort(java.util.Comparator.comparing(AgendaItem::data).thenComparing(i -> i.periodo().ordinal())

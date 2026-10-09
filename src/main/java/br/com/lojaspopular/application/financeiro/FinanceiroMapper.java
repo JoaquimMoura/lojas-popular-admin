@@ -56,7 +56,8 @@ public class FinanceiroMapper {
     boolean vencido = r.getStatus() == StatusRecebivel.PREVISTO && r.getDataPrevista().isBefore(relogio.hoje());
     return new RecebivelView(r.getId(), r.getRecebimento().getId(), r.getPedido().getId(), r.getOperadora(), r.getParcela(),
         r.getTotalParcelas(), r.getValorBruto(), r.getTaxaPercentual(), r.getValorTaxa(), r.getValorLiquido(),
-        r.getDataPrevista(), r.getStatus(), r.getDataLiquidacao(), r.getValorLiquidado(), diferenca, vencido);
+        r.getDataPrevista(), r.getStatus(), r.getDataLiquidacao(), r.getValorLiquidado(), diferenca, vencido,
+        r.getRecebimento().isPlanoManual());
   }
 
   public RecebimentoView view(Recebimento r) {
@@ -64,7 +65,7 @@ public class FinanceiroMapper {
     return new RecebimentoView(r.getId(), r.getPedido().getId(), r.getForma(), r.getValor(), r.getParcelas(),
         r.getDataPagamento(), r.getReferencia(), r.getOperadora(), r.getObservacao(), r.getStatus(),
         nome(r.getRegistradoPor()), r.getCriadoEm(), r.getEstornadoEm(), nome(r.getEstornadoPor()), r.getMotivoEstorno(),
-        parcelas);
+        parcelas, r.getTipoCartao(), r.isPlanoManual());
   }
 
   public SessaoCaixaView view(SessaoCaixa s, boolean comMovimentos) {
