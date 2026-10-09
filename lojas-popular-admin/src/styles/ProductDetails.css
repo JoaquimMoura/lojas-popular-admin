@@ -230,3 +230,24 @@
   font-size: 0.85rem;
   z-index: 1200;
 }
+
+/* ── Características ── */
+.car-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.car-list li {
+  font-size: 0.93rem;
+  color: #444;
+  overflow-wrap: anywhere;
+}
+
+.car-nome {
+  font-weight: 600;
+  color: var(--color-ink, #241010);
+}

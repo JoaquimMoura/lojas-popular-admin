@@ -65,6 +65,12 @@ export default function ProductDetails() {
   const temDimensoes = produto.largura || produto.altura || produto.profundidade || produto.peso;
   const temDiferenciais = produto.diferenciais?.length > 0;
   const temVariacoes = produto.variacoes?.length > 0;
+  // Características visíveis na vitrine (produtos antigos podem não ter esses campos)
+  const caracteristicasVitrine = (Array.isArray(produto.caracteristicas) ? produto.caracteristicas : [])
+    .filter(c => c.exibirNaVitrine && c.caracteristicaAtiva && c.exibicao)
+    .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0) || String(a.nome).localeCompare(String(b.nome), "pt-BR"));
+  const materiaisProduto = (Array.isArray(produto.materiais) ? produto.materiais : []).map(m => m.nome).filter(Boolean);
+  const temCaracteristicas = caracteristicasVitrine.length > 0 || materiaisProduto.length > 0;
 
   const todasImagens = [
     ...(produto.imagemUrl ? [produto.imagemUrl] : []),
@@ -215,6 +221,21 @@ export default function ProductDetails() {
                 {produto.peso && <div className="dim-item"><span className="dim-label">Peso</span><span className="dim-value">{Number(produto.peso).toFixed(1)} kg</span></div>}
                 {produto.volumes && <div className="dim-item"><span className="dim-label">Volumes</span><span className="dim-value">{produto.volumes} cx</span></div>}
               </div>
+            </div>
+          )}
+
+          {/* Características */}
+          {temCaracteristicas && (
+            <div className="product-caracteristicas mb-3">
+              <p className="fw-semibold mb-2 text-muted small">CARACTERÍSTICAS</p>
+              <ul className="car-list">
+                {materiaisProduto.length > 0 && (
+                  <li><span className="car-nome">Materiais:</span> {materiaisProduto.join(", ")}</li>
+                )}
+                {caracteristicasVitrine.map(c => (
+                  <li key={c.caracteristicaId}><span className="car-nome">{c.nome}:</span> {c.exibicao}</li>
+                ))}
+              </ul>
             </div>
           )}
 

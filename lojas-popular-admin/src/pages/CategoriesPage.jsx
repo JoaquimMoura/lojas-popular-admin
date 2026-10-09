@@ -1,11 +1,59 @@
 import { useEffect, useState } from "react";
 import { categoriesApi } from "../services/categoriesApi";
+import { useAuth } from "../context/AuthContext";
 import CategoryForm from "../components/CategoryForm";
+import ErroAlert from "../components/gestao/ErroAlert";
+
+function Pendencias({ categoria }) {
+  const [aberto, setAberto] = useState(false);
+  const [lista, setLista] = useState(null);
+
+  async function alternar() {
+    const novo = !aberto;
+    setAberto(novo);
+    if (novo && lista === null) {
+      try {
+        setLista(await categoriesApi.pendencias(categoria.id));
+      } catch {
+        setLista([]);
+      }
+    }
+  }
+
+  const n = categoria.produtosPendentes;
+  return (
+    <div className="alert alert-warning py-2 px-3 mt-2 mb-0 small">
+      <div className="d-flex flex-wrap align-items-center gap-2">
+        <span>
+          {n} {n === 1 ? "produto precisa" : "produtos precisam"} de complementação
+        </span>
+        <button type="button" className="btn btn-link btn-sm p-0" onClick={alternar}>
+          {aberto ? "Esconder" : "Ver quais"}
+        </button>
+      </div>
+      {aberto && (
+        <ul className="mb-0 mt-2 ps-3">
+          {lista === null && <li>Carregando...</li>}
+          {lista?.map((p) => (
+            <li key={p.id}>
+              {p.nome}
+              {p.faltando?.length ? <span className="text-muted"> - falta: {p.faltando.join(", ")}</span> : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export default function CategoriesPage() {
+  const { user } = useAuth() ?? {};
+  const podeConfigurar = !!user?.roles?.some((r) => r === "ADMIN" || r === "GERENTE");
+
   const [items, setItems] = useState([]);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [erro, setErro] = useState(null);
 
   async function load() {
     try {
@@ -21,6 +69,7 @@ export default function CategoriesPage() {
     load();
   }, []);
 
+  // Os formulários recebem o erro (rejeição) e o exibem sem fechar.
   async function onCreate(payload) {
     await categoriesApi.create(payload);
     setCreating(false);
@@ -35,29 +84,44 @@ export default function CategoriesPage() {
 
   async function onDelete(id) {
     if (!confirm("Confirma excluir a categoria?")) return;
-    await categoriesApi.remove(id);
-    await load();
+    setErro(null);
+    try {
+      await categoriesApi.remove(id);
+      await load();
+    } catch (e) {
+      setErro(e);
+    }
+  }
+
+  async function abrirEdicao(c) {
+    setErro(null);
+    try {
+      // dados completos e atualizados (inclui características e produtosComValor)
+      setEditing(await categoriesApi.byId(c.id));
+    } catch {
+      setEditing(c);
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h3>Categorias</h3>
+    <div className="container-fluid px-2 px-md-3">
+      <div className="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+        <h3 className="mb-0">Categorias</h3>
         {!creating && !editing && (
           <button className="btn btn-success" onClick={() => setCreating(true)}>
-            + Nova Categoria
+            + Nova categoria
           </button>
         )}
       </div>
 
+      <ErroAlert erro={erro} onClose={() => setErro(null)} />
+
       {creating && (
         <div className="card mb-3">
           <div className="card-body">
-            <h5 className="card-title">Nova Categoria</h5>
-            <CategoryForm
-              onSubmit={onCreate}
-              onCancel={() => setCreating(false)}
-            />
+            <h5 className="card-title">Nova categoria</h5>
+            <CategoryForm podeConfigurar={podeConfigurar} onSubmit={onCreate} onCancel={() => setCreating(false)} />
           </div>
         </div>
       )}
@@ -65,9 +129,11 @@ export default function CategoriesPage() {
       {editing && (
         <div className="card mb-3">
           <div className="card-body">
-            <h5 className="card-title">Editar Categoria</h5>
+            <h5 className="card-title">Editar categoria</h5>
             <CategoryForm
+              key={editing.id}
               initial={editing}
+              podeConfigurar={podeConfigurar}
               onSubmit={onUpdate}
               onCancel={() => setEditing(null)}
             />
@@ -75,55 +141,53 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      <div className="card">
-        <div className="card-body">
-          <div className="table-responsive">
-            <table className="table table-sm align-middle">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Nome</th>
-                  <th>Descrição</th>
-                  <th>Material</th>
-                  <th style={{ width: 120 }}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items?.map((c) => (
-                  <tr key={c.id}>
-                    <td>{c.id}</td>
-                    <td>{c.nome}</td>
-                    <td>{c.descricao}</td>
-                    <td>{c.material}</td>
-                    <td>
-                      <div className="btn-group btn-group-sm">
-                        <button
-                          className="btn btn-outline-primary"
-                          onClick={() => setEditing(c)}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          className="btn btn-outline-danger"
-                          onClick={() => onDelete(c.id)}
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {(items?.length ?? 0) === 0 && (
-                  <tr>
-                    <td colSpan={5} className="text-center text-muted">
-                      Nenhuma categoria cadastrada
-                    </td>
-                  </tr>
+      <div className="row g-3">
+        {items?.map((c) => (
+          <div className="col-12 col-lg-6" key={c.id}>
+            <div className="card h-100">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-start gap-2">
+                  <div className="min-w-0">
+                    <h5 className="mb-1 text-break">{c.nome}</h5>
+                    {c.descricao && <div className="text-muted small text-break">{c.descricao}</div>}
+                  </div>
+                  <div className="btn-group btn-group-sm flex-shrink-0">
+                    <button className="btn btn-outline-primary" onClick={() => abrirEdicao(c)}>
+                      Editar
+                    </button>
+                    <button className="btn btn-outline-danger" onClick={() => onDelete(c.id)}>
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+
+                {c.materiais?.length > 0 && (
+                  <div className="d-flex flex-wrap gap-1 mt-2">
+                    {c.materiais.map((m) => (
+                      <span
+                        key={m.id}
+                        className="badge rounded-pill"
+                        style={{ background: "var(--color-brand-yellow-light)", color: "var(--color-ink)" }}
+                      >
+                        {m.nome}
+                        {m.ativo === false ? " (inativo)" : ""}
+                      </span>
+                    ))}
+                  </div>
                 )}
-              </tbody>
-            </table>
+
+                {c.caracteristicas?.length > 0 && (
+                  <div className="text-muted small mt-2">
+                    Características: {c.caracteristicas.filter((x) => x.ativa !== false).map((x) => x.nome).join(", ") || "nenhuma ativa"}
+                  </div>
+                )}
+
+                {c.produtosPendentes > 0 && <Pendencias categoria={c} />}
+              </div>
+            </div>
           </div>
-        </div>
+        ))}
+        {(items?.length ?? 0) === 0 && <div className="col-12 text-center text-muted">Nenhuma categoria cadastrada</div>}
       </div>
     </div>
   );

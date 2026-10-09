@@ -7,4 +7,5 @@ export const categoriesApi = {
   create: (payload) => api.post("/categorias", payload).then(r => r.data),
   update: (id, payload) => api.put(`/categorias/${id}`, payload).then(r => r.data),
   remove: (id) => api.delete(`/categorias/${id}`).then(r => r.data),
+  pendencias: (id) => api.get(`/categorias/${id}/pendencias`).then(r => r.data),
 };

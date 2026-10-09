@@ -127,7 +127,21 @@ export default function ProductsPage() {
                         />
                       ) : <span className="text-muted">—</span>}
                     </td>
-                    <td>{p.nome}</td>
+                    <td>
+                      {p.nome}
+                      {p.pendencias?.length > 0 && (
+                        <div>
+                          <span
+                            className="badge rounded-pill"
+                            style={{ background: "var(--color-brand-yellow)", color: "var(--color-ink)" }}
+                            title={`Falta: ${p.pendencias.join(", ")}`}
+                          >
+                            Complementar cadastro
+                          </span>
+                          <div className="small text-muted">Falta: {p.pendencias.join(", ")}</div>
+                        </div>
+                      )}
+                    </td>
                     <td>R$ {Number(p.preco).toFixed(2)}</td>
                     <td>{p.estoque}</td>
                     <td>{p.categoria}</td>

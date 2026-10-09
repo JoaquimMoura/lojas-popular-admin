@@ -1,6 +1,10 @@
 // src/components/ProductForm.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { categoriesApi } from "../services/categoriesApi";
+import { productsApi } from "../services/productsApi";
+import { useAuth } from "../context/AuthContext";
+import CaracteristicasProduto from "./CaracteristicasProduto";
+import { valorVazio } from "../utils/caracteristicas";
 import { resolveImageUrl } from "../utils/url";
 import ImageCropModal from "./ImageCropModal";
 
@@ -37,6 +41,24 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
   const [saving, setSaving]           = useState(false);
   const [saveError, setSaveError]     = useState(null);
 
+  // ── Catálogo dinâmico (materiais e características da categoria) ──
+  const { user } = useAuth() ?? {};
+  const roles = user?.roles ?? [];
+  const podeConfigurar = roles.some(r => r === "ADMIN" || r === "GERENTE");
+  const [categoria, setCategoria]     = useState(null);   // detalhe da categoria escolhida
+  const [catCarregando, setCatCarregando] = useState(false);
+  const [catErro, setCatErro]         = useState(false);
+  const [materialIds, setMaterialIds] = useState([]);     // seleção bruta (permite desfazer a troca de categoria)
+  const [valores, setValores]         = useState({});     // caracteristicaId -> {opcaoIds, valorTexto, valorNumero}
+  const [novosMat, setNovosMat]       = useState([]);     // materiais cadastrados agora, nesta tela
+  const [impacto, setImpacto]         = useState(null);   // { materiais, caracteristicas } da troca de categoria
+  const [impactoCarregando, setImpactoCarregando] = useState(false);
+  const [impactoErro, setImpactoErro] = useState(false);
+  const [tentarImpacto, setTentarImpacto] = useState(0);
+  const [tentou, setTentou]           = useState(false);
+  const [addCatBusy, setAddCatBusy]   = useState(false);
+  const [addCatErro, setAddCatErro]   = useState(null);
+
   // refs to reset file inputs after crop so the same file can be re-selected
   const coverInputRef    = useRef(null);
   const galleryInputRef  = useRef(null);
@@ -53,8 +75,57 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
     loadCats();
   }, []);
 
+  function carregarCategoria(id) {
+    setCatErro(false);
+    setCatCarregando(true);
+    return categoriesApi.byId(id)
+      .then(c => { setCategoria(c); return c; })
+      .catch(() => { setCategoria(null); setCatErro(true); })
+      .finally(() => setCatCarregando(false));
+  }
+
+  // Ao escolher a categoria, traz os materiais e as características dela
+  useEffect(() => {
+    if (!form.categoriaId) { setCategoria(null); setCatErro(false); setCatCarregando(false); return; }
+    let vivo = true;
+    setCategoria(null);
+    setCatErro(false);
+    setCatCarregando(true);
+    categoriesApi.byId(form.categoriaId)
+      .then(c => { if (vivo) setCategoria(c); })
+      .catch(() => { if (vivo) setCatErro(true); })
+      .finally(() => { if (vivo) setCatCarregando(false); });
+    return () => { vivo = false; };
+  }, [form.categoriaId]);
+
+  // Produto já salvo trocando de categoria: avisa o que será descartado
+  const catOriginal = initial ? String(initial.categoriaId ?? "") : null;
+  const mudouCategoria = !!initial?.id && !!form.categoriaId && form.categoriaId !== catOriginal;
+  useEffect(() => {
+    setImpacto(null);
+    setImpactoErro(false);
+    if (!mudouCategoria) { setImpactoCarregando(false); return; }
+    let vivo = true;
+    setImpactoCarregando(true);
+    productsApi.impactoCategoria(initial.id, Number(form.categoriaId))
+      .then(r => { if (vivo) setImpacto({ materiais: r?.materiais ?? [], caracteristicas: r?.caracteristicas ?? [] }); })
+      .catch(() => { if (vivo) setImpactoErro(true); })
+      .finally(() => { if (vivo) setImpactoCarregando(false); });
+    return () => { vivo = false; };
+  }, [mudouCategoria, form.categoriaId, initial?.id, tentarImpacto]);
+
   useEffect(() => {
     if (initial) {
+      setMaterialIds((initial.materiais ?? []).map(m => m.id));
+      const mapa = {};
+      (initial.caracteristicas ?? []).forEach(v => {
+        mapa[v.caracteristicaId] = {
+          opcaoIds: (v.opcoes ?? []).map(o => o.id),
+          valorTexto: v.valorTexto ?? "",
+          valorNumero: v.valorNumero == null ? "" : String(v.valorNumero),
+        };
+      });
+      setValores(mapa);
       setForm({
         nome:          initial.nome          ?? "",
         codigo:        initial.codigo        ?? "",
@@ -187,10 +258,81 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
     setGalleryPreview(p => p.filter((_, idx) => idx !== i));
   }
 
+  // ── Materiais e características ──────────────────────────────────
+  const categoriaAtual = categoria && String(categoria.id) === form.categoriaId ? categoria : null;
+  const idsNovos = novosMat.map(m => m.id);
+  const idsDaCategoria = new Set((categoriaAtual?.materiais ?? []).map(m => m.id));
+  // Em produto novo ou com categoria trocada, só valem os materiais da nova categoria.
+  const filtrarMateriais = !!categoriaAtual && (!initial || mudouCategoria);
+  const materiaisEfetivos = filtrarMateriais
+    ? materialIds.filter(id => idsDaCategoria.has(id) || idsNovos.includes(id))
+    : materialIds;
+  const materiaisDisponiveis = [
+    ...(categoriaAtual?.materiais ?? []),
+    ...(!filtrarMateriais ? (initial?.materiais ?? []) : []),
+  ].filter((m, i, a) => a.findIndex(x => x.id === m.id) === i);
+  const carsAtivas = (categoriaAtual?.caracteristicas ?? []).filter(c => c.ativa);
+  const opcoesDoProduto = {};
+  (initial?.caracteristicas ?? []).forEach(v => { opcoesDoProduto[v.caracteristicaId] = v.opcoes ?? []; });
+  const obrigatoriasVazias = carsAtivas.filter(c => c.obrigatoria && valorVazio(c, valores[c.id]));
+  const pend = initial?.pendencias ?? [];
+  const destacar = new Set(
+    obrigatoriasVazias.filter(c => tentou || pend.includes(c.nome)).map(c => c.id)
+  );
+  // materiais criados agora que a categoria ainda não oferece
+  const materiaisSemCategoria = novosMat.filter(m => materialIds.includes(m.id) && !idsDaCategoria.has(m.id));
+  const descartaAlgo = mudouCategoria && !!impacto && (impacto.materiais.length > 0 || impacto.caracteristicas.length > 0);
+
+  function mudarValor(id, parcial) {
+    setValores(v => ({ ...v, [id]: { opcaoIds: [], valorTexto: "", valorNumero: "", ...v[id], ...parcial } }));
+  }
+
+  function mudarMateriais(ids) {
+    // mantém (sem mostrar) o que a nova categoria não oferece, para poder desfazer a troca
+    const escondidos = materialIds.filter(id => !materiaisEfetivos.includes(id));
+    setMaterialIds([...escondidos, ...ids]);
+  }
+
+  async function adicionarNaCategoria(m) {
+    if (!categoriaAtual || addCatBusy) return;
+    setAddCatBusy(true);
+    setAddCatErro(null);
+    try {
+      await categoriesApi.update(categoriaAtual.id, {
+        nome: categoriaAtual.nome,
+        descricao: categoriaAtual.descricao ?? "",
+        materialIds: [...(categoriaAtual.materiais ?? []).map(x => x.id), m.id],
+      });
+      await carregarCategoria(categoriaAtual.id);
+    } catch (err) {
+      setAddCatErro(err?.response?.data?.message || err?.message || "Não foi possível adicionar o material à categoria.");
+    } finally {
+      setAddCatBusy(false);
+    }
+  }
+
   // ── Submit ────────────────────────────────────────────────────────
   async function submit(e) {
     e.preventDefault();
     if (saving) return;
+    if (catCarregando || impactoCarregando) return;
+    if (form.categoriaId && catErro) {
+      setSaveError("Não foi possível carregar os materiais e características da categoria. Tente carregar de novo antes de salvar.");
+      return;
+    }
+    if (impactoErro) {
+      setSaveError("Não foi possível conferir o que a troca de categoria vai descartar. Tente conferir de novo antes de salvar.");
+      return;
+    }
+    setTentou(true);
+    if (materiaisSemCategoria.length > 0) {
+      setSaveError(`O material "${materiaisSemCategoria[0].nome}" ainda não está liberado para esta categoria. Adicione-o à categoria ou tire-o da lista.`);
+      return;
+    }
+    if (obrigatoriasVazias.length > 0) {
+      setSaveError(`Preencha os campos obrigatórios: ${obrigatoriasVazias.map(c => c.nome).join(", ")}.`);
+      return;
+    }
     const n = (v) => v !== "" && v !== null && v !== undefined ? Number(v) : null;
 
     const payload = {
@@ -211,6 +353,18 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
       version:       form.version,
       modalidade:    form.modalidade || "PRONTA_ENTREGA",
       prazoEncomendaDias: n(form.prazoEncomendaDias),
+      materialIds: materiaisEfetivos,
+      caracteristicas: carsAtivas.map(c => {
+        const v = valores[c.id];
+        const sel = c.tipo === "SELECAO_UNICA" || c.tipo === "SELECAO_MULTIPLA";
+        return {
+          caracteristicaId: c.id,
+          opcaoIds:   sel ? (v?.opcaoIds ?? []) : [],
+          valorTexto: c.tipo === "TEXTO" ? ((v?.valorTexto ?? "").trim() || null) : null,
+          valorNumero: c.tipo === "NUMERO" && v?.valorNumero !== "" && v?.valorNumero != null ? Number(v.valorNumero) : null,
+        };
+      }),
+      confirmarDescarte: descartaAlgo,
       variacoes: variacoes.map(v => ({
         id:            v.id ?? null,
         cor:           v.cor || null,
@@ -302,6 +456,80 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
             </div>
           </div>
         </div>
+
+        {/* ── Características (materiais + campos da categoria) ── */}
+        {!!initial && pend.length > 0 && (
+          <div className="alert alert-warning py-2" role="alert">
+            <strong>Complementar cadastro:</strong> falta preencher {pend.join(", ")}.
+          </div>
+        )}
+        {form.categoriaId && catCarregando && (
+          <p className="text-muted small">Carregando materiais e características da categoria…</p>
+        )}
+        {form.categoriaId && catErro && (
+          <div className="alert alert-danger py-2" role="alert">
+            Não foi possível carregar os materiais e características da categoria.{" "}
+            <button type="button" className="btn btn-link btn-sm p-0 align-baseline" onClick={() => carregarCategoria(form.categoriaId)}>
+              Tentar novamente
+            </button>
+          </div>
+        )}
+        {mudouCategoria && impactoCarregando && (
+          <p className="text-muted small">Conferindo o que muda com a nova categoria…</p>
+        )}
+        {mudouCategoria && impactoErro && (
+          <div className="alert alert-danger py-2" role="alert">
+            Não foi possível conferir o que a troca de categoria vai descartar.{" "}
+            <button type="button" className="btn btn-link btn-sm p-0 align-baseline" onClick={() => setTentarImpacto(t => t + 1)}>
+              Conferir de novo
+            </button>
+          </div>
+        )}
+        {descartaAlgo && (
+          <div className="alert alert-warning" role="alert">
+            <p className="fw-semibold mb-1">Atenção: ao salvar, estas informações do produto serão apagadas, porque a nova categoria não as usa.</p>
+            <ul className="mb-2">
+              {impacto.materiais.length > 0 && <li>Materiais: {impacto.materiais.join(", ")}</li>}
+              {impacto.caracteristicas.map((c, i) => <li key={i}>{c}</li>)}
+            </ul>
+            <button type="button" className="btn btn-sm btn-outline-dark"
+              onClick={() => setForm(f => ({ ...f, categoriaId: catOriginal }))}>
+              Desfazer e voltar à categoria anterior
+            </button>
+          </div>
+        )}
+        {categoriaAtual && (
+          <CaracteristicasProduto
+            categoria={categoriaAtual}
+            materialIds={materiaisEfetivos}
+            onMaterialIds={mudarMateriais}
+            materiaisDisponiveis={materiaisDisponiveis}
+            valores={valores}
+            onValor={mudarValor}
+            destacar={destacar}
+            opcoesDoProduto={opcoesDoProduto}
+            podeCadastrar={podeConfigurar}
+            onMaterialCriado={m => setNovosMat(l => [...l, { id: m.id, nome: m.nome, ativo: m.ativo !== false }])}
+            avisoMaterial={materiaisSemCategoria.length > 0 && (
+              <div className="alert alert-warning py-2 mt-2 mb-0" role="alert">
+                {materiaisSemCategoria.map(m => (
+                  <div key={m.id} className="mb-1">
+                    O material <strong>{m.nome}</strong> foi cadastrado, mas só pode ser usado no produto se a categoria "{categoriaAtual.nome}" o oferecer.
+                    {podeConfigurar ? (
+                      <button type="button" className="btn btn-sm btn-outline-dark ms-2" disabled={addCatBusy}
+                        onClick={() => adicionarNaCategoria(m)}>
+                        {addCatBusy ? "Aguarde..." : "Adicionar à categoria"}
+                      </button>
+                    ) : (
+                      <span> Peça a um gerente para liberar na categoria.</span>
+                    )}
+                  </div>
+                ))}
+                {addCatErro && <div className="text-danger small">{addCatErro}</div>}
+              </div>
+            )}
+          />
+        )}
 
         {/* ── Seção 2: Preço e Estoque ── */}
         <div className="card mb-3">
@@ -549,7 +777,7 @@ export default function ProductForm({ initial, onSubmit, onCancel }) {
           <div className="alert alert-danger" role="alert">{saveError}</div>
         )}
         <div className="d-flex gap-2">
-          <button className="btn btn-danger px-4" type="submit" disabled={saving}>
+          <button className="btn btn-danger px-4" type="submit" disabled={saving || catCarregando || impactoCarregando}>
             {saving ? "Salvando…" : initial ? "Salvar alterações" : "Criar produto"}
           </button>
           <button className="btn btn-outline-secondary" type="button" onClick={onCancel} disabled={saving}>Cancelar</button>

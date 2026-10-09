@@ -13,6 +13,10 @@ export const productsApi = {
 
   remove: (id) => api.delete(`/produtos/${id}`),
 
+  // O que deixaria de valer (materiais/características) ao trocar a categoria do produto
+  impactoCategoria: (id, categoriaId) =>
+    api.get(`/produtos/${id}/impacto-categoria`, { params: { categoriaId } }).then(r => r.data),
+
   // ✅ Capa
   uploadCover: (id, file) => {
     const form = new FormData();
