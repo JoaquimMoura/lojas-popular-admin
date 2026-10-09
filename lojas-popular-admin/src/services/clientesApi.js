@@ -7,5 +7,7 @@ export const clientesApi = {
   obter: (id) => api.get(`/clientes/${id}`).then((r) => r.data),
   criar: (payload) => api.post("/clientes", payload).then((r) => r.data),
   atualizar: (id, payload) => api.put(`/clientes/${id}`, payload).then((r) => r.data),
+  compras: (id, params) => api.get(`/clientes/${id}/compras`, { params }).then((r) => r.data),
+  resumo: (id) => api.get(`/clientes/${id}/resumo`).then((r) => r.data),
   desativar: (id) => api.post(`/clientes/${id}/desativar`).then((r) => r.data),
 };

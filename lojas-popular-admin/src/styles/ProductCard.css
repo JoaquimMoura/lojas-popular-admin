@@ -1,4 +1,4 @@
-/* ProductCard - Popular Móveis */
+/* ProductCard - Lá Casa Popular Móveis */
 
 .product-card {
   transition: transform 0.18s ease, box-shadow 0.18s ease;
@@ -7,8 +7,8 @@
 }
 
 .product-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(142, 0, 0, 0.18);
 }
 
 /* wrapper da imagem para posicionar badges */
@@ -41,11 +41,32 @@
 .product-badge--discount {
   background-color: var(--color-brand-red);
   color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .product-badge--promo {
   background-color: var(--color-brand-yellow);
   color: #5d2e00;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* sem foto: bloco de marca em CSS */
+.product-card-noimg {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  color: var(--color-brand-red-dark);
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(198, 40, 40, 0.18) 0 18%, transparent 19%),
+    linear-gradient(135deg, var(--color-brand-yellow-light), var(--color-brand-yellow));
 }
 
 /* corpo */
@@ -54,7 +75,7 @@
   padding: 0.85rem;
 }
 
-.product-card .card-body h6 {
+.product-card .card-body .product-card-title {
   margin-bottom: 4px;
   line-height: 1.25;
   font-size: 0.95rem;
@@ -68,26 +89,34 @@
 
 /* preco original riscado */
 .product-card-original {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
+  color: #5c5c5c;
 }
 
 /* preco principal */
 .product-card-price {
-  font-size: 1.15rem;
+  font-size: 1.3rem;
   line-height: 1.2;
+  color: var(--color-brand-red);
 }
 
 /* parcelamento */
 .product-card-installment {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   line-height: 1.3;
+  color: #4a4a4a;
+}
+
+.product-card-installment-tag {
+  color: #146c3a;
+  font-weight: 700;
 }
 
 /* lista de itens */
 .product-card-items {
   margin-bottom: 10px;
   font-size: 0.83rem;
-  color: #6c757d;
+  color: #5c636a;
 }
 
 .product-card-items li::before {
@@ -100,11 +129,12 @@
 
 /* botao whatsapp no card — CTA principal */
 .product-card-wa-btn {
-  background-color: #198754;
-  border-color: #198754;
-  font-weight: 700;
-  font-size: 0.85rem;
-  padding: 0.55rem 0.75rem;
+  background-color: #17803d;
+  border-color: #17803d;
+  font-weight: 800;
+  font-size: 0.92rem;
+  padding: 0.7rem 0.75rem;
+  box-shadow: 0 4px 10px rgba(23, 128, 61, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -112,8 +142,8 @@
 
 .product-card-wa-btn:hover,
 .product-card-wa-btn:focus {
-  background-color: #128c7e;
-  border-color: #128c7e;
+  background-color: #126b32;
+  border-color: #126b32;
   color: #fff;
 }
 
@@ -122,7 +152,7 @@
   text-align: center;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--color-text-muted, #6c757d);
+  color: #4a4a4a;
   text-decoration: underline;
 }
 
@@ -179,7 +209,7 @@
 
 /* responsividade */
 @media (max-width: 400px) {
-  .product-card .card-body h6 {
+  .product-card .card-body .product-card-title {
     font-size: 0.88rem;
   }
 }

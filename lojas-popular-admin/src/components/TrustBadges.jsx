@@ -1,21 +1,26 @@
+import "../styles/TrustBadges.css";
+import Icon from "./Icons";
+import { TEXTO_PARCELAMENTO } from "../constants/loja";
+
 const BADGES = [
-  { icon: "💳", label: "Pix" },
-  { icon: "🏦", label: "Boleto" },
-  { icon: "💰", label: "Parcelado" },
-  { icon: "🛡️", label: "Garantia 12m" },
-  { icon: "🚚", label: "Entrega SP" },
-  { icon: "🔧", label: "Montagem" },
+  { icon: "card", label: `Cartão ${TEXTO_PARCELAMENTO}` },
+  { icon: "pix", label: "Pix" },
+  { icon: "cash", label: "Dinheiro" },
+  { icon: "truck", label: "Frete grátis" },
+  { icon: "wrench", label: "Montagem inclusa" },
 ];
 
 export default function TrustBadges({ className = "trust-badges" }) {
   return (
-    <div className={className}>
+    <ul className={className}>
       {BADGES.map((b) => (
-        <div className="trust-badge" key={b.label}>
-          <span className="trust-badge-icon" aria-hidden="true">{b.icon}</span>
+        <li className="trust-badge" key={b.label}>
+          <span className="trust-badge-icon" aria-hidden="true">
+            <Icon name={b.icon} size={16} />
+          </span>
           <span className="trust-badge-label">{b.label}</span>
-        </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

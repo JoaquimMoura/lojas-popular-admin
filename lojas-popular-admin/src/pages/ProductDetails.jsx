@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { storeApi } from "../services/storeApi";
 import { resolveImageUrl } from "../utils/url";
 import { buildWhatsAppUrl } from "../utils/whatsapp";
+import { PARCELAS_SEM_JUROS, valorParcela as calcParcela } from "../constants/loja";
 import WhatsAppButton from "../components/WhatsAppButton";
 import "../styles/Lightbox.css";
 import "../styles/ProductDetails.css";
@@ -55,8 +56,8 @@ export default function ProductDetails() {
   const precoOriginal = produto.precoOriginal ? Number(produto.precoOriginal) : null;
   const temDesconto = precoOriginal && precoOriginal > preco;
   const desconto = temDesconto ? Math.round((1 - preco / precoOriginal) * 100) : 0;
-  const parcelas = 12;
-  const valorParcela = preco / parcelas;
+  const parcelas = PARCELAS_SEM_JUROS;
+  const valorParcela = calcParcela(preco, parcelas);
 
   const fmt = (v) => v?.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
   const fmtM = (v) => v != null ? `${Number(v).toFixed(2)} m` : "—";
@@ -79,7 +80,9 @@ export default function ProductDetails() {
     addToCart({ id: produto.id, nome: produto.nome, preco: produto.preco, imagemUrl: produto.imagemUrl });
     toast.success(`${produto.nome} adicionado ao carrinho!`, {
       position: "top-right", autoClose: 3000, theme: "dark",
-      style: { backgroundColor: "#B71C1C", color: "#fff" },
+      // sucesso em verde (vermelho passa ideia de erro); barra de progresso amarela da marca
+      style: { backgroundColor: "#1E7B34", color: "#fff" },
+      progressStyle: { background: "#FFC72C" },
     });
   }
 

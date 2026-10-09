@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { DEFAULT_IMAGE, resolveImageUrl } from "../utils/url";
 import { buildWhatsAppUrl } from "../utils/whatsapp";
+import { PARCELAS_SEM_JUROS, valorParcela as calcParcela } from "../constants/loja";
+import Icon from "./Icons";
 import "../styles/ProductCard.css";
 
 function WaIconSmall() {
@@ -24,9 +26,11 @@ function WaIconSmall() {
 export default function ProductCard({ produto, badge, whatsapp }) {
   const [imagemSrc, setImagemSrc] = useState(() => resolveImageUrl(produto?.imagemUrl));
   const [imagemErro, setImagemErro] = useState(false);
+  const [semImagem, setSemImagem] = useState(!produto?.imagemUrl);
 
   useEffect(() => {
     setImagemErro(false);
+    setSemImagem(!produto?.imagemUrl);
     setImagemSrc(resolveImageUrl(produto?.imagemUrl));
   }, [produto?.imagemUrl]);
 
@@ -36,6 +40,12 @@ export default function ProductCard({ produto, badge, whatsapp }) {
     if (imagemErro) return;
     setImagemErro(true);
     setImagemSrc(DEFAULT_IMAGE);
+    setSemImagem(true);
+  };
+
+  // imagens minúsculas (placeholders de 1px) viram o bloco de marca
+  const handleImageLoad = (e) => {
+    if (e.currentTarget.naturalWidth < 40) setSemImagem(true);
   };
 
   const preco = Number(produto.preco || 0);
@@ -43,9 +53,8 @@ export default function ProductCard({ produto, badge, whatsapp }) {
   const temDesconto = precoOriginal && precoOriginal > preco;
   const desconto = temDesconto ? Math.round((1 - preco / precoOriginal) * 100) : 0;
 
-  const parcelas = Number(produto.parcelas || 12);
-  const semJuros = produto.semJuros !== false;
-  const valorParcela = preco / parcelas;
+  const parcelas = PARCELAS_SEM_JUROS;
+  const valorParcela = calcParcela(preco, parcelas);
 
   const precoFormatado = preco.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const parcelaFormatada = valorParcela.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -73,7 +82,7 @@ export default function ProductCard({ produto, badge, whatsapp }) {
         if (!item) return null;
         if (typeof item === "string" || typeof item === "number") return String(item).trim();
         if (typeof item === "object") {
-          const quantidade = item.quantidade ?? item.qtd ?? item.qtde ?? item.estoque;
+          const quantidade = item.quantidade ?? item.qtd ?? item.qtde;
           const nome =
             item.nome ?? item.itemNome ?? item.titulo ?? item.descricao ??
             item.name ?? item.label ?? item.produtoNome ?? item.produto?.nome;
@@ -81,12 +90,9 @@ export default function ProductCard({ produto, badge, whatsapp }) {
           const partes = [];
           if (quantidade) partes.push(`${quantidade}x`);
           if (nome) partes.push(nome);
-          if (!partes.length) {
-            const fallback = Object.values(item)
-              .filter((v) => typeof v === "string" || typeof v === "number")
-              .map((v) => String(v).trim())
-              .filter(Boolean);
-            if (fallback.length) partes.push(fallback.join(" - "));
+          if (!partes.length && (item.cor || item.tamanho)) {
+            // variação: só cor e tamanho (nunca SKU, estoque ou caminhos de imagem)
+            partes.push([item.cor, item.tamanho].filter(Boolean).join(" · "));
           }
           if (complemento) partes.push(`(${complemento})`);
           return partes.join(" ").trim() || null;
@@ -104,14 +110,23 @@ export default function ProductCard({ produto, badge, whatsapp }) {
   return (
     <div className="card product-card shadow-sm border-0">
       <div className="product-card-img-wrap">
-        <img
-          src={imagemSrc}
-          alt={produto.nome || "Produto sem imagem"}
-          onError={handleImageError}
-          className="card-img-top img-fluid"
-        />
+        {semImagem ? (
+          <div className="product-card-noimg" role="img" aria-label={produto.nome || "Produto"}>
+            <Icon name="sofa" size={44} />
+            <span>Lá Casa Popular Móveis</span>
+          </div>
+        ) : (
+          <img
+            src={imagemSrc}
+            alt={produto.nome || "Produto sem imagem"}
+            onError={handleImageError}
+            onLoad={handleImageLoad}
+            loading="lazy"
+            className="card-img-top img-fluid"
+          />
+        )}
         {temDesconto && (
-          <span className="product-badge product-badge--discount">{desconto}% OFF</span>
+          <span className="product-badge product-badge--discount">Oferta · {desconto}% OFF</span>
         )}
         {badge && !temDesconto && (
           <span className="product-badge product-badge--promo">{badge}</span>
@@ -119,7 +134,7 @@ export default function ProductCard({ produto, badge, whatsapp }) {
       </div>
 
       <div className="card-body text-center d-flex flex-column">
-        <h6 className="fw-bold text-dark">{produto.nome}</h6>
+        <h3 className="product-card-title fw-bold text-dark">{produto.nome}</h3>
 
         {produto.descricao && (
           <p className="product-card-description text-muted small mb-2">{produto.descricao}</p>
@@ -135,14 +150,14 @@ export default function ProductCard({ produto, badge, whatsapp }) {
 
         <div className="mt-auto">
           {temDesconto && (
-            <p className="product-card-original text-muted mb-0">
-              De: <span className="text-decoration-line-through">R$ {originalFormatado}</span>
+            <p className="product-card-original mb-0">
+              De <span className="text-decoration-line-through">R$ {originalFormatado}</span> por
             </p>
           )}
-          <p className="product-card-price text-danger mb-0 fw-bold">R$ {precoFormatado}</p>
-          <p className="product-card-installment text-muted small mb-3">
+          <p className="product-card-price mb-0 fw-bold">R$ {precoFormatado}</p>
+          <p className="product-card-installment mb-3">
             ou {parcelas}x de R$ {parcelaFormatada}
-            {semJuros && <span className="text-success fw-semibold"> sem juros</span>}
+            <span className="product-card-installment-tag"> sem juros</span>
           </p>
 
           <div className="d-flex flex-column gap-2">

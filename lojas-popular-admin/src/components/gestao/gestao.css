@@ -16,3 +16,56 @@
 .gestao-timeline li { position: relative; padding: 0 0 12px 14px; }
 .gestao-timeline li::before { content: ""; position: absolute; left: -8px; top: 5px; width: 13px; height: 13px; border-radius: 50%; background: var(--color-primary); }
 @media (min-width: 576px) { .w-sm-auto { width: auto !important; } }
+
+/* Paleta da marca (vermelho e amarelo) no lugar do azul padrão do Bootstrap */
+.gestao-nav.nav-pills { --bs-nav-pills-link-active-bg: var(--color-primary); --bs-nav-pills-link-active-color: #fff; }
+.gestao-nav.nav-pills .nav-link.active { background-color: var(--color-primary); color: #fff; }
+.gestao-nav .nav-link:hover:not(.active),
+.gestao-nav .nav-link:focus-visible:not(.active) { background: rgba(198, 40, 40, .08); color: var(--color-primary-dark); }
+.btn.btn-primary {
+  --bs-btn-bg: var(--color-primary); --bs-btn-border-color: var(--color-primary);
+  --bs-btn-hover-bg: var(--color-primary-dark); --bs-btn-hover-border-color: var(--color-primary-dark);
+  --bs-btn-active-bg: var(--color-brand-red-darker); --bs-btn-active-border-color: var(--color-brand-red-darker);
+  --bs-btn-disabled-bg: var(--color-primary); --bs-btn-disabled-border-color: var(--color-primary);
+  --bs-btn-focus-shadow-rgb: 198, 40, 40;
+}
+.btn.btn-outline-primary {
+  --bs-btn-color: var(--color-primary); --bs-btn-border-color: var(--color-primary);
+  --bs-btn-hover-bg: var(--color-primary); --bs-btn-hover-border-color: var(--color-primary); --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: var(--color-primary-dark); --bs-btn-active-border-color: var(--color-primary-dark); --bs-btn-active-color: #fff;
+  --bs-btn-disabled-color: var(--color-primary); --bs-btn-disabled-border-color: var(--color-primary);
+  --bs-btn-focus-shadow-rgb: 198, 40, 40;
+}
+.text-primary { color: var(--color-primary) !important; }
+.bg-primary, .text-bg-primary { background-color: var(--color-primary) !important; color: #fff !important; }
+.form-check-input:checked { background-color: var(--color-primary); border-color: var(--color-primary); }
+.form-check-input:focus { border-color: var(--color-brand-red-light); box-shadow: 0 0 0 .25rem rgba(198, 40, 40, .2); }
+.form-control:focus, .form-select:focus { border-color: var(--color-brand-red-light); box-shadow: 0 0 0 .25rem rgba(198, 40, 40, .2); }
+.gestao-page a:not(.btn):not(.nav-link) { color: var(--color-primary); }
+.gestao-page a:not(.btn):not(.nav-link):hover { color: var(--color-primary-dark); }
+
+/* Modais na paleta da marca */
+.modal-content { border: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 18px 48px rgba(36, 16, 16, .35); }
+.modal-header { background: var(--color-ink); color: var(--color-brand-yellow); border-bottom: 3px solid var(--color-brand-yellow); }
+.modal-header .modal-title { color: var(--color-brand-yellow); font-weight: 700; }
+.modal-header .btn-close { filter: invert(1) grayscale(1) brightness(2); opacity: .85; }
+.modal-header .btn-close:hover { opacity: 1; }
+.modal-body { background: #fffaf0; }
+.modal-footer { background: #fff3d6; border-top: 1px solid var(--color-brand-yellow-light); }
+.modal-backdrop.show { background-color: #2a0505; opacity: .6; }
+.modal .btn-outline-secondary { --bs-btn-color: var(--color-ink-soft); --bs-btn-border-color: var(--color-ink-soft); --bs-btn-hover-bg: var(--color-ink-soft); --bs-btn-hover-border-color: var(--color-ink-soft); }
+
+/* Selos de status sem o ciano padrão do Bootstrap: amarelo claro da marca */
+.badge.text-bg-info { background-color: var(--color-brand-yellow-light) !important; color: var(--color-ink) !important; }
+.badge.text-bg-dark { background-color: var(--color-ink) !important; }
+
+/* Histórico de compras do cliente */
+.gestao-indicador { background: #fff; }
+.gestao-indicador.destaque { border-color: var(--color-brand-yellow-dark) !important; background: var(--color-brand-yellow-light); }
+.gestao-compra-topo { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0; color: inherit; }
+.gestao-compra.cancelada { opacity: .75; }
+.gestao-compra.cancelada .gestao-compra-topo strong { text-decoration: line-through; }
+.gestao-abas.nav-tabs .nav-link { color: var(--color-primary); }
+.gestao-abas.nav-tabs .nav-link.active { color: var(--color-ink); border-bottom-color: var(--color-brand-yellow-dark); font-weight: 600; }
+
+.btn.btn-link { --bs-btn-color: var(--color-primary); --bs-btn-hover-color: var(--color-primary-dark); }

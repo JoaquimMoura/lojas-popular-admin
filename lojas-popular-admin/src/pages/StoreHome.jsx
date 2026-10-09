@@ -75,7 +75,7 @@ export default function StoreHome() {
 
   return (
     <div className="container py-4">
-      <h2 className="text-center mb-4 text-danger fw-bold">Popular Móveis</h2>
+      <h2 className="text-center mb-4 text-danger fw-bold">Lá Casa Popular Móveis</h2>
       <p className="text-center text-muted mb-5">
         {busca ? `Resultados para "${busca}"` : "Móveis com qualidade e preco popular!"}
       </p>

@@ -18,6 +18,8 @@ function LiquidarModal({ r, onClose, onFeito }) {
   const [data, setData] = useState("");
   const [valor, setValor] = useState("");
   const chave = useChave();
+  // plano manual (sem taxa cadastrada): indicado pelo servidor
+  const manual = r.planoManual === true;
   const dif = valor !== "" ? Math.round((Number(valor) - Number(r.valorLiquido)) * 100) / 100 : null;
   return (
     <FormModal titulo={`Liquidar parcela ${r.parcela}/${r.totalParcelas} — pedido #${r.pedidoId}`} submitLabel="Liquidar" variant="success"
@@ -29,6 +31,12 @@ function LiquidarModal({ r, onClose, onFeito }) {
         toast.success("Parcela liquidada: o valor entrou no banco.");
         onFeito();
       }}>
+      {manual && (
+        <div className="alert alert-warning">
+          <strong>Plano manual (sem taxa cadastrada).</strong> O valor depositado é como se registra a taxa real: informe
+          abaixo o que realmente caiu na conta. A diferença para o bruto fica registrada.
+        </div>
+      )}
       <div className="alert alert-info">
         A liquidação registra a <strong>entrada efetiva no banco</strong>. Líquido previsto: {fmtMoney(r.valorLiquido)}
         {" "}(bruto {fmtMoney(r.valorBruto)} − taxa {fmtMoney(r.valorTaxa)}), previsão {fmtDate(r.dataPrevista)}.
@@ -40,8 +48,15 @@ function LiquidarModal({ r, onClose, onFeito }) {
           <div className="form-text">Vazio = hoje.</div>
         </div>
         <div className="col-12 col-sm-6">
-          <CampoValor label="Valor liquidado (se diferente do previsto)" value={valor} onChange={setValor}
-            ajuda="Vazio = o líquido previsto." />
+          {manual ? (
+            <div className="p-2 border border-warning border-2 rounded bg-warning-subtle">
+              <CampoValor label="Valor depositado" value={valor} onChange={setValor}
+                ajuda="Informe o valor que realmente caiu. Vazio = o valor previsto (sem taxa)." />
+            </div>
+          ) : (
+            <CampoValor label="Valor liquidado (se diferente do previsto)" value={valor} onChange={setValor}
+              ajuda="Vazio = o líquido previsto." />
+          )}
         </div>
       </div>
       {dif !== null && (

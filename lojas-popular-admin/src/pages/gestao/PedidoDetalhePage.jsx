@@ -5,6 +5,7 @@ import { vendasApi } from "../../services/vendasApi";
 import StatusBadge from "../../components/gestao/StatusBadge";
 import ErroAlert from "../../components/gestao/ErroAlert";
 import ConfirmModal from "../../components/gestao/ConfirmModal";
+import ClienteVendaModal from "../../components/gestao/ClienteVendaModal";
 import { Secao, Linha } from "../../components/gestao/Secao";
 import { EntregaSecao, MontagemSecao } from "../../components/gestao/AtendimentoExpedicao";
 import { EncomendasSecao, MovimentacoesSecao, OcorrenciasSecao } from "../../components/gestao/AtendimentoPosVenda";
@@ -18,6 +19,7 @@ import {
   fmtDateTime,
   fmtMoney,
   fmtPercent,
+  isAdmin,
   isGestor,
   novaChave,
 } from "../../utils/format";
@@ -26,6 +28,7 @@ export default function PedidoDetalhePage() {
   const { id } = useParams();
   const { user } = useAuth();
   const gestor = isGestor(user);
+  const admin = isAdmin(user);
   const [venda, setVenda] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -104,6 +107,7 @@ export default function PedidoDetalhePage() {
   const acoes = venda.acoes ?? {};
   const bloq = acoes.bloqueios ?? {};
   const cliente = venda.cliente;
+  const podeTrocarCliente = gestor && venda.statusComercial === "CONFIRMADA";
   const end = venda.endereco;
   const itens = venda.itens ?? [];
   const freteGratis = !venda.frete || Number(venda.frete) === 0;
@@ -224,9 +228,29 @@ export default function PedidoDetalhePage() {
         <div className="col-lg-6">
           <Secao titulo="Cliente e venda">
             <Linha rotulo="Cliente">
-              {cliente?.nome ?? "—"}
-              {cliente?.telefone ? ` · ${cliente.telefone}` : ""}
+              {cliente ? (
+                <>
+                  <Link to={`/gestao/clientes/${cliente.id}`}>{cliente.nome}</Link>
+                  {cliente.telefone ? ` · ${cliente.telefone}` : ""}
+                </>
+              ) : (
+                <span className="text-muted fst-italic">Cliente não identificado</span>
+              )}
             </Linha>
+            {!cliente && admin && (
+              <div className="d-grid d-sm-flex justify-content-sm-end mt-1 mb-2">
+                <button className="btn btn-outline-primary btn-sm" onClick={() => setModal("vincular")}>
+                  Vincular a um cliente
+                </button>
+              </div>
+            )}
+            {cliente && podeTrocarCliente && (
+              <div className="d-grid d-sm-flex justify-content-sm-end mt-1 mb-2">
+                <button className="btn btn-outline-secondary btn-sm" onClick={() => setModal("trocar")}>
+                  Trocar cliente
+                </button>
+              </div>
+            )}
             <Linha rotulo="Vendedor">{venda.vendedor?.nome ?? "—"}</Linha>
             <Linha rotulo="Canal">{CANAIS[venda.canal] ?? venda.canal ?? "—"}</Linha>
             <Linha rotulo="Criado em">{fmtDateTime(venda.criadoEm)}</Linha>
@@ -405,6 +429,19 @@ export default function PedidoDetalhePage() {
       <EncomendasSecao venda={venda} gestor={gestor} />
       <OcorrenciasSecao venda={venda} gestor={gestor} onNovaOcorrencia={carregarSilencioso} />
       <MovimentacoesSecao venda={venda} />
+
+      {(modal === "vincular" || modal === "trocar") && (
+        <ClienteVendaModal
+          venda={venda}
+          modo={modal}
+          onClose={() => setModal(null)}
+          onFeito={(v) => {
+            setVenda(v);
+            setModal(null);
+            toast.success(modal === "trocar" ? "Cliente da venda trocado." : "Venda vinculada ao cliente.");
+          }}
+        />
+      )}
 
       <ConfirmModal
         open={modal === "cancelar"}

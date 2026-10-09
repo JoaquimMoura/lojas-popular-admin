@@ -1,5 +1,5 @@
 /* ============================================================
-   Footer — Popular Móveis
+   Footer — Lá Casa Popular Móveis
    ============================================================ */
 
 .site-footer {
@@ -72,7 +72,7 @@
 }
 
 .footer-top .trust-badge-label {
-  color: var(--color-text-on-dark-muted);
+  color: var(--color-text-on-dark);
 }
 
 .footer-bottom {

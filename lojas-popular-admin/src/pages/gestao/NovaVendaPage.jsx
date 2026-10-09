@@ -394,7 +394,11 @@ export default function NovaVendaPage() {
               <div className="alert alert-success d-flex justify-content-between align-items-start gap-2">
                 <div>
                   <strong>{cliente.nome}</strong>
-                  <div className="small">{cliente.telefone || "Sem telefone"}{cliente.cpf ? ` · CPF ${cliente.cpf}` : ""}</div>
+                  <div className="small">
+                    {cliente.telefone || "Sem telefone"}
+                    {cliente.email ? ` · ${cliente.email}` : ""}
+                    {cliente.cpf ? ` · CPF ${cliente.cpf}` : ""}
+                  </div>
                 </div>
                 <button className="btn btn-sm btn-outline-secondary" onClick={() => setCliente(null)}>Trocar</button>
               </div>
@@ -664,7 +668,14 @@ export default function NovaVendaPage() {
         <div className="card">
           <div className="card-header">Revisão</div>
           <div className="card-body">
-            <div className="mb-2"><span className="text-muted">Cliente:</span> <strong>{cliente?.nome}</strong></div>
+            <div className="mb-2">
+              <span className="text-muted">Cliente:</span> <strong>{cliente?.nome}</strong>
+              <div className="small">
+                Contato: {cliente?.telefone || "sem telefone"}
+                {cliente?.email ? ` · ${cliente.email}` : ""}
+                {cliente?.cpf ? ` · CPF ${cliente.cpf}` : ""}
+              </div>
+            </div>
             <div className="mb-2">
               <span className="text-muted">Canal / entrega:</span> {CANAIS[canal]} · {TIPOS_ENTREGA[tipoEntrega]}
               {tipoEntrega === "ENTREGA" && enderecos.find((e) => String(e.id) === enderecoId) && (

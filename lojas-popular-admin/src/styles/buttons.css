@@ -42,3 +42,18 @@
   border-color: var(--color-accent-dark);
   color: var(--color-primary);
 }
+
+/* WhatsApp — verde com contraste AA (branco sobre #17803d ~5:1) */
+.btn-whatsapp {
+  background-color: #17803d;
+  border-color: #17803d;
+  color: #fff;
+  font-weight: 700;
+}
+
+.btn-whatsapp:hover,
+.btn-whatsapp:focus {
+  background-color: #126b32;
+  border-color: #126b32;
+  color: #fff;
+}

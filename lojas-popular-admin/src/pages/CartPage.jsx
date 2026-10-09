@@ -25,7 +25,7 @@ export default function CartPage() {
       position: "top-right",
       autoClose: 2000,
       theme: "dark",
-      style: { backgroundColor: "#B71C1C", color: "#fff" },
+      style: { backgroundColor: "#37393D", color: "#fff" },
     });
   };
 

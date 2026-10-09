@@ -18,6 +18,9 @@ export const vendasApi = {
   rejeitarDesconto: (id, motivo) =>
     api.post(`/vendas/${id}/desconto/rejeitar`, { motivo: motivo || null }).then((r) => r.data),
 
+  vincularCliente: (id, body) => api.post(`/vendas/${id}/vincular-cliente`, body).then((r) => r.data),
+  trocarCliente: (id, body) => api.post(`/vendas/${id}/trocar-cliente`, body).then((r) => r.data),
+
   // Etapa 2: entrega, montagem e pós-venda (as respostas são o detalhe da venda)
   agendarEntrega: (id, body) => api.post(`/vendas/${id}/entrega/agendar`, body).then((r) => r.data),
   reagendarEntrega: (id, body) => api.post(`/vendas/${id}/entrega/reagendar`, body).then((r) => r.data),

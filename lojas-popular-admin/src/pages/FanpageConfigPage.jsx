@@ -58,7 +58,7 @@ export default function FanpageConfigPage() {
         });
       } catch (err) {
         console.error("Erro ao carregar configuração da fanpage", err);
-        setFeedback({ type: "danger", message: "Nao foi possível carregar os dados atuais." });
+        setFeedback({ type: "danger", message: "Não foi possível carregar os dados atuais." });
       } finally {
         setLoading(false);
       }
@@ -149,13 +149,13 @@ export default function FanpageConfigPage() {
       const serverMsg = err.response?.data?.message || err.response?.data?.error;
       let message;
       if (!err.response) {
-        message = "Erro de conexão. Verifique se o servidor esta rodando.";
+        message = "Erro de conexão. Verifique se o servidor está rodando.";
       } else if (status === 403) {
-        message = "Sem permissao. Certifique-se de estar logado como ADMIN.";
+        message = "Sem permissão. Certifique-se de estar logado como ADMIN.";
       } else if (status === 400) {
         message = serverMsg ? `Campos inválidos: ${serverMsg}` : "Campos inválidos. Verifique os dados e tente novamente.";
       } else {
-        message = serverMsg || `Erro ${status || ""}: Nao foi possível salvar. Tente novamente.`;
+        message = serverMsg || `Erro ${status || ""}: Não foi possível salvar. Tente novamente.`;
       }
       setFeedback({ type: "danger", message });
     } finally {
@@ -168,8 +168,8 @@ export default function FanpageConfigPage() {
       <h2 className="mb-4">Configuração da Fanpage</h2>
 
       <p className="text-muted">
-        Atualize os textos e destaques exibidos na pagina inicial/fanpage. Utilize os formatos
-        indicados para listar beneficios, colecoes e destaques.
+        Atualize os textos e destaques exibidos na página inicial. Utilize os formatos
+        indicados para listar benefícios, coleções e destaques.
       </p>
 
       {feedback && (
@@ -180,7 +180,7 @@ export default function FanpageConfigPage() {
 
       <form className="row g-3" onSubmit={handleSubmit}>
         <div className="col-md-6">
-          <label className="form-label">Titulo do Hero*</label>
+          <label className="form-label">Título do Hero*</label>
           <input
             className="form-control"
             name="heroTitle"
@@ -192,7 +192,7 @@ export default function FanpageConfigPage() {
         </div>
 
         <div className="col-md-6">
-          <label className="form-label">Subtitulo do Hero</label>
+          <label className="form-label">Subtítulo do Hero</label>
           <input
             className="form-control"
             name="heroSubtitle"
@@ -215,7 +215,7 @@ export default function FanpageConfigPage() {
         </div>
 
         <div className="col-md-4">
-          <label className="form-label">Rotulo do botao principal*</label>
+          <label className="form-label">Rótulo do botão principal*</label>
           <input
             className="form-control"
             name="heroPrimaryLabel"
@@ -239,7 +239,7 @@ export default function FanpageConfigPage() {
         </div>
 
         <div className="col-md-4">
-          <label className="form-label">Rotulo do botao secundario</label>
+          <label className="form-label">Rótulo do botão secundário</label>
           <input
             className="form-control"
             name="heroSecondaryLabel"
@@ -250,7 +250,7 @@ export default function FanpageConfigPage() {
         </div>
 
         <div className="col-md-4">
-          <label className="form-label">Link do botao secundario</label>
+          <label className="form-label">Link do botão secundário</label>
           <input
             className="form-control"
             name="heroSecondaryUrl"
@@ -270,11 +270,14 @@ export default function FanpageConfigPage() {
             onChange={handleChange}
             disabled={loading || saving}
           />
-          <div className="form-text">Opcional. Informe uma URL absoluta ou caminho relativo.</div>
+          <div className="form-text">
+            Opcional. Informe uma URL absoluta ou caminho relativo. Vira a primeira imagem do
+            carrossel do topo; as demais vêm das imagens das coleções, categorias e produtos.
+          </div>
         </div>
 
         <div className="col-12">
-          <label className="form-label">Beneficios (um por linha)</label>
+          <label className="form-label">Benefícios (um por linha)</label>
           <textarea
             className="form-control"
             name="benefitsText"
@@ -283,11 +286,11 @@ export default function FanpageConfigPage() {
             onChange={handleChange}
             disabled={loading || saving}
           />
-          <div className="form-text">Formato: Titulo|Descrição</div>
+          <div className="form-text">Formato: Título|Descrição</div>
         </div>
 
         <div className="col-12">
-          <label className="form-label">Colecoes (uma por linha)</label>
+          <label className="form-label">Coleções (uma por linha)</label>
           <textarea
             className="form-control"
             name="collectionsText"
@@ -300,7 +303,7 @@ export default function FanpageConfigPage() {
         </div>
 
         <div className="col-md-6">
-          <label className="form-label">Titulo das ofertas</label>
+          <label className="form-label">Título das ofertas</label>
           <input
             className="form-control"
             name="offersTitle"
@@ -322,7 +325,7 @@ export default function FanpageConfigPage() {
         </div>
 
         <div className="col-md-6">
-          <label className="form-label">Titulo dos combos</label>
+          <label className="form-label">Título dos combos</label>
           <input
             className="form-control"
             name="combosTitle"
@@ -344,7 +347,7 @@ export default function FanpageConfigPage() {
         </div>
 
         <div className="col-md-6">
-          <label className="form-label">Titulo da chamada final</label>
+          <label className="form-label">Título da chamada final</label>
           <input
             className="form-control"
             name="ctaTitle"

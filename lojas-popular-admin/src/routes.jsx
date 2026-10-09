@@ -24,6 +24,7 @@ import PedidosPage from "./pages/gestao/PedidosPage";
 import PedidoDetalhePage from "./pages/gestao/PedidoDetalhePage";
 import NovaVendaPage from "./pages/gestao/NovaVendaPage";
 import ClientesPage from "./pages/gestao/ClientesPage";
+import ClienteDetalhePage from "./pages/gestao/ClienteDetalhePage";
 import EstoquePage from "./pages/gestao/EstoquePage";
 import ConfiguracaoComercialPage from "./pages/gestao/ConfiguracaoComercialPage";
 import UsuariosPage from "./pages/gestao/UsuariosPage";
@@ -122,6 +123,7 @@ export const router = createBrowserRouter([
               { path: "vendas/nova", element: <NovaVendaPage /> },
               { path: "vendas/:id/editar", element: <NovaVendaPage /> },
               { path: "clientes", element: <ClientesPage /> },
+              { path: "clientes/:id", element: <ClienteDetalhePage /> },
               { path: "estoque", element: <EstoquePage /> },
               { path: "agenda", element: <AgendaPage /> },
               {

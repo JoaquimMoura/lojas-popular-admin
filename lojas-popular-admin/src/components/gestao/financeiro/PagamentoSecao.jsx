@@ -41,12 +41,30 @@ export function NotaTresConceitos() {
   );
 }
 
+/** Rótulo do recebimento: "Cartão crédito 3x", "Cartão débito", "Pix", "Dinheiro". */
+function rotuloRecebimento(r) {
+  if (r.forma !== "CARTAO") return FORMAS[r.forma] ?? r.forma;
+  if (r.tipoCartao === "DEBITO") return "Cartão débito";
+  if (r.tipoCartao === "CREDITO") return `Cartão crédito ${r.parcelas ?? 1}x`;
+  return `Cartão ${r.parcelas ?? 1}x`;
+}
+
+const TEXTO_PLANO_MANUAL =
+  "Sem taxa cadastrada: previsão na data do pagamento. Quando o dinheiro cair na conta, dê baixa em Financeiro › Cartão informando o valor depositado.";
+
 function RegistrarModal({ venda, pag, onClose, onVenda }) {
-  const forma = pag.forma;
+  const ativos = (pag.recebimentos ?? []).filter((r) => r.status === "REGISTRADO");
+  const travada = ativos.length > 0;
+  const formaInicial = travada ? ativos[0].forma : pag.forma ?? "PIX";
+  const [forma, setForma] = useState(formaInicial);
   const cartao = forma === "CARTAO";
   const dinheiro = forma === "DINHEIRO";
   const saldo = Number(pag.saldo ?? 0);
-  const [valor, setValor] = useState(cartao ? String(pag.total ?? "") : saldo > 0 ? saldo.toFixed(2) : "");
+  const [tipoCartao, setTipoCartao] = useState(
+    travada ? ativos[0].tipoCartao ?? "CREDITO" : pag.forma === "CARTAO" ? "CREDITO" : "",
+  );
+  const [parcelas, setParcelas] = useState(String(Math.min(Math.max(Number(pag.parcelas) || 1, 1), 6)));
+  const [valor, setValor] = useState(formaInicial === "CARTAO" ? String(pag.total ?? "") : saldo > 0 ? saldo.toFixed(2) : "");
   const [data, setData] = useState("");
   const [referencia, setReferencia] = useState("");
   const [operadora, setOperadora] = useState("");
@@ -59,6 +77,7 @@ function RegistrarModal({ venda, pag, onClose, onVenda }) {
   useEffect(() => {
     let ativo = true;
     if (dinheiro) {
+      setCaixa(null);
       financeiroApi.caixaAtual().then((c) => ativo && setCaixa(c)).catch(() => ativo && setCaixa({ aberta: true, erroLeitura: true }));
     }
     if (cartao) {
@@ -69,11 +88,17 @@ function RegistrarModal({ venda, pag, onClose, onVenda }) {
     };
   }, [dinheiro, cartao]);
 
+  const escolherForma = (f) => {
+    setForma(f);
+    setValor(f === "CARTAO" ? String(pag.total ?? "") : saldo > 0 ? saldo.toFixed(2) : "");
+  };
+
   const n = Number(valor);
+  const credito = cartao && tipoCartao === "CREDITO";
   const caixaFechado = dinheiro && caixa && caixa.aberta === false;
   const invalido =
     !(n > 0) ||
-    (cartao && operadora.trim() === "") ||
+    (cartao && tipoCartao === "") ||
     (cartao && Math.abs(n - Number(pag.total)) > 0.004) ||
     caixaFechado ||
     (dinheiro && caixa === null);
@@ -82,12 +107,16 @@ function RegistrarModal({ venda, pag, onClose, onVenda }) {
     return (
       <ModalShell titulo="Recebimento registrado" onClose={onClose}>
         <div className="alert alert-success" role="status">
-          Recebimento de {fmtMoney(novo.valor)} registrado em {FORMAS[novo.forma] ?? novo.forma}.
+          Recebimento de {fmtMoney(novo.valor)} registrado: {rotuloRecebimento(novo)}.
         </div>
         {novo.forma === "CARTAO" ? (
           <>
-            <NotaTresConceitos />
-            <div className="fw-semibold mb-2">Parcelas geradas pela operadora</div>
+            {novo.planoManual ? (
+              <div className="alert alert-info small">{TEXTO_PLANO_MANUAL}</div>
+            ) : (
+              <NotaTresConceitos />
+            )}
+            <div className="fw-semibold mb-2">{novo.planoManual ? "Recebível previsto" : "Parcelas geradas pela operadora"}</div>
             <RecebiveisMini recebiveis={novo.recebiveis} />
             <div className="small text-muted mt-2">
               Para dar baixa quando a operadora pagar, use <Link to="/gestao/financeiro/cartao">Financeiro &rsaquo; Cartão</Link>.
@@ -111,8 +140,11 @@ function RegistrarModal({ venda, pag, onClose, onVenda }) {
           valor: n,
           dataPagamento: dinheiro ? null : data || null,
           referencia: referencia.trim() || null,
-          operadora: cartao ? operadora.trim() : null,
+          operadora: cartao ? operadora.trim() || null : null,
           observacao: obs.trim() || null,
+          forma,
+          tipoCartao: cartao ? tipoCartao : null,
+          parcelas: cartao ? (credito ? Number(parcelas) : 1) : null,
         };
         const idsAntes = new Set((pag.recebimentos ?? []).map((r) => r.id));
         const atualizado = await financeiroApi.registrarRecebimento(
@@ -127,13 +159,29 @@ function RegistrarModal({ venda, pag, onClose, onVenda }) {
         if (criado) setNovo(criado);
         else onClose();
       }}>
+      <div className="alert alert-info small py-2">
+        O sistema não processa pagamento: registre aqui o que já foi pago na maquininha, no Pix ou em dinheiro.
+      </div>
+
       <div className="mb-3">
-        <div className="d-flex justify-content-between"><span className="text-muted">Forma da venda</span>
-          <strong>{FORMAS[forma] ?? forma}{cartao ? ` em ${pag.parcelas}x` : ""}</strong></div>
-        <div className="d-flex justify-content-between"><span className="text-muted">Total</span><span>{fmtMoney(pag.total)}</span></div>
+        <div className="d-flex justify-content-between"><span className="text-muted">Total da venda</span><span>{fmtMoney(pag.total)}</span></div>
         <div className="d-flex justify-content-between"><span className="text-muted">Já recebido</span><span>{fmtMoney(pag.recebido)}</span></div>
         <div className="d-flex justify-content-between"><span className="text-muted">Saldo a receber</span><strong>{fmtMoney(pag.saldo)}</strong></div>
-        <div className="form-text">A forma de pagamento é a da venda; uma venda tem uma única forma.</div>
+      </div>
+
+      <div className="mb-3">
+        <label className="form-label" htmlFor="pag-forma">Como o cliente pagou</label>
+        <select id="pag-forma" className="form-select" value={forma} disabled={travada}
+          onChange={(e) => escolherForma(e.target.value)}>
+          <option value="PIX">Pix</option>
+          <option value="DINHEIRO">Dinheiro</option>
+          <option value="CARTAO">Cartão</option>
+        </select>
+        <div className="form-text">
+          {travada
+            ? "A forma está travada: esta venda já tem recebimento ativo e uma venda tem uma única forma de pagamento. Para trocar, estorne o recebimento."
+            : "Só pode mudar em relação à venda se isso não alterar o preço; senão o sistema recusa."}
+        </div>
       </div>
 
       {caixaFechado && (
@@ -142,9 +190,35 @@ function RegistrarModal({ venda, pag, onClose, onVenda }) {
           <Link to="/gestao/financeiro/caixa">Abrir o caixa</Link>
         </div>
       )}
-      {cartao && <NotaTresConceitos />}
+      {dinheiro && !caixaFechado && (
+        <div className="small text-muted mb-3">{pag.bloqueios?.caixa ?? "Pagamento em dinheiro entra no caixa físico: o caixa precisa estar aberto."}</div>
+      )}
+      {cartao && pag.bloqueios?.cartao && <div className="alert alert-info small">{pag.bloqueios.cartao}</div>}
 
       <div className="row g-3">
+        {cartao && (
+          <>
+            <div className="col-12 col-sm-6">
+              <label className="form-label" htmlFor="pag-tipo">Tipo do cartão <span className="text-danger">*</span></label>
+              <select id="pag-tipo" className="form-select" value={tipoCartao} disabled={travada && !!ativos[0].tipoCartao}
+                onChange={(e) => setTipoCartao(e.target.value)} autoFocus>
+                <option value="">Selecione...</option>
+                <option value="CREDITO">Crédito</option>
+                <option value="DEBITO">Débito</option>
+              </select>
+              {tipoCartao === "DEBITO" && <div className="form-text">Débito é sempre à vista (1x).</div>}
+            </div>
+            {credito && (
+              <div className="col-12 col-sm-6">
+                <label className="form-label" htmlFor="pag-parcelas">Parcelas</label>
+                <select id="pag-parcelas" className="form-select" value={parcelas} onChange={(e) => setParcelas(e.target.value)}>
+                  {[1, 2, 3, 4, 5, 6].map((i) => <option key={i} value={i}>{i}x</option>)}
+                </select>
+                <div className="form-text">Sem juros, de 1x a 6x.</div>
+              </div>
+            )}
+          </>
+        )}
         <div className="col-12 col-sm-6">
           <CampoValor label="Valor recebido" obrigatorio value={valor} onChange={setValor} max={saldo > 0 ? saldo : undefined}
             readOnly={cartao} autoFocus={!cartao}
@@ -159,13 +233,13 @@ function RegistrarModal({ venda, pag, onClose, onVenda }) {
         )}
         {cartao && (
           <div className="col-12 col-sm-6">
-            <label className="form-label">Operadora <span className="text-danger">*</span></label>
+            <label className="form-label">Operadora <span className="text-muted fw-normal">(opcional)</span></label>
             <input className="form-control" list="operadoras-cadastradas" maxLength={60} value={operadora}
-              onChange={(e) => setOperadora(e.target.value)} autoFocus />
+              onChange={(e) => setOperadora(e.target.value)} />
             <datalist id="operadoras-cadastradas">
               {sugestoes.map((o) => <option key={o} value={o} />)}
             </datalist>
-            <div className="form-text">Use o nome cadastrado em Cartão &rsaquo; Taxas; sem taxa cadastrada o servidor recusa.</div>
+            <div className="form-text">Com a operadora e a taxa cadastradas (Cartão &rsaquo; Taxas) as parcelas são calculadas; sem elas, o registro fica em plano manual.</div>
           </div>
         )}
         <div className="col-12 col-sm-6">
@@ -193,7 +267,7 @@ function EstornarModal({ rec, onClose, onVenda }) {
         onClose();
       }}>
       <div className="alert alert-warning">
-        Estorna {fmtMoney(rec.valor)} ({FORMAS[rec.forma] ?? rec.forma}). {rec.forma === "CARTAO"
+        Estorna {fmtMoney(rec.valor)} ({rotuloRecebimento(rec)}). {rec.forma === "CARTAO"
           ? "As parcelas da operadora serão canceladas; se alguma já foi liquidada, estorne primeiro a liquidação (tela Cartão)."
           : "O lançamento de entrada será estornado."} Esta ação fica registrada com o seu usuário.
       </div>
@@ -221,8 +295,8 @@ export default function PagamentoSecao({ venda, onVenda }) {
       </div>
       <div className="row">
         <div className="col-md-6">
-          <Linha rotulo="Forma (da venda)">{FORMAS[pag.forma] ?? pag.forma ?? "—"}</Linha>
-          <Linha rotulo="Parcelas">{pag.forma === "CARTAO" ? `${pag.parcelas}x` : "—"}</Linha>
+          <Linha rotulo="Forma">{FORMAS[pag.forma] ?? pag.forma ?? "—"}</Linha>
+          <Linha rotulo="Parcelas">{pag.forma === "CARTAO" ? `${pag.parcelas ?? 1}x` : "—"}</Linha>
           <Linha rotulo="Total da venda">{fmtMoney(pag.total)}</Linha>
         </div>
         <div className="col-md-6">
@@ -233,8 +307,9 @@ export default function PagamentoSecao({ venda, onVenda }) {
       </div>
 
       {pag.forma === "CARTAO" && <NotaTresConceitos />}
-      <AvisosLista itens={Object.fromEntries(Object.entries(bloqueios).filter(([k]) => k !== "caixa"))}
+      <AvisosLista itens={Object.fromEntries(Object.entries(bloqueios).filter(([k]) => k !== "caixa" && k !== "cartao"))}
         titulo="Bloqueios financeiros desta venda" />
+      {bloqueios.cartao && <div className="alert alert-info small">{bloqueios.cartao}</div>}
       {bloqueios.caixa && <div className="small text-muted mb-2">{bloqueios.caixa}</div>}
 
       {(podeRegistrar || podeEstornar) && (
@@ -258,6 +333,7 @@ export default function PagamentoSecao({ venda, onVenda }) {
                 <span>
                   <strong className={r.status === "ESTORNADO" ? "text-decoration-line-through" : ""}>{fmtMoney(r.valor)}</strong>{" "}
                   <StatusBadge tipo="recebimento" valor={r.status} />
+                  {r.planoManual && <span className="badge text-bg-secondary ms-1" title={TEXTO_PLANO_MANUAL}>plano manual</span>}
                 </span>
                 {podeEstornar && r.status === "REGISTRADO" && (
                   <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setModal({ estornar: r })}>
@@ -266,8 +342,8 @@ export default function PagamentoSecao({ venda, onVenda }) {
                 )}
               </div>
               <div className="small">
-                {FORMAS[r.forma] ?? r.forma}
-                {r.forma === "CARTAO" ? ` ${r.parcelas}x${r.operadora ? ` · ${r.operadora}` : ""}` : ""} · pago em {fmtDate(r.dataPagamento)}
+                {rotuloRecebimento(r)}
+                {r.forma === "CARTAO" && r.operadora ? ` · ${r.operadora}` : ""} · pago em {fmtDate(r.dataPagamento)}
                 {r.referencia ? ` · ref. ${r.referencia}` : ""}
               </div>
               <div className="small">Registrado por {r.registradoPor ?? "—"} em {fmtDateTime(r.criadoEm)}</div>
@@ -277,6 +353,7 @@ export default function PagamentoSecao({ venda, onVenda }) {
                   Estornado por {r.estornadoPor ?? "—"} em {fmtDateTime(r.estornadoEm)} — {r.motivoEstorno}
                 </div>
               )}
+              {r.planoManual && r.status === "REGISTRADO" && <div className="small text-muted">{TEXTO_PLANO_MANUAL}</div>}
               {r.forma === "CARTAO" && (r.recebiveis ?? []).length > 0 && (
                 <details className="mt-2">
                   <summary className="small">Recebíveis da operadora ({r.recebiveis.length})</summary>

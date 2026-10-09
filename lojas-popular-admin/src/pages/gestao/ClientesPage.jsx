@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { clientesApi } from "../../services/clientesApi";
 import ClienteForm from "../../components/gestao/ClienteForm";
@@ -102,7 +103,7 @@ export default function ClientesPage() {
                 <div className="card h-100">
                   <div className="card-body">
                     <div className="d-flex justify-content-between">
-                      <strong>{c.nome}</strong>
+                      <Link to={`/gestao/clientes/${c.id}`} className="fw-bold text-decoration-none">{c.nome}</Link>
                       {!c.ativo && <span className="badge text-bg-secondary">Inativo</span>}
                     </div>
                     <div className="small text-muted">
@@ -117,7 +118,10 @@ export default function ClientesPage() {
                       </div>
                     )}
                     <div className="d-grid d-sm-flex gap-2 mt-3">
-                      <button className="btn btn-outline-primary btn-sm" onClick={() => setForm({ cliente: c })}>
+                      <Link className="btn btn-outline-primary btn-sm" to={`/gestao/clientes/${c.id}?aba=historico`}>
+                        Histórico de compras
+                      </Link>
+                      <button className="btn btn-outline-secondary btn-sm" onClick={() => setForm({ cliente: c })}>
                         Editar
                       </button>
                       {c.ativo && gestor && (

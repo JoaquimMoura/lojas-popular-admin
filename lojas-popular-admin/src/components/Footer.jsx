@@ -4,6 +4,7 @@ import { storeConfigApi } from "../services/storeConfigApi";
 import { categoriesApi } from "../services/categoriesApi";
 import WhatsAppButton from "./WhatsAppButton";
 import TrustBadges from "./TrustBadges";
+import { corrigirTexto, corrigirEndereco } from "../utils/textoLoja";
 import "../styles/footer.css";
 
 export default function Footer() {
@@ -33,8 +34,8 @@ export default function Footer() {
     };
   }, []);
 
-  const lojaNome = storeInfo?.nomeLoja ?? "Popular Móveis";
-  const lojaEndereco = storeInfo?.endereco ?? null;
+  const lojaNome = corrigirTexto(storeInfo?.nomeLoja) ?? "Lá Casa Popular Móveis";
+  const lojaEndereco = corrigirEndereco(storeInfo?.endereco) ?? null;
   const lojaWhatsapp = storeInfo?.whatsapp ?? null;
   const ano = new Date().getFullYear();
 
@@ -45,7 +46,7 @@ export default function Footer() {
           <div className="footer-col footer-brand">
             <p className="footer-brand-name">{lojaNome}</p>
             <p className="footer-tagline">
-              Móveis modulados com preço popular, entrega e montagem inclusas.
+              Móveis modulados com preço popular. Frete grátis e montagem inclusa.
             </p>
             <WhatsAppButton
               phone={lojaWhatsapp}
@@ -84,7 +85,7 @@ export default function Footer() {
           )}
 
           <div className="footer-col">
-            <h2 className="footer-col-title">Pagamento e garantia</h2>
+            <h2 className="footer-col-title">Formas de pagamento</h2>
             <TrustBadges className="trust-badges trust-badges--footer" />
           </div>
         </div>

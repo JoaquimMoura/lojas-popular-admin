@@ -4,16 +4,16 @@ import { vendasApi } from "../../services/vendasApi";
 import StatusBadge from "../../components/gestao/StatusBadge";
 import PendenciasAlert from "../../components/gestao/PendenciasAlert";
 import ErroAlert from "../../components/gestao/ErroAlert";
-import { CANAIS, ROTULOS, fmtDateTime, fmtMoney } from "../../utils/format";
+import { CANAIS, DESCRICOES, NOME_STATUS, ROTULOS, fmtDateTime, fmtMoney } from "../../utils/format";
 
 const TAMANHO = 20;
 
 function Badges({ v }) {
   return (
     <div className="d-flex flex-wrap gap-1">
-      <StatusBadge tipo="comercial" valor={v.statusComercial} />
-      <StatusBadge tipo="pagamento" valor={v.statusPagamento} />
-      <StatusBadge tipo="entrega" valor={v.statusEntrega} />
+      <StatusBadge tipo="comercial" valor={v.statusComercial} comRotulo />
+      <StatusBadge tipo="pagamento" valor={v.statusPagamento} comRotulo />
+      <StatusBadge tipo="entrega" valor={v.statusEntrega} comRotulo />
       {v.revisaoLegado && <span className="badge text-bg-danger">Revisar</span>}
     </div>
   );
@@ -127,7 +127,9 @@ export default function PedidosPage() {
                     <th>Cliente</th>
                     <th>Vendedor</th>
                     <th>Canal</th>
-                    <th>Status</th>
+                    <th title="Situação da venda: rascunho, aguardando aprovação de desconto, confirmada ou cancelada">Venda</th>
+                    <th title="Quanto já foi recebido do cliente">Pagamento</th>
+                    <th title="Onde está a mercadoria: não agendada, agendada, saiu da loja ou entregue">Entrega</th>
                     <th className="text-end">Total</th>
                     <th>Criado em</th>
                     <th />
@@ -137,10 +139,12 @@ export default function PedidosPage() {
                   {itens.map((v) => (
                     <tr key={v.id}>
                       <td>#{v.id}</td>
-                      <td>{v.cliente ?? "—"}</td>
+                      <td>{v.cliente ?? <span className="text-muted fst-italic">Cliente não identificado</span>}</td>
                       <td>{v.vendedor ?? "—"}</td>
                       <td>{CANAIS[v.canal] ?? v.canal ?? "—"}</td>
-                      <td><Badges v={v} /></td>
+                      <td><StatusBadge tipo="comercial" valor={v.statusComercial} />{v.revisaoLegado && <span className="badge text-bg-danger ms-1">Revisar</span>}</td>
+                      <td><StatusBadge tipo="pagamento" valor={v.statusPagamento} /></td>
+                      <td><StatusBadge tipo="entrega" valor={v.statusEntrega} /></td>
                       <td className="text-end">{fmtMoney(v.total)}</td>
                       <td>{fmtDateTime(v.criadoEm)}</td>
                       <td className="text-end">
@@ -162,7 +166,7 @@ export default function PedidosPage() {
                 <div className="card">
                   <div className="card-body">
                     <div className="d-flex justify-content-between">
-                      <strong>#{v.id} — {v.cliente ?? "Sem cliente"}</strong>
+                      <strong>#{v.id} — {v.cliente ?? "Cliente não identificado"}</strong>
                       <strong>{fmtMoney(v.total)}</strong>
                     </div>
                     <div className="small text-muted mb-2">
@@ -194,6 +198,23 @@ export default function PedidosPage() {
               Próxima
             </button>
           </div>
+          <details className="mt-3 small">
+            <summary className="fw-semibold" style={{ cursor: "pointer" }}>O que significa cada status?</summary>
+            <div className="row g-3 mt-1">
+              {["comercial", "pagamento", "entrega"].map((tipo) => (
+                <div className="col-12 col-md-4" key={tipo}>
+                  <div className="fw-semibold mb-1">{NOME_STATUS[tipo]}</div>
+                  <ul className="list-unstyled mb-0">
+                    {Object.entries(DESCRICOES[tipo]).filter(([k]) => k !== "NAO_INFORMADO" && k !== "LEGADO").map(([k, d]) => (
+                      <li key={k} className="mb-1">
+                        <StatusBadge tipo={tipo} valor={k} /> <span className="text-muted">{d}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </details>
         </>
       )}
     </div>

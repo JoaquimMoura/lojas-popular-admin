@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import PendenciasAlert from "../../components/gestao/PendenciasAlert";
 import ErroAlert from "../../components/gestao/ErroAlert";
 import DecisoesFinanceiras from "../../components/gestao/financeiro/DecisoesFinanceiras";
+import ClientesConfig from "../../components/gestao/ClientesConfig";
 import PermissoesFinanceiras from "../../components/gestao/financeiro/PermissoesFinanceiras";
 import { ARREDONDAMENTOS, FORMAS, PERFIS, fmtPercent } from "../../utils/format";
 
@@ -192,6 +193,7 @@ export default function ConfiguracaoComercialPage() {
 
       <DecisoesFinanceiras key={JSON.stringify(cfg?.financeiro ?? {})} cfg={cfg} ehAdmin={!!ehAdmin} onSalvo={aplicar} />
       <PermissoesFinanceiras ehAdmin={!!ehAdmin} />
+      <ClientesConfig ehAdmin={!!ehAdmin} />
 
       <div className="card mb-4">
         <div className="card-header">Condições de pagamento</div>

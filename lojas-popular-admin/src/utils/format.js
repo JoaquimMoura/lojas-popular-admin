@@ -124,6 +124,40 @@ export const ROTULOS = {
   fechamento: { APROVADO: "Aprovado", REABERTO: "Reaberto" },
 };
 
+/** Explicações em linguagem simples de cada status (usadas como dica ao passar o mouse e na legenda). */
+export const DESCRICOES = {
+  comercial: {
+    LEGADO: "Pedido do checkout online antigo, anterior à gestão de vendas.",
+    RASCUNHO: "Venda ainda sendo montada: o estoque ainda não foi reservado.",
+    AGUARDANDO_APROVACAO: "Tem desconto acima do limite: espera a aprovação do gerente ou do proprietário.",
+    CONFIRMADA: "Venda fechada: os produtos de pronta entrega já estão reservados para este cliente.",
+    CANCELADA: "Venda cancelada: a reserva foi liberada.",
+  },
+  pagamento: {
+    NAO_INFORMADO: "Pedido antigo, sem controle de pagamento.",
+    PENDENTE: "Ainda não recebemos nada desta venda.",
+    PARCIAL: "Recebemos parte do valor; falta receber o restante.",
+    PAGO: "Valor total recebido.",
+  },
+  entrega: {
+    NAO_INFORMADO: "Pedido antigo, sem controle de entrega.",
+    NAO_AGENDADA: "Ainda não foi marcada data de entrega ou retirada.",
+    AGENDADA: "Entrega ou retirada marcada para uma data; a mercadoria ainda está na loja.",
+    SAIU: "A mercadoria já saiu da loja (baixa no estoque feita) e está a caminho do cliente.",
+    TENTATIVA_FRUSTRADA: "A entrega foi tentada e não deu certo: precisa reagendar.",
+    ENTREGUE: "Entrega concluída, com comprovação.",
+  },
+  montagem: {
+    NAO_AGENDADA: "A montagem (inclusa) ainda não foi marcada.",
+    AGENDADA: "Montagem marcada.",
+    CONCLUIDA: "Montagem concluída.",
+    NAO_NECESSARIA: "Este pedido não precisa de montagem.",
+  },
+};
+
+/** Nome do que cada status representa (para rotular os selos). */
+export const NOME_STATUS = { comercial: "Venda", pagamento: "Pagamento", entrega: "Entrega", montagem: "Montagem" };
+
 export const COR = {
   comercial: {
     LEGADO: "secondary",
@@ -137,11 +171,11 @@ export const COR = {
     NAO_INFORMADO: "secondary",
     NAO_AGENDADA: "secondary",
     AGENDADA: "info",
-    SAIU: "primary",
+    SAIU: "dark",
     TENTATIVA_FRUSTRADA: "danger",
     ENTREGUE: "success",
   },
-  entregaRegistro: { AGENDADA: "info", SAIU: "primary", TENTATIVA_FRUSTRADA: "danger", ENTREGUE: "success", CANCELADA: "secondary" },
+  entregaRegistro: { AGENDADA: "info", SAIU: "dark", TENTATIVA_FRUSTRADA: "danger", ENTREGUE: "success", CANCELADA: "secondary" },
   eventoEntrega: { AGENDADA: "info", REAGENDADA: "info", SAIDA: "primary", TENTATIVA_FRUSTRADA: "danger", ENTREGUE: "success", CANCELADA: "secondary" },
   encomenda: { AGUARDANDO_PEDIDO: "warning", PEDIDO_REALIZADO: "info", PARCIALMENTE_RECEBIDA: "info", RECEBIDA: "success", CANCELADA: "secondary" },
   ocorrencia: { ABERTA: "warning", DEVOLUCAO_RECEBIDA: "info", RESOLVIDA: "success", CANCELADA: "secondary" },
