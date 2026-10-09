@@ -64,6 +64,10 @@ public class Pedido {
 	@JoinColumn(name = "usuario_id", nullable = false)
 	private User usuario;
 
+	/** Observação destinada ao CLIENTE (acesso, entrega, montagem): é a única que sai no comprovante. */
+	@Column(length = 500)
+	private String observacaoCliente;
+
 	/** Dados do cliente COMO ESTAVAM na venda (alterar o cadastro depois não muda o histórico). */
 	@Column(length = 150)
 	private String clienteNomeHist;

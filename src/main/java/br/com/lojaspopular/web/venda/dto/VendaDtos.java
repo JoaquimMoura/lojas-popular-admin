@@ -119,7 +119,7 @@ public final class VendaDtos {
       List<HistoricoResponse> historico, Acoes acoes,
       EntregaResponse entrega, MontagemResponse montagem, List<EncomendaResponse> encomendas,
       List<OcorrenciaResponse> ocorrencias, List<MovimentacaoView> movimentacoes,
-      br.com.lojaspopular.web.financeiro.FinanceiroDtos.PagamentoPedido pagamento) {
+      br.com.lojaspopular.web.financeiro.FinanceiroDtos.PagamentoPedido pagamento, String observacaoCliente) {
   }
 
   public record Pagina<T>(List<T> conteudo, int pagina, int tamanho, long total, int totalPaginas) {

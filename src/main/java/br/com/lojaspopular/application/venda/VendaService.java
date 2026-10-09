@@ -645,7 +645,7 @@ public class VendaService {
         p.getSubtotal(), p.getDesconto(), p.getFrete(), p.getTotal(), p.getObservacao(), p.getCriadoEm(),
         p.getConfirmadoEm(), p.getCanceladoEm(), p.getMotivoCancelamento(), itens, reservasDto, descontos, historico,
         acoes(p, ator, pagamento), expedicao.entregaDoPedido(p.getId()), expedicao.montagemDoPedido(p.getId()),
-        encomendas.doPedido(p.getId()), posVenda.doPedido(p.getId()), estoque.movimentacoesDoPedido(p.getId()), pagamento);
+        encomendas.doPedido(p.getId()), posVenda.doPedido(p.getId()), estoque.movimentacoesDoPedido(p.getId()), pagamento, p.getObservacaoCliente());
   }
 
   private Acoes acoes(Pedido p, User ator, br.com.lojaspopular.web.financeiro.FinanceiroDtos.PagamentoPedido pagamento) {
